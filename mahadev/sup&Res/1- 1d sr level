@@ -1,0 +1,29 @@
+import yfinance as yf
+import pandas as pd
+import numpy as np
+
+LEFT = 15
+RIGHT = 15
+
+# Download 10 months of daily data
+df = yf.download("ALKEM.NS", period="10mo", interval="1d")
+
+df['pivot_high'] = np.nan
+df['pivot_low'] = np.nan
+
+for i in range(LEFT, len(df) - RIGHT):
+    high_range = df['High'][i-LEFT:i+RIGHT+1]
+    low_range = df['Low'][i-LEFT:i+RIGHT+1]
+
+    if df['High'][i] == high_range.max():
+        df.at[df.index[i], 'pivot_high'] = df['High'][i]
+
+    if df['Low'][i] == low_range.min():
+        df.at[df.index[i], 'pivot_low'] = df['Low'][i]
+
+# Last confirmed levels (LuxAlgo logic)
+last_resistance = df['pivot_high'].dropna().iloc[-1]
+last_support = df['pivot_low'].dropna().iloc[-1]
+
+print("🔴 Resistance:", round(last_resistance, 2))
+print("🔵 Support:", round(last_support, 2))

@@ -13,7 +13,7 @@ import json
 import os
 
 # --- USER CONFIGURATION ---
-today = datetime.strptime("2025-12-17", "%Y-%m-%d")  # Set date manually
+today = datetime.strptime("2026-01-27", "%Y-%m-%d")  # Set date manually
 range_days = 15  # Number of days to look back
 INPUT_TAB = "input2"
 OUTPUT_TAB = "day_output"

@@ -1,0 +1,58 @@
+{
+    "BPCL.NS": {
+        "timeframe": "30m",
+        "ltp": 354.15,
+        "resistance": 388.15,
+        "support": 343.4,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-20 17:41:12"
+    },
+    "ITC.NS": {
+        "timeframe": "30m",
+        "ltp": 326.2,
+        "resistance": 426.4,
+        "support": 325.75,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-20 17:41:16"
+    },
+    "CDSL.NS": {
+        "timeframe": "30m",
+        "ltp": 1342.5,
+        "resistance": 1673.7,
+        "support": 1335.0,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-20 17:41:21"
+    },
+    "CHOLAFIN.NS": {
+        "timeframe": "30m",
+        "ltp": 1651.0,
+        "resistance": 1831.3,
+        "support": 1555.6,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-20 17:41:26"
+    },
+    "CIPLA.NS": {
+        "timeframe": "30m",
+        "ltp": 1381.8,
+        "resistance": 1592.7,
+        "support": 1372.9,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-20 17:41:31"
+    },
+    "COALINDIA.NS": {
+        "timeframe": "30m",
+        "ltp": 415.95,
+        "resistance": 441.95,
+        "support": 369.65,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-20 17:41:36"
+    },
+    "COCHINSHIP.NS": {
+        "timeframe": "30m",
+        "ltp": 1439.5,
+        "resistance": 1825.4,
+        "support": 1429.5,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-20 17:41:41"
+    }
+}

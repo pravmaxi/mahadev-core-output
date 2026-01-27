@@ -1,0 +1,72 @@
+[
+    {
+        "symbol": "BPCL.NS",
+        "timeframe": "30m",
+        "ltp": 354.15,
+        "support": 351.4,
+        "resistance": 367.75,
+        "previous_close": 356.0,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-20 17:52:05"
+    },
+    {
+        "symbol": "ITC.NS",
+        "timeframe": "30m",
+        "ltp": 326.2,
+        "support": 328.6,
+        "resistance": 339.5,
+        "previous_close": 327.15,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-20 17:52:10"
+    },
+    {
+        "symbol": "CDSL.NS",
+        "timeframe": "30m",
+        "ltp": 1342.5,
+        "support": 1402.3,
+        "resistance": 1451.7,
+        "previous_close": 1348.9,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-20 17:52:15"
+    },
+    {
+        "symbol": "CHOLAFIN.NS",
+        "timeframe": "30m",
+        "ltp": 1651.0,
+        "support": 1676.9,
+        "resistance": 1725.2,
+        "previous_close": 1660.0,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-20 17:52:20"
+    },
+    {
+        "symbol": "CIPLA.NS",
+        "timeframe": "30m",
+        "ltp": 1381.8,
+        "support": 1372.9,
+        "resistance": 1468.2,
+        "previous_close": 1380.7,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-20 17:52:26"
+    },
+    {
+        "symbol": "COALINDIA.NS",
+        "timeframe": "30m",
+        "ltp": 415.95,
+        "support": 428.0,
+        "resistance": 441.95,
+        "previous_close": 417.45,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-20 17:52:30"
+    },
+    {
+        "symbol": "COCHINSHIP.NS",
+        "timeframe": "30m",
+        "ltp": 1439.5,
+        "support": 1523.4,
+        "resistance": 1636.1,
+        "previous_close": 1445.0,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-20 17:52:35"
+    }
+]

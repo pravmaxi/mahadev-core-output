@@ -1,0 +1,912 @@
+[
+    {
+        "symbol": "EQUITASBNK.NS",
+        "timeframe": "15m",
+        "ltp": 70.44,
+        "support": 66.0,
+        "resistance": 73.38,
+        "previous_close": 70.58,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:26"
+    },
+    {
+        "symbol": "EXIDEIND.NS",
+        "timeframe": "15m",
+        "ltp": 322.65,
+        "support": 322.5,
+        "resistance": 337.25,
+        "previous_close": 322.9,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:26"
+    },
+    {
+        "symbol": "FEDERALBNK.NS",
+        "timeframe": "15m",
+        "ltp": 281.8,
+        "support": 277.55,
+        "resistance": 284.85,
+        "previous_close": 281.55,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:28"
+    },
+    {
+        "symbol": "GABRIEL.NS",
+        "timeframe": "15m",
+        "ltp": 878.0,
+        "support": 869.9,
+        "resistance": 910.1,
+        "previous_close": 878.7,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:29"
+    },
+    {
+        "symbol": "GAIL.NS",
+        "timeframe": "15m",
+        "ltp": 158.95,
+        "support": 159.88,
+        "resistance": 165.0,
+        "previous_close": 159.31,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:58:31"
+    },
+    {
+        "symbol": "GIPCL.NS",
+        "timeframe": "15m",
+        "ltp": 136.43,
+        "support": 136.0,
+        "resistance": 140.35,
+        "previous_close": 136.38,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:32"
+    },
+    {
+        "symbol": "GODREJCP.NS",
+        "timeframe": "15m",
+        "ltp": 1173.7,
+        "support": 1213.9,
+        "resistance": 1249.9,
+        "previous_close": 1173.9,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:58:33"
+    },
+    {
+        "symbol": "GOLDBEES.NS",
+        "timeframe": "15m",
+        "ltp": 131.2,
+        "support": 126.15,
+        "resistance": 132.39,
+        "previous_close": 131.24,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:34"
+    },
+    {
+        "symbol": "GRASIM.NS",
+        "timeframe": "15m",
+        "ltp": 2848.6,
+        "support": 2752.5,
+        "resistance": 2805.0,
+        "previous_close": 2843.0,
+        "trend": "Buy Trend",
+        "timestamp": "2026-01-27 12:58:35"
+    },
+    {
+        "symbol": "GSFC.NS",
+        "timeframe": "15m",
+        "ltp": 172.48,
+        "support": 165.94,
+        "resistance": 176.98,
+        "previous_close": 172.3,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:36"
+    },
+    {
+        "symbol": "GSPL.NS",
+        "timeframe": "15m",
+        "ltp": 292.65,
+        "support": 288.7,
+        "resistance": 299.85,
+        "previous_close": 293.1,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:37"
+    },
+    {
+        "symbol": "HAL.NS",
+        "timeframe": "15m",
+        "ltp": 4312.8,
+        "support": 4235.0,
+        "resistance": 4375.0,
+        "previous_close": 4314.1,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:39"
+    },
+    {
+        "symbol": "HAVELLS.NS",
+        "timeframe": "15m",
+        "ltp": 1279.1,
+        "support": 1294.3,
+        "resistance": 1348.6,
+        "previous_close": 1280.0,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:58:40"
+    },
+    {
+        "symbol": "HCLTECH.NS",
+        "timeframe": "15m",
+        "ltp": 1714.6,
+        "support": 1698.9,
+        "resistance": 1720.9,
+        "previous_close": 1709.2,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:41"
+    },
+    {
+        "symbol": "HDFCBANK.NS",
+        "timeframe": "15m",
+        "ltp": 917.8,
+        "support": 913.35,
+        "resistance": 925.4,
+        "previous_close": 915.85,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:42"
+    },
+    {
+        "symbol": "HINDUNILVR.NS",
+        "timeframe": "15m",
+        "ltp": 2387.8,
+        "support": 2360.2,
+        "resistance": 2433.9,
+        "previous_close": 2388.3,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:43"
+    },
+    {
+        "symbol": "ICICIBANK.NS",
+        "timeframe": "15m",
+        "ltp": 1352.3,
+        "support": 1335.8,
+        "resistance": 1355.0,
+        "previous_close": 1346.8,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:44"
+    },
+    {
+        "symbol": "ICICIGI.NS",
+        "timeframe": "15m",
+        "ltp": 1796.5,
+        "support": 1794.5,
+        "resistance": 1829.5,
+        "previous_close": 1797.4,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:45"
+    },
+    {
+        "symbol": "ICICIPRULI.NS",
+        "timeframe": "15m",
+        "ltp": 642.4,
+        "support": 643.35,
+        "resistance": 658.0,
+        "previous_close": 642.9,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:58:46"
+    },
+    {
+        "symbol": "IDFCFIRSTB.NS",
+        "timeframe": "15m",
+        "ltp": 82.38,
+        "support": 79.62,
+        "resistance": 85.13,
+        "previous_close": 82.37,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:47"
+    },
+    {
+        "symbol": "INDIGO.NS",
+        "timeframe": "15m",
+        "ltp": 4708.5,
+        "support": 4750.0,
+        "resistance": 4931.0,
+        "previous_close": 4714.0,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:58:48"
+    },
+    {
+        "symbol": "INDUSINDBK.NS",
+        "timeframe": "15m",
+        "ltp": 887.45,
+        "support": 892.9,
+        "resistance": 914.45,
+        "previous_close": 885.8,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:58:49"
+    },
+    {
+        "symbol": "INDUSTOWER.NS",
+        "timeframe": "15m",
+        "ltp": 417.55,
+        "support": 410.35,
+        "resistance": 422.15,
+        "previous_close": 417.25,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:50"
+    },
+    {
+        "symbol": "INFY.NS",
+        "timeframe": "15m",
+        "ltp": 1680.0,
+        "support": 1653.8,
+        "resistance": 1674.5,
+        "previous_close": 1679.7,
+        "trend": "Buy Trend",
+        "timestamp": "2026-01-27 12:58:51"
+    },
+    {
+        "symbol": "IOC.NS",
+        "timeframe": "15m",
+        "ltp": 157.8,
+        "support": 155.61,
+        "resistance": 160.38,
+        "previous_close": 157.5,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:52"
+    },
+    {
+        "symbol": "IRCTC.NS",
+        "timeframe": "15m",
+        "ltp": 605.05,
+        "support": 619.25,
+        "resistance": 638.7,
+        "previous_close": 604.3,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:58:53"
+    },
+    {
+        "symbol": "IRFC.NS",
+        "timeframe": "15m",
+        "ltp": 113.46,
+        "support": 115.63,
+        "resistance": 118.28,
+        "previous_close": 113.3,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:58:55"
+    },
+    {
+        "symbol": "ITBEES.NS",
+        "timeframe": "15m",
+        "ltp": 42.28,
+        "support": 41.95,
+        "resistance": 42.5,
+        "previous_close": 42.26,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:56"
+    },
+    {
+        "symbol": "ITC.NS",
+        "timeframe": "15m",
+        "ltp": 321.55,
+        "support": 321.1,
+        "resistance": 326.35,
+        "previous_close": 321.45,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:56"
+    },
+    {
+        "symbol": "ITCHOTELS.NS",
+        "timeframe": "15m",
+        "ltp": 179.54,
+        "support": 182.21,
+        "resistance": 190.43,
+        "previous_close": 179.35,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:58:57"
+    },
+    {
+        "symbol": "JAMNAAUTO.NS",
+        "timeframe": "15m",
+        "ltp": 116.23,
+        "support": 114.75,
+        "resistance": 121.19,
+        "previous_close": 115.76,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:58:58"
+    },
+    {
+        "symbol": "JIOFIN.NS",
+        "timeframe": "15m",
+        "ltp": 253.2,
+        "support": 262.55,
+        "resistance": 266.2,
+        "previous_close": 252.9,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:00"
+    },
+    {
+        "symbol": "JKTYRE.NS",
+        "timeframe": "15m",
+        "ltp": 507.95,
+        "support": 513.3,
+        "resistance": 524.95,
+        "previous_close": 507.75,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:00"
+    },
+    {
+        "symbol": "JUNIORBEES.NS",
+        "timeframe": "15m",
+        "ltp": 711.7,
+        "support": 710.3,
+        "resistance": 730.79,
+        "previous_close": 711.85,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:01"
+    },
+    {
+        "symbol": "KIRLOSBROS.NS",
+        "timeframe": "15m",
+        "ltp": 1506.9,
+        "support": 1482.0,
+        "resistance": 1518.7,
+        "previous_close": 1507.2,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:02"
+    },
+    {
+        "symbol": "KPITTECH.NS",
+        "timeframe": "15m",
+        "ltp": 1104.1,
+        "support": 1097.0,
+        "resistance": 1122.8,
+        "previous_close": 1103.6,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:08"
+    },
+    {
+        "symbol": "KPRMILL.NS",
+        "timeframe": "15m",
+        "ltp": 912.1,
+        "support": 847.0,
+        "resistance": 917.45,
+        "previous_close": 906.35,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:09"
+    },
+    {
+        "symbol": "LAURUSLABS.NS",
+        "timeframe": "15m",
+        "ltp": 1002.6,
+        "support": 980.2,
+        "resistance": 1044.0,
+        "previous_close": 1002.0,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:17"
+    },
+    {
+        "symbol": "LEMONTREE.NS",
+        "timeframe": "15m",
+        "ltp": 127.5,
+        "support": 127.51,
+        "resistance": 130.36,
+        "previous_close": 127.19,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:18"
+    },
+    {
+        "symbol": "LICI.NS",
+        "timeframe": "15m",
+        "ltp": 806.35,
+        "support": 803.0,
+        "resistance": 827.2,
+        "previous_close": 806.8,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:19"
+    },
+    {
+        "symbol": "LINCOLN.NS",
+        "timeframe": "15m",
+        "ltp": 451.05,
+        "support": 450.2,
+        "resistance": 462.95,
+        "previous_close": 452.75,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:20"
+    },
+    {
+        "symbol": "LT.NS",
+        "timeframe": "15m",
+        "ltp": 3764.0,
+        "support": 3720.7,
+        "resistance": 3800.4,
+        "previous_close": 3762.6,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:21"
+    },
+    {
+        "symbol": "MAHABANK.NS",
+        "timeframe": "15m",
+        "ltp": 64.72,
+        "support": 62.96,
+        "resistance": 67.35,
+        "previous_close": 64.78,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:22"
+    },
+    {
+        "symbol": "MANAPPURAM.NS",
+        "timeframe": "15m",
+        "ltp": 294.2,
+        "support": 292.95,
+        "resistance": 302.6,
+        "previous_close": 294.75,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:23"
+    },
+    {
+        "symbol": "MARICO.NS",
+        "timeframe": "15m",
+        "ltp": 744.8,
+        "support": 739.0,
+        "resistance": 757.35,
+        "previous_close": 744.3,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:24"
+    },
+    {
+        "symbol": "MON100.NS",
+        "timeframe": "15m",
+        "ltp": 238.7,
+        "support": 235.0,
+        "resistance": 238.89,
+        "previous_close": 238.39,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:26"
+    },
+    {
+        "symbol": "MOTILALOFS.NS",
+        "timeframe": "15m",
+        "ltp": 731.5,
+        "support": 771.35,
+        "resistance": 784.2,
+        "previous_close": 730.2,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:33"
+    },
+    {
+        "symbol": "MSUMI.NS",
+        "timeframe": "15m",
+        "ltp": 42.26,
+        "support": 43.73,
+        "resistance": 44.98,
+        "previous_close": 42.25,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:34"
+    },
+    {
+        "symbol": "MUKANDLTD.NS",
+        "timeframe": "15m",
+        "ltp": 120.83,
+        "support": 120.1,
+        "resistance": 125.79,
+        "previous_close": 120.79,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:35"
+    },
+    {
+        "symbol": "NATCOPHARM.NS",
+        "timeframe": "15m",
+        "ltp": 811.95,
+        "support": 830.5,
+        "resistance": 843.35,
+        "previous_close": 812.8,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:36"
+    },
+    {
+        "symbol": "NEWGEN.NS",
+        "timeframe": "15m",
+        "ltp": 608.95,
+        "support": 627.6,
+        "resistance": 653.0,
+        "previous_close": 608.85,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:38"
+    },
+    {
+        "symbol": "NIFTYBEES.NS",
+        "timeframe": "15m",
+        "ltp": 284.2,
+        "support": 285.18,
+        "resistance": 287.15,
+        "previous_close": 284.12,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:43"
+    },
+    {
+        "symbol": "NUCLEUS.NS",
+        "timeframe": "15m",
+        "ltp": 880.2,
+        "support": 871.0,
+        "resistance": 916.0,
+        "previous_close": 880.7,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:44"
+    },
+    {
+        "symbol": "NV20IETF.NS",
+        "timeframe": "15m",
+        "ltp": 15.03,
+        "support": 14.83,
+        "resistance": 15.15,
+        "previous_close": 15.0,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:45"
+    },
+    {
+        "symbol": "ONGC.NS",
+        "timeframe": "15m",
+        "ltp": 247.9,
+        "support": 241.57,
+        "resistance": 246.47,
+        "previous_close": 247.81,
+        "trend": "Buy Trend",
+        "timestamp": "2026-01-27 12:59:46"
+    },
+    {
+        "symbol": "PETRONET.NS",
+        "timeframe": "15m",
+        "ltp": 276.3,
+        "support": 274.0,
+        "resistance": 282.45,
+        "previous_close": 276.3,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:47"
+    },
+    {
+        "symbol": "PFC.NS",
+        "timeframe": "15m",
+        "ltp": 361.2,
+        "support": 362.8,
+        "resistance": 371.0,
+        "previous_close": 361.2,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:48"
+    },
+    {
+        "symbol": "PHARMABEES.NS",
+        "timeframe": "15m",
+        "ltp": 22.31,
+        "support": 22.37,
+        "resistance": 22.59,
+        "previous_close": 22.31,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:49"
+    },
+    {
+        "symbol": "POWERGRID.NS",
+        "timeframe": "15m",
+        "ltp": 253.25,
+        "support": 255.1,
+        "resistance": 259.85,
+        "previous_close": 254.05,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:50"
+    },
+    {
+        "symbol": "PTC.NS",
+        "timeframe": "15m",
+        "ltp": 168.9,
+        "support": 157.35,
+        "resistance": 158.2,
+        "previous_close": 169.51,
+        "trend": "Buy Trend",
+        "timestamp": "2026-01-27 12:59:51"
+    },
+    {
+        "symbol": "RAIN.NS",
+        "timeframe": "15m",
+        "ltp": 143.86,
+        "support": 133.64,
+        "resistance": 142.28,
+        "previous_close": 143.38,
+        "trend": "Buy Trend",
+        "timestamp": "2026-01-27 12:59:52"
+    },
+    {
+        "symbol": "RECLTD.NS",
+        "timeframe": "15m",
+        "ltp": 363.3,
+        "support": 364.65,
+        "resistance": 370.6,
+        "previous_close": 364.1,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:53"
+    },
+    {
+        "symbol": "RELIANCE.NS",
+        "timeframe": "15m",
+        "ltp": 1384.2,
+        "support": 1395.3,
+        "resistance": 1406.9,
+        "previous_close": 1386.0,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:55"
+    },
+    {
+        "symbol": "RVNL.NS",
+        "timeframe": "15m",
+        "ltp": 323.45,
+        "support": 314.1,
+        "resistance": 334.8,
+        "previous_close": 322.8,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:55"
+    },
+    {
+        "symbol": "SAGCEM.NS",
+        "timeframe": "15m",
+        "ltp": 183.03,
+        "support": 185.0,
+        "resistance": 193.99,
+        "previous_close": 183.15,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 12:59:57"
+    },
+    {
+        "symbol": "SBILIFE.NS",
+        "timeframe": "15m",
+        "ltp": 2034.0,
+        "support": 1988.0,
+        "resistance": 2064.5,
+        "previous_close": 2032.7,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:58"
+    },
+    {
+        "symbol": "SBIN.NS",
+        "timeframe": "15m",
+        "ltp": 1040.0,
+        "support": 1025.7,
+        "resistance": 1052.55,
+        "previous_close": 1041.4,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 12:59:59"
+    },
+    {
+        "symbol": "SENSEXETF.NS",
+        "timeframe": "15m",
+        "ltp": 83.72,
+        "support": 83.22,
+        "resistance": 85.0,
+        "previous_close": 83.67,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:00"
+    },
+    {
+        "symbol": "SHRIRAMFIN.NS",
+        "timeframe": "15m",
+        "ltp": 996.7,
+        "support": 974.0,
+        "resistance": 1020.2,
+        "previous_close": 996.7,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:09"
+    },
+    {
+        "symbol": "SILVERBEES.NS",
+        "timeframe": "15m",
+        "ltp": 314.2,
+        "support": 289.01,
+        "resistance": 319.15,
+        "previous_close": 314.19,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:10"
+    },
+    {
+        "symbol": "SOUTHBANK.NS",
+        "timeframe": "15m",
+        "ltp": 44.97,
+        "support": 44.41,
+        "resistance": 46.74,
+        "previous_close": 44.94,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:11"
+    },
+    {
+        "symbol": "SUNPHARMA.NS",
+        "timeframe": "15m",
+        "ltp": 1626.9,
+        "support": 1624.8,
+        "resistance": 1654.0,
+        "previous_close": 1627.1,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:12"
+    },
+    {
+        "symbol": "SUNTV.NS",
+        "timeframe": "15m",
+        "ltp": 529.8,
+        "support": 535.75,
+        "resistance": 570.85,
+        "previous_close": 530.0,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 13:00:13"
+    },
+    {
+        "symbol": "TATACHEM.NS",
+        "timeframe": "15m",
+        "ltp": 710.45,
+        "support": 703.3,
+        "resistance": 733.75,
+        "previous_close": 710.45,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:14"
+    },
+    {
+        "symbol": "TATACONSUM.NS",
+        "timeframe": "15m",
+        "ltp": 1168.0,
+        "support": 1149.5,
+        "resistance": 1187.8,
+        "previous_close": 1167.7,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:15"
+    },
+    {
+        "symbol": "TATAGOLD.NS",
+        "timeframe": "15m",
+        "ltp": 15.37,
+        "support": 14.85,
+        "resistance": 15.6,
+        "previous_close": 15.38,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:16"
+    },
+    {
+        "symbol": "TATAINVEST.NS",
+        "timeframe": "15m",
+        "ltp": 602.8,
+        "support": 598.05,
+        "resistance": 623.6,
+        "previous_close": 602.8,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:17"
+    },
+    {
+        "symbol": "TATAPOWER.NS",
+        "timeframe": "15m",
+        "ltp": 344.95,
+        "support": 342.6,
+        "resistance": 354.95,
+        "previous_close": 345.3,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:20"
+    },
+    {
+        "symbol": "TATASTEEL.NS",
+        "timeframe": "15m",
+        "ltp": 190.77,
+        "support": 187.32,
+        "resistance": 192.31,
+        "previous_close": 190.8,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:21"
+    },
+    {
+        "symbol": "TCS.NS",
+        "timeframe": "15m",
+        "ltp": 3141.6,
+        "support": 3122.5,
+        "resistance": 3193.9,
+        "previous_close": 3141.3,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:22"
+    },
+    {
+        "symbol": "TECHM.NS",
+        "timeframe": "15m",
+        "ltp": 1727.1,
+        "support": 1682.8,
+        "resistance": 1712.0,
+        "previous_close": 1727.7,
+        "trend": "Buy Trend",
+        "timestamp": "2026-01-27 13:00:23"
+    },
+    {
+        "symbol": "TIINDIA.NS",
+        "timeframe": "15m",
+        "ltp": 2182.6,
+        "support": 2166.0,
+        "resistance": 2309.8,
+        "previous_close": 2181.6,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:24"
+    },
+    {
+        "symbol": "TIRUMALCHM.NS",
+        "timeframe": "15m",
+        "ltp": 184.81,
+        "support": 194.3,
+        "resistance": 200.0,
+        "previous_close": 185.08,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 13:00:25"
+    },
+    {
+        "symbol": "TMB.NS",
+        "timeframe": "15m",
+        "ltp": 562.25,
+        "support": 549.45,
+        "resistance": 580.75,
+        "previous_close": 562.25,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:26"
+    },
+    {
+        "symbol": "TVSMOTOR.NS",
+        "timeframe": "15m",
+        "ltp": 3530.8,
+        "support": 3508.8,
+        "resistance": 3613.0,
+        "previous_close": 3530.0,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:27"
+    },
+    {
+        "symbol": "UBL.NS",
+        "timeframe": "15m",
+        "ltp": 1424.0,
+        "support": 1401.3,
+        "resistance": 1451.4,
+        "previous_close": 1424.2,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:28"
+    },
+    {
+        "symbol": "UJJIVANSFB.NS",
+        "timeframe": "15m",
+        "ltp": 62.02,
+        "support": 56.62,
+        "resistance": 68.0,
+        "previous_close": 62.01,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:29"
+    },
+    {
+        "symbol": "UNITDSPR.NS",
+        "timeframe": "15m",
+        "ltp": 1312.1,
+        "support": 1300.4,
+        "resistance": 1357.5,
+        "previous_close": 1312.1,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:31"
+    },
+    {
+        "symbol": "UPL.NS",
+        "timeframe": "15m",
+        "ltp": 716.15,
+        "support": 700.2,
+        "resistance": 796.15,
+        "previous_close": 716.3,
+        "trend": "Inside Trend",
+        "timestamp": "2026-01-27 13:00:32"
+    },
+    {
+        "symbol": "VSTIND.NS",
+        "timeframe": "15m",
+        "ltp": 232.35,
+        "support": 235.0,
+        "resistance": 241.55,
+        "previous_close": 232.3,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 13:00:33"
+    },
+    {
+        "symbol": "WIPRO.NS",
+        "timeframe": "15m",
+        "ltp": 233.15,
+        "support": 239.25,
+        "resistance": 243.55,
+        "previous_close": 233.2,
+        "trend": "Sell Trend",
+        "timestamp": "2026-01-27 13:00:34"
+    }
+]

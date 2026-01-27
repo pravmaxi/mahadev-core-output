@@ -20,7 +20,7 @@ TIMEFRAME = "4h"  # Can be "1h", "4h", "30m", "15m", "5m"
 AUTO_PERIOD = True  # Set to False to manually specify period
 PERIOD = "60d"     # Only used if AUTO_PERIOD is False
 USE_HARDCODED_DATE = True
-HARDCODED_DATE = "2025-12-22"
+HARDCODED_DATE = "2026-01-27"
 MAX_WORKERS = 8    # Thread pool size for concurrent processing
 
 # Auto period mapping
