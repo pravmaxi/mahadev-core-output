@@ -13,12 +13,12 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # ================= USER SETTINGS =================
 MULTI_TF_MODE = False
-SELECTED_TF = "5m"
+SELECTED_TF = "1d"
 TIMEFRAMES = ["5m", "15m", "30m", "1h", "1d"]
 
 SHEET_NAME = "Stock Price Scraper"
-INPUT_SHEET = "input2"
-OUTPUT_SHEET = "sroutput_multitf" if MULTI_TF_MODE else f"sroutput_{SELECTED_TF}"
+INPUT_SHEET = "srinput2"
+OUTPUT_SHEET = "sroutput_multitf" if MULTI_TF_MODE else f"sr10output_{SELECTED_TF}"
 JSON_FILE = f"sup&res_{SELECTED_TF}.json"
 CREDENTIALS_FILE = "/Users/apple/Downloads/learning/automation-project-429417-c51140fdff86.json"
 

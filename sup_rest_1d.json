@@ -1,62 +1,62 @@
 [
     {
         "symbol": "HDFCBANK.NS",
-        "timeframe": "5m",
+        "timeframe": "1d",
         "trend": "Buy Trend"
     },
     {
         "symbol": "HINDUNILVR.NS",
-        "timeframe": "5m",
-        "trend": "Inside Trend"
+        "timeframe": "1d",
+        "trend": "Buy Trend"
     },
     {
         "symbol": "ICICIBANK.NS",
-        "timeframe": "5m",
+        "timeframe": "1d",
         "trend": "Buy Trend"
     },
     {
         "symbol": "ICICIGI.NS",
-        "timeframe": "5m",
+        "timeframe": "1d",
         "trend": "Buy Trend"
     },
     {
         "symbol": "ICICIPRULI.NS",
-        "timeframe": "5m",
-        "trend": "Inside Trend"
+        "timeframe": "1d",
+        "trend": "Sell Trend"
     },
     {
         "symbol": "HCLTECH.NS",
-        "timeframe": "5m",
+        "timeframe": "1d",
         "trend": "Inside Trend"
     },
     {
         "symbol": "IDFCFIRSTB.NS",
-        "timeframe": "5m",
-        "trend": "Buy Trend"
+        "timeframe": "1d",
+        "trend": "Sell Trend"
     },
     {
         "symbol": "INDIGO.NS",
-        "timeframe": "5m",
+        "timeframe": "1d",
         "trend": "Buy Trend"
     },
     {
         "symbol": "INDUSINDBK.NS",
-        "timeframe": "5m",
-        "trend": "Inside Trend"
+        "timeframe": "1d",
+        "trend": "Sell Trend"
     },
     {
         "symbol": "INDUSTOWER.NS",
-        "timeframe": "5m",
-        "trend": "Buy Trend"
+        "timeframe": "1d",
+        "trend": "Inside Trend"
     },
     {
         "symbol": "INFY.NS",
-        "timeframe": "5m",
-        "trend": "Buy Trend"
+        "timeframe": "1d",
+        "trend": "Inside Trend"
     },
     {
         "symbol": "EQUITASBNK.NS",
-        "timeframe": "5m",
+        "timeframe": "1d",
         "trend": "Sell Trend"
     }
 ]

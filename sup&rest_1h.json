@@ -1,0 +1,597 @@
+[
+    {
+        "symbol": "AARTIIND.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "AARTIPHARM.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "ACC.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "ALKEM.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "AMBUJACEM.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "APOLLOHOSP.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "APOLLOTYRE.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "APTECHT.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "ASHOKLEY.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "AURUM.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "AXISBANK.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "BANKBEES.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "BEL.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "BERGEPAINT.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "BHARTIARTL.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "BPCL.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "BUTTERFLY.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "CDSL.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "CHOLAFIN.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "CIPLA.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "COALINDIA.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "COCHINSHIP.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "CYIENT.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "DABUR.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "DIAMONDYD.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "DIVISLAB.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "DOLLAR.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "EQUITASBNK.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "EXIDEIND.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "FEDERALBNK.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "GABRIEL.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "GAIL.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "GIPCL.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "GODREJCP.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "GOLDBEES.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "GRASIM.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "GSFC.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "GSPL.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "HAL.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "HAVELLS.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "HCLTECH.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "HDFCBANK.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "HINDUNILVR.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "ICICIBANK.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "ICICIGI.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "ICICIPRULI.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "IDFCFIRSTB.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "INDIGO.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "INDUSINDBK.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "INDUSTOWER.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "INFY.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "IOC.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "IRCTC.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "IRFC.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "ITBEES.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "ITC.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "ITCHOTELS.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "JAMNAAUTO.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "JIOFIN.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "JKTYRE.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "JUNIORBEES.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "KIRLOSBROS.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "KPITTECH.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "KPRMILL.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "LAURUSLABS.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "LICI.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "LINCOLN.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "LT.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "LTF.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "MAHABANK.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "MANAPPURAM.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "MARICO.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "MON100.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "MOTILALOFS.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "MSUMI.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "MUKANDLTD.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "NATCOPHARM.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "NEWGEN.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "NIFTYBEES.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "NUCLEUS.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "NV20IETF.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "ONGC.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "PETRONET.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "PFC.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "PHARMABEES.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "POWERGRID.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "PTC.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "RAIN.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "RECLTD.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "RELIANCE.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "RVNL.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "SAGCEM.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "SBILIFE.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "SBIN.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "SENSEXETF.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "SHRIRAMFIN.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "SILVERBEES.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "SOUTHBANK.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "SUNPHARMA.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "SUNTV.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "TATACHEM.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "TATACONSUM.NS",
+        "timeframe": "1h",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "TATAGOLD.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "TATAINVEST.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "TATAPOWER.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "TATASTEEL.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "TCS.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "TECHM.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "TIINDIA.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "TIRUMALCHM.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "TMB.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "TMCV.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "TMPV.NS",
+        "timeframe": "1h",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "TVSMOTOR.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "UBL.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "UJJIVANSFB.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "UPL.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "VSTIND.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "WIPRO.NS",
+        "timeframe": "1h",
+        "trend": "Inside Trend"
+    }
+]
