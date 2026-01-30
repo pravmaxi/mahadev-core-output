@@ -1,0 +1,62 @@
+[
+    {
+        "symbol": "HDFCBANK.NS",
+        "timeframe": "1d",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "HINDUNILVR.NS",
+        "timeframe": "1d",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "ICICIBANK.NS",
+        "timeframe": "1d",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "ICICIGI.NS",
+        "timeframe": "1d",
+        "trend": "Sell Trend"
+    },
+    {
+        "symbol": "ICICIPRULI.NS",
+        "timeframe": "1d",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "HCLTECH.NS",
+        "timeframe": "1d",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "IDFCFIRSTB.NS",
+        "timeframe": "1d",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "INDIGO.NS",
+        "timeframe": "1d",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "INDUSINDBK.NS",
+        "timeframe": "1d",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "INDUSTOWER.NS",
+        "timeframe": "1d",
+        "trend": "Buy Trend"
+    },
+    {
+        "symbol": "INFY.NS",
+        "timeframe": "1d",
+        "trend": "Inside Trend"
+    },
+    {
+        "symbol": "EQUITASBNK.NS",
+        "timeframe": "1d",
+        "trend": "Buy Trend"
+    }
+]
