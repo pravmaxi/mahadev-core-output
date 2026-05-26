@@ -1,0 +1,38 @@
+name: Run Day Bot
+
+on:
+  schedule:
+    - cron: '50 9 * * *'
+
+  workflow_dispatch:
+
+jobs:
+  run-python-script:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install yfinance
+          pip install pandas
+          pip install numpy
+          pip install gspread
+          pip install oauth2client
+          pip install gspread-formatting
+
+      - name: Create credentials file
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS }}' > credentials.json
+
+      - name: Run Python Script
+        run: |
+          python "mahadev/1 Final working 1 day.py"
