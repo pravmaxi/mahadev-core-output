@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # ================= USER SETTINGS =================
 MULTI_TF_MODE = False
-SELECTED_TF = "1d"
+SELECTED_TF = "1h"
 
 SHEET_NAME = "Stock Price Scraper"
 INPUT_SHEET = "input2"
