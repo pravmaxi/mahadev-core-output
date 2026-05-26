@@ -9,18 +9,18 @@ from typing import Dict, List, Tuple, Optional
 from gspread_formatting import CellFormat, Color, format_cell_ranges, TextFormat
 
 # --- USER CONFIGURATION ---
-today = datetime.strptime("2025-12-10", "%Y-%m-%d")  # Set date manually
+today = datetime.strptime("2026-04-23", "%Y-%m-%d")  # Set date manually
 range_days = 15  # Number of days to look back
+
+# Timeframe configuration - USER SELECTABLE
+SELECTED_TIMEFRAME = "1d"  # Options: "5m", "15m", "30m", "1h", "4h", "1d"
 INPUT_TAB = "input2"
-OUTPUT_TAB = "CE_output"
+OUTPUT_TAB = f"CE_output_{SELECTED_TIMEFRAME}"
 JSON_FILE = "trigger_history.json"
 SHOW_ALL_STOCKS = True  # Set to True to show all stocks, False to show only final status stocks
 
 # TOGGLE: Set to True for Heikin-Ashi candles, False for normal candles
 USE_HEIKIN_ASHI = True  # Toggle between Heikin-Ashi and normal candles
-
-# Timeframe configuration - USER SELECTABLE
-SELECTED_TIMEFRAME = "1d"  # Options: "5m", "15m", "30m", "1h", "4h", "1d"
 
 TIMEFRAMES = [SELECTED_TIMEFRAME]  # Only analyze the selected timeframe
 AUTO_PERIOD_MAP = {
@@ -51,7 +51,13 @@ client = gspread.authorize(creds)
 # Open Google Sheet
 sheet = client.open("Stock Price Scraper")
 input_ws = sheet.worksheet(INPUT_TAB)
-output_ws = sheet.worksheet(OUTPUT_TAB)
+
+# Ensure output worksheet exists
+try:
+    output_ws = sheet.worksheet(OUTPUT_TAB)
+except gspread.exceptions.WorksheetNotFound:
+    print(f"Worksheet '{OUTPUT_TAB}' not found. Creating a new worksheet.")
+    output_ws = sheet.add_worksheet(title=OUTPUT_TAB, rows="100", cols="20")
 
 def get_date_range(start_date: datetime, days_back: int) -> List[datetime]:
     """Generate list of dates to analyze"""
