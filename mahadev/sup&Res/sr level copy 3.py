@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # ================= USER SETTINGS =================
 MULTI_TF_MODE = False
-SELECTED_TF = "15m"
+SELECTED_TF = "1d"
 
 SHEET_NAME = "Stock Price Scraper"
 INPUT_SHEET = "input2"
@@ -194,10 +194,7 @@ def main():
                 old_trend[(i["symbol"], i["timeframe"])] = i.get("trend")
 
     rows, json_out = [], []
-    buy_cnt = sell_cnt = inside_cnt = 0
-    new_buy_triggers = new_sell_triggers = 0
-    new_buy_symbols = []
-    new_sell_symbols = []
+    buy_cnt = sell_cnt = inside_cnt = new_triggers = 0
     spinner = ["|", "/", "-", "\\"]
 
     for idx, symbol in enumerate(symbols, start=1):
@@ -233,12 +230,7 @@ def main():
         if trend in ("Buy Trend", "Sell Trend") and old_trend.get((symbol, SELECTED_TF)) != trend:
             triggered = "New trigger"
             triggered_at = start_str
-            if trend == "Buy Trend":
-                new_buy_triggers += 1
-                new_buy_symbols.append(symbol)
-            elif trend == "Sell Trend":
-                new_sell_triggers += 1
-                new_sell_symbols.append(symbol)
+            new_triggers += 1
 
         rows.append([
             datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S"),
@@ -258,8 +250,7 @@ def main():
     duration_seconds = (end_time - start_time).total_seconds()
     duration_str = f"{duration_seconds:.1f}s"
 
-    new_triggers_str = f"Buy: {new_buy_triggers}, Sell: {new_sell_triggers}"
-    summary = f"Timeframe: {SELECTED_TF} | Run start: {start_str} | Duration: {duration_str} | New Triggers: {new_triggers_str} | Prev run: {prev_run_start or 'N/A'}"
+    summary = f"Timeframe: {SELECTED_TF} | Run start: {start_str} | Duration: {duration_str} | Prev run: {prev_run_start or 'N/A'}"
 
     if rows:
         write_output_batch(sheet, rows, summary=summary)
@@ -282,25 +273,10 @@ def main():
     print(f"Buy Trend       : {buy_cnt}")
     print(f"Sell Trend      : {sell_cnt}")
     print(f"Inside Trend    : {inside_cnt}")
-    print(f"New Triggers    : Buy: {new_buy_triggers}, Sell: {new_sell_triggers}")
+    print(f"New Triggers    : {new_triggers}")
     print(f"Skipped Symbols : {len(SKIPPED_SYMBOLS)}")
     print("────────────────────────────")
     print("✅ Sheet & JSON updated successfully")
-
-    # Print lists of newly triggered stocks
-    if new_buy_symbols:
-        print("\nNew Buy triggers:")
-        for s in new_buy_symbols:
-            print(f"- {s}")
-    else:
-        print("\nNew Buy triggers: None")
-
-    if new_sell_symbols:
-        print("\nNew Sell triggers:")
-        for s in new_sell_symbols:
-            print(f"- {s}")
-    else:
-        print("\nNew Sell triggers: None")
 
 if __name__ == "__main__":
     main()
