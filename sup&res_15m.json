@@ -1,31 +1,31 @@
 {
     "run_history": {
         "15m": {
-            "run_start": "2026-05-26 19:44:15 IST",
-            "duration_seconds": 47.276254
+            "run_start": "2026-06-01 01:33:49 IST",
+            "duration_seconds": 38.375513
         }
     },
     "data": [
         {
             "symbol": "AARTIIND.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 11:45",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "AARTIPHARM.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 15:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": ""
         },
         {
             "symbol": "ACC.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-25 14:45",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "ALKEM.NS",
@@ -45,8 +45,8 @@
             "symbol": "APOLLOHOSP.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 11:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "APOLLOTYRE.NS",
@@ -58,30 +58,30 @@
         {
             "symbol": "APTECHT.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 09:15",
             "triggered_at": ""
         },
         {
             "symbol": "ASHOKLEY.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 11:30",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "AURUM.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "AXISBANK.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "BANKBEES.NS",
@@ -93,30 +93,30 @@
         {
             "symbol": "BEL.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
             "triggered_at": ""
         },
         {
             "symbol": "BERGEPAINT.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 10:30",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "BHARTIARTL.NS",
             "timeframe": "15m",
-            "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 14:00",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
             "triggered_at": ""
         },
         {
             "symbol": "BPCL.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 14:45",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "BUTTERFLY.NS",
@@ -128,23 +128,23 @@
         {
             "symbol": "CDSL.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-26 14:45",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "CHOLAFIN.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 12:30",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "CIPLA.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "COALINDIA.NS",
@@ -156,16 +156,16 @@
         {
             "symbol": "COCHINSHIP.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 09:15",
             "triggered_at": ""
         },
         {
             "symbol": "CYIENT.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-25 10:15",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "DABUR.NS",
@@ -177,23 +177,23 @@
         {
             "symbol": "DIAMONDYD.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-26 11:45",
-            "triggered_at": "2026-05-26 19:44:15 IST"
-        },
-        {
-            "symbol": "DIVISLAB.NS",
-            "timeframe": "15m",
             "trend": "Inside Trend",
             "breakout_dt": "",
             "triggered_at": ""
         },
         {
-            "symbol": "DOLLAR.NS",
+            "symbol": "DIVISLAB.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 09:15",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
+        },
+        {
+            "symbol": "DOLLAR.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "EQUITASBNK.NS",
@@ -205,9 +205,9 @@
         {
             "symbol": "EXIDEIND.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-25 15:15",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "FEDERALBNK.NS",
@@ -226,9 +226,9 @@
         {
             "symbol": "GAIL.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 10:30",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "GIPCL.NS",
@@ -248,92 +248,92 @@
             "symbol": "GOLDBEES.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 09:15",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 13:30",
+            "triggered_at": ""
         },
         {
             "symbol": "GRASIM.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 12:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "GSFC.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 09:15",
             "triggered_at": ""
         },
         {
             "symbol": "HAL.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
             "triggered_at": ""
         },
         {
             "symbol": "HAVELLS.NS",
             "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 12:45",
+            "triggered_at": "2026-06-01 01:33:49 IST"
+        },
+        {
+            "symbol": "HCLTECH.NS",
+            "timeframe": "15m",
             "trend": "Inside Trend",
             "breakout_dt": "",
             "triggered_at": ""
         },
         {
-            "symbol": "HCLTECH.NS",
-            "timeframe": "15m",
-            "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 14:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
-        },
-        {
             "symbol": "HDFCBANK.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
             "triggered_at": ""
         },
         {
             "symbol": "HINDUNILVR.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
             "triggered_at": ""
         },
         {
             "symbol": "ICICIBANK.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "ICICIGI.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-26 11:45",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-27 15:15",
+            "triggered_at": ""
         },
         {
             "symbol": "ICICIPRULI.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 09:30",
             "triggered_at": ""
         },
         {
             "symbol": "IDFCFIRSTB.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-26 14:15",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "INDIGO.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "INDUSINDBK.NS",
@@ -345,9 +345,9 @@
         {
             "symbol": "INDUSTOWER.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-05-29 11:15",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "INFY.NS",
@@ -359,65 +359,65 @@
         {
             "symbol": "IOC.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "IRCTC.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
             "triggered_at": ""
         },
         {
             "symbol": "IRFC.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 13:45",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 12:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "ITBEES.NS",
             "timeframe": "15m",
-            "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 14:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "ITC.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-27 09:15",
             "triggered_at": ""
         },
         {
             "symbol": "ITCHOTELS.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "JAMNAAUTO.NS",
             "timeframe": "15m",
             "trend": "Buy Trend",
-            "breakout_dt": "2026-05-26 09:15",
-            "triggered_at": ""
+            "breakout_dt": "2026-05-29 13:15",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "JIOFIN.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 13:45",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 14:45",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "JKTYRE.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-26 09:15",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "JUNIORBEES.NS",
@@ -429,43 +429,43 @@
         {
             "symbol": "KIRLOSBROS.NS",
             "timeframe": "15m",
-            "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 13:30",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "KPITTECH.NS",
-            "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-26 15:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
-        },
-        {
-            "symbol": "KPRMILL.NS",
             "timeframe": "15m",
             "trend": "Inside Trend",
             "breakout_dt": "",
             "triggered_at": ""
         },
         {
-            "symbol": "LAURUSLABS.NS",
+            "symbol": "KPRMILL.NS",
             "timeframe": "15m",
             "trend": "Buy Trend",
-            "breakout_dt": "2026-05-25 15:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 14:45",
+            "triggered_at": "2026-06-01 01:33:49 IST"
+        },
+        {
+            "symbol": "LAURUSLABS.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "LICI.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-26 12:15",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "LINCOLN.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 09:15",
             "triggered_at": ""
         },
         {
@@ -485,9 +485,9 @@
         {
             "symbol": "MAHABANK.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "MANAPPURAM.NS",
@@ -513,30 +513,30 @@
         {
             "symbol": "MOTILALOFS.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "MSUMI.NS",
             "timeframe": "15m",
-            "trend": "",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "MUKANDLTD.NS",
             "timeframe": "15m",
-            "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 12:45",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-05-29 13:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "NATCOPHARM.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 14:15",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "NEWGEN.NS",
@@ -548,9 +548,9 @@
         {
             "symbol": "NIFTYBEES.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 13:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "NUCLEUS.NS",
@@ -562,50 +562,50 @@
         {
             "symbol": "NV20IETF.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "ONGC.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-27 09:15",
             "triggered_at": ""
         },
         {
             "symbol": "PETRONET.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 13:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "PFC.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 12:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "PHARMABEES.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "POWERGRID.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 12:45",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "PTC.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-27 14:45",
             "triggered_at": ""
         },
         {
@@ -625,8 +625,8 @@
         {
             "symbol": "RELIANCE.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 09:30",
             "triggered_at": ""
         },
         {
@@ -634,20 +634,20 @@
             "timeframe": "15m",
             "trend": "Sell Trend",
             "breakout_dt": "2026-05-26 14:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "triggered_at": ""
         },
         {
             "symbol": "SAGCEM.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 15:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 10:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "SBILIFE.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 09:15",
             "triggered_at": ""
         },
         {
@@ -661,22 +661,22 @@
             "symbol": "SENSEXETF.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 13:30",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 13:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "SHRIRAMFIN.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 15:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "SILVERBEES.NS",
             "timeframe": "15m",
-            "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 12:30",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "SOUTHBANK.NS",
@@ -688,9 +688,9 @@
         {
             "symbol": "SUNPHARMA.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 14:45",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "SUNTV.NS",
@@ -702,23 +702,23 @@
         {
             "symbol": "TATACHEM.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "TATACONSUM.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "TATAGOLD.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 09:15",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 13:30",
+            "triggered_at": ""
         },
         {
             "symbol": "TATAINVEST.NS",
@@ -737,23 +737,23 @@
         {
             "symbol": "TATASTEEL.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "TCS.NS",
             "timeframe": "15m",
             "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 13:30",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "TECHM.NS",
             "timeframe": "15m",
             "trend": "Buy Trend",
-            "breakout_dt": "2026-05-26 11:45",
-            "triggered_at": ""
+            "breakout_dt": "2026-05-29 10:30",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "TIINDIA.NS",
@@ -765,9 +765,9 @@
         {
             "symbol": "TIRUMALCHM.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "TMB.NS",
@@ -779,23 +779,23 @@
         {
             "symbol": "TMCV.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "TMPV.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-25 09:15",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "TVSMOTOR.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 15:00",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "UBL.NS",
@@ -807,30 +807,30 @@
         {
             "symbol": "UJJIVANSFB.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-05-25 14:30",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "UPL.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 14:45",
             "triggered_at": ""
         },
         {
             "symbol": "VSTIND.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-05-29 13:45",
+            "triggered_at": "2026-06-01 01:33:49 IST"
         },
         {
             "symbol": "WIPRO.NS",
             "timeframe": "15m",
-            "trend": "Sell Trend",
-            "breakout_dt": "2026-05-26 14:00",
-            "triggered_at": "2026-05-26 19:44:15 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         }
     ]
 }
