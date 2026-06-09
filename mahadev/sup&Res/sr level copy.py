@@ -16,7 +16,7 @@ MULTI_TF_MODE = False
 SELECTED_TF = "15m"
 
 SHEET_NAME = "Stock Price Scraper"
-INPUT_SHEET = "input2"
+INPUT_SHEET = "F&O" #---> Change to "input1" for trade-focused sheet or F&O
 OUTPUT_SHEET = "sroutput_multitf" if MULTI_TF_MODE else f"sroutput_{SELECTED_TF}"
 JSON_FILE = f"sup&res_{SELECTED_TF}.json"
 CREDENTIALS_FILE = "Json/automation-project-429417-c51140fdff86.json"
