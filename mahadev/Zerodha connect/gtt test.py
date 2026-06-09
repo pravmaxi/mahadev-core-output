@@ -2,7 +2,7 @@ from kiteconnect import KiteConnect
 
 api_key = "ud3fa01mv5n39ra2"
 # Read token automatically
-with open("token.txt", "r") as file:
+with open("access_token.txt", "r") as file: 
     access_token = file.read().strip()
 
 kite = KiteConnect(api_key=api_key)
