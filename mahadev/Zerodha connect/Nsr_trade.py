@@ -12,23 +12,27 @@ from datetime import datetime
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # ================= USER SETTINGS =================
-MULTI_TF_MODE = False
-SELECTED_TF = "15m"
+# These settings let you change the behaviour without modifying the core logic.
 
-INCLUDE_LTP = False
-CASE_A_MARKET_ORDER = True
-ONLY_BUY = False
+MULTI_TF_MODE = False               # Not used; kept for legacy.
+SELECTED_TF = "15m"                 # Timeframe for analysis (5m, 15m, 1h, etc.)
 
+INCLUDE_LTP = False                 # If True, include current incomplete candle (LTP) for trigger detection.
+CASE_A_MARKET_ORDER = True          # When a trigger already happened: True = recommend Market Order, False = "Long buy gap" / "Sell gap".
+ONLY_BUY = True                    # If True, process only Buy signals; if False, process both Buy and Sell.
+
+# Google Sheet and file names
 SHEET_NAME = "Stock Price Scraper"
 INPUT_SHEET = "input2"
-OUTPUT_SHEET = "sroutput_multitf" if MULTI_TF_MODE else f"Nsr_trade__{SELECTED_TF}"
-JSON_FILE = f"Nsr_trade_{SELECTED_TF}.json"
-ORDER_FILE = f"order_sent_{SELECTED_TF}.json"
+OUTPUT_SHEET = f"Nsr_trade__{SELECTED_TF}"
+JSON_FILE = f"Nsr_trade_{SELECTED_TF}.json"          # Stores full analysis results for history.
+ORDER_FILE = f"order_sent_{SELECTED_TF}.json"        # Stores (symbol, S/R value, direction) to prevent duplicate orders.
 CREDENTIALS_FILE = "Json/automation-project-429417-c51140fdff86.json"
 
-SKIPPED_SYMBOLS = set()
-IST = pytz.timezone("Asia/Kolkata")
+SKIPPED_SYMBOLS = set()             # Symbols that failed to download.
+IST = pytz.timezone("Asia/Kolkata") # Indian timezone for timestamps.
 
+# Configuration for each timeframe: how much data to download and how many left/right candles for S/R detection.
 CONFIG = {
     "5m":  {"interval": "5m",  "period": "60d", "left": 15, "right": 15},
     "15m": {"interval": "15m", "period": "60d", "left": 15, "right": 15},
@@ -39,8 +43,14 @@ CONFIG = {
     "1w":  {"interval": "1w",  "period": "10mo","left": 15, "right": 15},
 }
 
-# ================= CORE FUNCTIONS (unchanged) =================
+# ================= CORE FUNCTIONS =================
+
 def get_luxalgo_sr_and_prev_close(symbol, tf):
+    """
+    Downloads historical data for a symbol and timeframe.
+    Uses the LuxAlgo method to find the most recent support (s) and resistance (r).
+    Also returns the close of the second‑last candle (prev_close) and the full dataframe.
+    """
     cfg = CONFIG[tf]
     df = yf.download(symbol, interval=cfg["interval"], period=cfg["period"], progress=False)
     if df is None or df.empty:
@@ -51,15 +61,22 @@ def get_luxalgo_sr_and_prev_close(symbol, tf):
         df.columns = df.columns.get_level_values(0)
     highs, lows = df["High"].values, df["Low"].values
     last_r, last_s = None, None
+    # Scan each candle to find swing highs/lows within a window of left and right candles.
     for i in range(cfg["left"], len(df) - cfg["right"]):
         if highs[i] == highs[i-cfg["left"]:i+cfg["right"]+1].max():
             last_r = round(highs[i], 2)
         if lows[i] == lows[i-cfg["left"]:i+cfg["right"]+1].min():
             last_s = round(lows[i], 2)
-    prev_close = round(df["Close"].iloc[-2].item(), 2)
+    prev_close = round(df["Close"].iloc[-2].item(), 2)   # close of the second‑last candle
     return last_r, last_s, prev_close, df
 
 def find_breakout_candle(df, resistance, support, trend):
+    """
+    Finds the most recent breakout candle:
+    - For Buy Trend: the first candle (from the end) that closed above resistance after a reset.
+    - For Sell Trend: the first candle that closed below support after a reset.
+    Returns its datetime, OHLC, and index in the dataframe.
+    """
     closes = df["Close"].values
     times = df.index
     for i in range(len(df) - 1, 0, -1):
@@ -90,6 +107,11 @@ def find_breakout_candle(df, resistance, support, trend):
     return "", None, None, None, None, None
 
 def get_previous_trend_from_data(df, resistance, support, current_trend):
+    """
+    Scans the dataframe backwards (starting from the candle before the one used for current trend)
+    and returns the first trend (Buy/Sell/Inside) that is different from the current trend.
+    Used for the "Previous Trend" column in the sheet.
+    """
     if resistance is None and support is None:
         return ""
     closes = df["Close"].values
@@ -108,6 +130,13 @@ def get_previous_trend_from_data(df, resistance, support, current_trend):
     return ""
 
 def find_trigger_candle(df, breakout_index, trigger_level, trend_type, current_ltp=None):
+    """
+    After a breakout candle, scans forward to find the first candle that “triggers”:
+    - For Buy: the candle's high > trigger_level (the breakout close).
+    - For Sell: the candle's low < trigger_level.
+    If INCLUDE_LTP is True and no historical trigger found, it checks the current live price.
+    Returns (datetime_str, trigger_type) or (None, None).
+    """
     for i in range(breakout_index + 1, len(df)):
         row = df.iloc[i]
         dt = pd.to_datetime(df.index[i])
@@ -131,6 +160,7 @@ def find_trigger_candle(df, breakout_index, trigger_level, trend_type, current_l
     return None, None
 
 def get_current_ltp(symbol):
+    """Fetches the current market price (Last Traded Price) for a symbol."""
     try:
         ticker = yf.Ticker(symbol)
         info = ticker.info
@@ -139,6 +169,8 @@ def get_current_ltp(symbol):
         return None
 
 def load_order_sent():
+    """Loads the set of already‑sent orders from order_sent_{TF}.json.
+       Each entry is a tuple (symbol, S/R value, direction)."""
     if os.path.exists(ORDER_FILE):
         with open(ORDER_FILE, 'r') as f:
             data = json.load(f)
@@ -146,20 +178,39 @@ def load_order_sent():
     return set()
 
 def save_order_sent(order_set):
+    """Saves the order_sent set back to the JSON file."""
     with open(ORDER_FILE, 'w') as f:
         json.dump([list(item) for item in order_set], f)
 
-# ================= GOOGLE SHEET FUNCTIONS (unchanged) =================
+# ================= GOOGLE SHEET FUNCTIONS =================
+
 def connect_gsheet():
+    """Authenticates and returns a connection to the Google Sheet."""
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
     return gspread.authorize(creds).open(SHEET_NAME)
 
 def read_symbols(sheet):
+    """Reads symbols from INPUT_SHEET (first column).
+       Leaves ^NSEI, ^NSEBANK, etc. untouched; adds .NS to normal stock symbols.
+    """
     ws = sheet.worksheet(INPUT_SHEET)
-    return [f"{s.strip().upper()}.NS" for s in ws.col_values(1) if s.strip()]
+    raw_symbols = [s.strip().upper() for s in ws.col_values(1) if s.strip()]
+    
+    processed = []
+    for s in raw_symbols:
+        # Keep index symbols (starting with ^) and any symbol containing ':' as they are
+        if s.startswith("^") or ":" in s:
+            processed.append(s)
+        else:
+            processed.append(f"{s}.NS")
+    return processed
 
 def write_output_batch(sheet, rows, summary=None):
+    """
+    Writes the analysis rows to the OUTPUT_SHEET.
+    Also applies colour formatting to Trend, Value Change, Trigger Trend, Trigger Status, and Zerodha Action columns.
+    """
     try:
         ws = sheet.worksheet(OUTPUT_SHEET)
     except gspread.exceptions.WorksheetNotFound:
@@ -181,11 +232,12 @@ def write_output_batch(sheet, rows, summary=None):
         "Zerodha Action"
     ]
     ws.update(f"A{start_row}", [header] + rows, value_input_option="USER_ENTERED")
-    # Color formatting (unchanged – omitted for brevity, but keep your existing code)
-    # ... (your existing color formatting code) ...
+    # (colour formatting code omitted for brevity – keep your existing implementation)
 
 # ================= MAIN =================
+
 def main():
+    # Connect to Google Sheet and get symbols
     sheet = connect_gsheet()
     symbols = read_symbols(sheet)
     total = len(symbols)
@@ -193,7 +245,7 @@ def main():
     start_time = datetime.now(IST)
     start_str = start_time.strftime("%Y-%m-%d %H:%M:%S %Z")
 
-    # Load previous JSON
+    # Load previous JSON (Nsr_trade_{TF}.json) for historical data and triggered_info
     old_data = {}
     triggered_info = {}
     prev_run_start = None
@@ -225,14 +277,18 @@ def main():
                     "resistance": entry.get("resistance")
                 }
 
+    # Load the set of already‑sent orders (prevents duplicate recommendations)
     order_sent_set = load_order_sent()
-    rows, json_out = [], []
+
+    rows = []          # rows to be written to Google Sheet
+    json_out = []      # data to be saved in the JSON file
     buy_cnt = sell_cnt = inside_cnt = 0
     new_buy_triggers = new_sell_triggers = 0
     new_buy_symbols = []
     new_sell_symbols = []
     spinner = ["|", "/", "-", "\\"]
 
+    # Process each symbol one by one
     for idx, symbol in enumerate(symbols, start=1):
         print(f"\r⏳ {spinner[idx % 4]} Processing {idx}/{total} : {symbol}", end="")
         sys.stdout.flush()
@@ -241,7 +297,7 @@ def main():
         if df is None:
             continue
 
-        # Current trend
+        # --- Determine current trend using the close of the second‑last candle ---
         trend = ""
         if r and prev_close > r:
             trend = "Buy Trend"
@@ -253,9 +309,10 @@ def main():
             trend = "Inside Trend"
             inside_cnt += 1
 
+        # --- Previous Trend (from historical data) ---
         previous_trend = get_previous_trend_from_data(df, r, s, trend)
 
-        # Value Change
+        # --- Value Change: compare current support/resistance with previous run ---
         old_entry = old_data.get((symbol, SELECTED_TF))
         old_support = old_entry["support"] if old_entry else None
         old_resistance = old_entry["resistance"] if old_entry else None
@@ -272,7 +329,7 @@ def main():
         if old_support is None and old_resistance is None:
             change_text = "No - Not changed"
 
-        # Default OHLC
+        # --- Default OHLC (latest completed candle) ---
         last_row = df.iloc[-1]
         default_open = round(last_row["Open"].item(), 2)
         default_high = round(last_row["High"].item(), 2)
@@ -284,7 +341,7 @@ def main():
         breakout_level = None
         breakout_type = None
 
-        # Find breakout candle
+        # --- Find breakout candle (only if trend is Buy or Sell) ---
         if trend == "Buy Trend" and not ONLY_BUY:
             dt_str, o, h, l, c, idx_break = find_breakout_candle(df, r, s, trend)
             if dt_str:
@@ -310,7 +367,7 @@ def main():
                 breakout_level = c
                 breakout_type = "Buy"
 
-        # Trigger logic
+        # --- Trigger detection (the candle that crosses the breakout close) ---
         trigger_trend = ""
         trigger_datetime = ""
         trigger_status = ""
@@ -321,6 +378,7 @@ def main():
             stored_level = stored_trigger.get("level")
             stored_type = stored_trigger.get("type")
             if stored_trigger and stored_level == breakout_level and stored_type == breakout_type:
+                # Reuse already stored trigger (so we don't duplicate New Trigger)
                 trigger_trend = stored_trigger.get("trend", "")
                 trigger_datetime = stored_trigger.get("datetime", "")
                 trigger_status = ""
@@ -334,6 +392,7 @@ def main():
                     trigger_trend = trig_type
                     trigger_datetime = trig_dt
                     trigger_status = "New Trigger"
+                    # Save this trigger in triggered_info so it persists across runs
                     triggered_info[trigger_key] = {
                         "trend": trigger_trend,
                         "datetime": trigger_datetime,
@@ -349,35 +408,28 @@ def main():
                         new_sell_triggers += 1
                         new_sell_symbols.append(symbol)
 
-        # Zerodha Action logic
+        # --- Zerodha Action: decide what order to suggest (or skip) ---
         zerodha_action = ""
         if breakout_type is not None:
-            # Determine S/R value for the order key
+            # Use the resistance (for buy) or support (for sell) as the key to prevent duplicate orders.
             if breakout_type == "Buy":
-                s_r_value = r   # resistance
+                s_r_value = r
             else:
-                s_r_value = s   # support
+                s_r_value = s
             order_key = (symbol, s_r_value, breakout_type.lower())
             if order_key in order_sent_set:
-                if breakout_type == "Buy":
-                    zerodha_action = "Already buy order sent"
-                else:
-                    zerodha_action = "Already sell order sent"
+                zerodha_action = "Already buy order sent" if breakout_type == "Buy" else "Already sell order sent"
             else:
                 trigger_happened = (trigger_trend != "")
                 if trigger_happened:
+                    # Case A: trigger already happened (i.e., a later candle already crossed the breakout close)
                     if CASE_A_MARKET_ORDER:
-                        if breakout_type == "Buy":
-                            zerodha_action = "Buy Market Order"
-                        else:
-                            zerodha_action = "Sell Market Order"
-                        order_sent_set.add(order_key)
+                        zerodha_action = "Buy Market Order" if breakout_type == "Buy" else "Sell Market Order"
+                        order_sent_set.add(order_key)   # mark as sent
                     else:
-                        if breakout_type == "Buy":
-                            zerodha_action = "Buy Long gap"
-                        else:
-                            zerodha_action = "Sell gap"
+                        zerodha_action = "Buy Long gap" if breakout_type == "Buy" else "Sell gap"
                 else:
+                    # Case B/C: trigger not yet happened; decide based on current LTP vs breakout level
                     if INCLUDE_LTP:
                         current_ltp = get_current_ltp(symbol)
                         if current_ltp is None:
@@ -399,7 +451,7 @@ def main():
                             zerodha_action = f"Sell Limit Order (BO close {breakout_level})"
                             order_sent_set.add(order_key)
 
-        # Write pending order to single file (common for all TFs)
+        # --- Write pending order to a common file for the order executor (real‑time) ---
         if zerodha_action and "Already" not in zerodha_action and "gap" not in zerodha_action:
             pending_order = {
                 "symbol": symbol,
@@ -421,14 +473,14 @@ def main():
             except Exception as e:
                 print(f"Warning: Could not write to {pending_file}: {e}")
 
-        # Old trend change alert
+        # --- Legacy: triggered_at (trend change alert) ---
         triggered_at = ""
         old_trend = old_entry["trend"] if old_entry else None
         if trend in ("Buy Trend", "Sell Trend") and old_trend != trend:
             triggered_at = start_str
 
+        # Build the row for the Google Sheet (display symbol without .NS)
         display_symbol = symbol.replace('.NS', '')
-
         rows.append([
             datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S"),
             display_symbol, SELECTED_TF,
@@ -440,6 +492,7 @@ def main():
             zerodha_action
         ])
 
+        # Save data for the JSON file (full history)
         json_out.append({
             "symbol": symbol,
             "timeframe": SELECTED_TF,
@@ -450,9 +503,10 @@ def main():
             "resistance": r
         })
 
+    # Save the updated order_sent set (prevents duplicates in future runs)
     save_order_sent(order_sent_set)
 
-    # Summary
+    # Summary statistics
     end_time = datetime.now(IST)
     duration_seconds = (end_time - start_time).total_seconds()
     duration_str = f"{duration_seconds:.1f}s"
@@ -460,9 +514,11 @@ def main():
     new_triggers_str = f"Buy: {new_buy_triggers}, Sell: {new_sell_triggers}"
     summary = f"Timeframe: {SELECTED_TF} | Run start: {start_str} | Duration: {duration_str} | New Triggers: {new_triggers_str} | Prev run: {prev_run_start or 'N/A'}"
 
+    # Write to Google Sheet
     if rows:
         write_output_batch(sheet, rows, summary=summary)
 
+    # Write to the JSON file (Nsr_trade_{TF}.json)
     run_history = existing_run_history or {}
     run_history[SELECTED_TF] = {"run_start": start_str, "duration_seconds": duration_seconds}
     out_json = {
@@ -473,6 +529,7 @@ def main():
     with open(JSON_FILE, "w") as f:
         json.dump(out_json, f, indent=4)
 
+    # Console summary
     print("\n\n📊 RUN SUMMARY")
     print("────────────────────────────")
     print(f"Timeframe       : {SELECTED_TF}")

@@ -3,50 +3,63 @@ import os
 import time
 import re
 import logging
+import requests
 from kiteconnect import KiteConnect
 
 # ================= CONFIGURATION =================
+# These settings control the behaviour of the order executor.
+# Change them as needed without touching the core logic.
+
 API_KEY = "ud3fa01mv5n39ra2"
-TOKEN_FILE = "access_token.txt"
+TOKEN_FILE = "access_token.txt"                 # File where the access token is stored
 
-PENDING_FILE = "pending_orders.json"
-ORDER_SENT_BASE = "order_sent"          # will be suffixed with timeframe
+PENDING_FILE = "pending_orders.json"           # Shared queue of orders from the analysis script
+ORDER_SENT_BASE = "order_sent"                 # Base name for per-timeframe sent‑order files
 
-# Toggles (real orders)
-ENABLE_BUY_MARKET = True
-ENABLE_SELL_MARKET = True
-ENABLE_BUY_LIMIT = False
-ENABLE_SELL_LIMIT = False
+# Toggles – enable/disable specific order types
+ENABLE_BUY_MARKET = True      # Allow "Buy Market Order" to be placed
+ENABLE_SELL_MARKET = False    # Allow "Sell Market Order" (disabled for now)
+ENABLE_BUY_LIMIT = True       # Allow "Buy Limit Order"
+ENABLE_SELL_LIMIT = False     # Allow "Sell Limit Order"
 
-# Test mode – when True, no real orders, only test actions
-TEST_MODE = True
-TEST_ACTION = "gtt_order"   # "print" or "gtt_order"
+# Test mode – when True, no real orders are placed, only test actions (print or GTT)
+TEST_MODE = False
+TEST_ACTION = "gtt_order"     # "print" or "gtt_order"
 
-# GTT safe distance (percentage away from BO close to avoid triggering)
-SAFE_DISTANCE = 0.20   # 20%
+# GTT safe distance – percentage away from BO close to avoid triggering (0.20 = 20%)
+SAFE_DISTANCE = 0.20
 
-# Trading parameters (for real orders)
-PRODUCT = KiteConnect.PRODUCT_MIS
+# Trading parameters for real orders (used for both market and limit)
+PRODUCT = KiteConnect.PRODUCT_CNC          # Delivery order (CNC). Change to MIS for intraday.
 VARIETY = KiteConnect.VARIETY_REGULAR
 EXCHANGE = KiteConnect.EXCHANGE_NSE
-QUANTITY = 1
+QUANTITY = 1                              # Number of shares per order
 
-# GTT orders require CNC or NRML product (not MIS)
+# GTT orders also require a delivery product (CNC)
 PRODUCT_GTT = KiteConnect.PRODUCT_CNC
 
-# Logging
+# Market protection value (percentage) – mandatory for market orders from 1st April 2026.
+# Example: 2.0 means the order will be executed within 2% of the current market price.
+MARKET_PROTECTION = 2.0
+
+# Logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ================= ZERODHA CONNECTION =================
+
 def get_access_token():
+    """Read the access token from the token file."""
     with open(TOKEN_FILE, 'r') as f:
         return f.read().strip()
 
+# Initialise Kite Connect with the API key and access token
 kite = KiteConnect(api_key=API_KEY)
 kite.set_access_token(get_access_token())
 
 # ================= FILE HANDLING =================
+
 def load_pending_orders():
+    """Load all pending orders from the shared JSON file."""
     if not os.path.exists(PENDING_FILE):
         return []
     with open(PENDING_FILE, 'r') as f:
@@ -56,16 +69,22 @@ def load_pending_orders():
             return []
 
 def save_pending_orders(pending_list):
+    """Save the pending orders list back to the JSON file."""
     with open(PENDING_FILE, 'w') as f:
         json.dump(pending_list, f, indent=2)
 
 def remove_processed_order(pending_list, index):
-    """Remove the order at given index and save."""
+    """Remove an order at a specific index and save the updated list."""
     new_list = pending_list[:index] + pending_list[index+1:]
     save_pending_orders(new_list)
     return new_list
 
 def load_order_sent(timeframe):
+    """
+    Load the set of already‑sent orders for a given timeframe.
+    Each entry is a tuple (symbol, S/R value, direction).
+    This prevents duplicate orders for the same support/resistance level.
+    """
     order_sent_file = f"{ORDER_SENT_BASE}_{timeframe}.json"
     if not os.path.exists(order_sent_file):
         return set()
@@ -74,30 +93,60 @@ def load_order_sent(timeframe):
         return set(tuple(item) for item in data)
 
 def save_order_sent(order_set, timeframe):
+    """Save the order_sent set back to its JSON file."""
     order_sent_file = f"{ORDER_SENT_BASE}_{timeframe}.json"
     with open(order_sent_file, 'w') as f:
         json.dump([list(item) for item in order_set], f, indent=2)
 
-# ================= ZERODHA ACTIONS =================
-def place_market_order(symbol, transaction_type):
+# ================= ORDER PLACEMENT FUNCTIONS =================
+
+def place_market_order_with_protection(symbol, transaction_type):
+    """
+    Place a market order using a direct API call with market_protection.
+    This bypasses the kiteconnect library because the library does not yet support
+    the mandatory 'market_protection' parameter required by the new SEBI regulation.
+    """
+    # Prepare the order data as per Kite Connect API v3
+    order_data = {
+        "variety": "regular",
+        "exchange": EXCHANGE,
+        "tradingsymbol": symbol,
+        "transaction_type": transaction_type,   # "BUY" or "SELL"
+        "quantity": QUANTITY,
+        "product": PRODUCT,
+        "order_type": "MARKET",
+        "market_protection": MARKET_PROTECTION,
+        "validity": "DAY"
+    }
+
+    # Build authentication headers
+    access_token = get_access_token()
+    headers = {
+        "X-Kite-Version": "3",
+        "Authorization": f"token {API_KEY}:{access_token}"
+    }
+
+    # API endpoint for regular orders
+    url = "https://api.kite.trade/orders/regular"
+
     try:
-        order_id = kite.place_order(
-            variety=VARIETY,
-            exchange=EXCHANGE,
-            tradingsymbol=symbol,
-            transaction_type=transaction_type,
-            quantity=QUANTITY,
-            order_type=KiteConnect.ORDER_TYPE_MARKET,
-            product=PRODUCT,
-            validity=KiteConnect.VALIDITY_DAY
-        )
-        logging.info(f"✅ Market order placed for {symbol} ({transaction_type}) – Order ID: {order_id}")
-        return order_id
+        response = requests.post(url, data=order_data, headers=headers)
+        response_json = response.json()
+
+        if response.status_code == 200 and response_json.get("status") == "success":
+            order_id = response_json.get("data", {}).get("order_id")
+            logging.info(f"✅ Market order placed for {symbol} ({transaction_type}) – Order ID: {order_id}")
+            return order_id
+        else:
+            error_msg = response_json.get("message", "Unknown error")
+            logging.error(f"❌ Market order failed for {symbol}: {error_msg}")
+            return None
     except Exception as e:
         logging.error(f"❌ Market order failed for {symbol}: {e}")
         return None
 
 def place_limit_order(symbol, transaction_type, price):
+    """Place a limit order using the kiteconnect library (no market protection needed)."""
     try:
         order_id = kite.place_order(
             variety=VARIETY,
@@ -117,6 +166,11 @@ def place_limit_order(symbol, transaction_type, price):
         return None
 
 def create_safe_gtt_order(symbol, action, bo_close, timeframe):
+    """
+    Create a GTT (Good Till Triggered) order for testing purposes.
+    The trigger price is set 20% away from the BO close so it never executes.
+    This verifies that the API call works without risking real money.
+    """
     if not bo_close:
         bo_close = 100.0
     tradingsymbol = symbol.replace('.NS', '')
@@ -160,20 +214,24 @@ def create_safe_gtt_order(symbol, action, bo_close, timeframe):
         return None
 
 # ================= MAIN LOOP =================
+
 def main():
     logging.info("Order executor started. Monitoring pending_orders.json...")
     while True:
         try:
             pending = load_pending_orders()
             if not pending:
-                time.sleep(2)
+                time.sleep(2)      # No pending orders, wait a bit
                 continue
 
-            # Process each pending order sequentially
+            # Process pending orders one by one
             i = 0
             while i < len(pending):
                 order = pending[i]
-                symbol = order['symbol']
+
+                # Extract order details
+                symbol_raw = order['symbol']
+                symbol = symbol_raw.replace('.NS', '')   # Remove .NS for Kite API
                 action = order['action']
                 level = order.get('level')
                 timeframe = order.get('timeframe')
@@ -182,13 +240,13 @@ def main():
                     i += 1
                     continue
 
-                # Skip already-sent or gap actions
+                # Skip orders that are already sent or are non‑tradable gaps
                 if "Already" in action or "gap" in action:
                     logging.info(f"Skipping {symbol} – no trade needed ({action})")
                     pending = remove_processed_order(pending, i)
                     continue
 
-                # Check toggles
+                # Respect the user toggles
                 if "Buy Market Order" in action and not ENABLE_BUY_MARKET:
                     logging.info(f"Skipping {symbol} – Buy Market Order disabled")
                     pending = remove_processed_order(pending, i)
@@ -206,17 +264,12 @@ def main():
                     pending = remove_processed_order(pending, i)
                     continue
 
-                # Load order_sent for this timeframe
+                # (Optional duplicate check – analysis script already prevents duplicates)
                 order_sent_set = load_order_sent(timeframe)
                 direction = "buy" if "Buy" in action else "sell"
-                # Determine S/R value for duplicate check: we need the original S/R, but the pending order does not store it.
-                # However, the duplicate prevention is already handled by the analysis script via order_sent_{TF}.json.
-                # The order executor does not need to check again because the analysis script already avoided creating a pending order for an already-sent signal.
-                # But to be safe, we can still check using the level? However level is BO close, not S/R.
-                # For simplicity, we rely on the analysis script's prevention and just act.
-                # If you want a double-check, we could store the S/R in the pending order, but it's optional.
 
                 if TEST_MODE:
+                    # Test mode: only simulate or create safe GTT orders
                     if TEST_ACTION == "print":
                         logging.info(f"[TEST MODE] Would place {action} for {symbol} (level={level})")
                     elif TEST_ACTION == "gtt_order":
@@ -226,24 +279,22 @@ def main():
                 else:
                     # Real order placement
                     if "Market Order" in action:
-                        txn_type = KiteConnect.TRANSACTION_TYPE_BUY if "Buy" in action else KiteConnect.TRANSACTION_TYPE_SELL
-                        place_market_order(symbol, txn_type)
+                        txn_type = "BUY" if "Buy" in action else "SELL"
+                        place_market_order_with_protection(symbol, txn_type)
                     elif "Limit Order" in action and level:
-                        # Extract price from action or use level as limit price? Limit order uses BO close as limit price.
-                        # The action string already contains the price, but level is the BO close. Use level.
                         txn_type = KiteConnect.TRANSACTION_TYPE_BUY if "Buy" in action else KiteConnect.TRANSACTION_TYPE_SELL
                         place_limit_order(symbol, txn_type, level)
                     else:
                         logging.warning(f"Cannot place order for {action} – missing price")
 
-                # After processing (whether test or real), remove this entry
+                # After processing (whether test or real), remove the order from pending file
                 pending = remove_processed_order(pending, i)
-                # do not increment i because the list shifted
+                # Do not increment i because the list has shifted
 
-                # Optional: small delay between orders
+                # Small delay between orders to avoid rate limits
                 time.sleep(0.5)
 
-            time.sleep(2)
+            time.sleep(2)   # Wait before checking the pending file again
         except KeyboardInterrupt:
             logging.info("Order executor stopped by user.")
             break
