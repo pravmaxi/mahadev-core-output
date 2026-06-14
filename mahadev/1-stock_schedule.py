@@ -13,7 +13,7 @@ def run_bot():
     # Use absolute paths
     project_dir = "/Users/apple/Downloads/PK/visual studio/mahadev core output"
     python_path = os.path.join(project_dir, "myenv/bin/python3")
-    script_path = os.path.join(project_dir, "4hrbot1 copy.py")
+    script_path = os.path.join(project_dir, "mahadev/Zerodha connect/Nsr_trade.py")
     
     # Log file
     log_file = "/Users/apple/Desktop/scheduler_run.log"
@@ -29,6 +29,7 @@ def run_bot():
             text=True,
             timeout=120  # 2 minute timeout
         )
+        
         
         # Log results
         with open(log_file, "a") as f:
@@ -66,7 +67,7 @@ if __name__ == "__main__":
     print(f"Python: /Users/apple/Downloads/PK/visual studio/mahadev core output/myenv/bin/python3")
     print(f"Script: 4hrbot1 copy.py")
     print(f"Log: ~/Desktop/scheduler_run.log")
-    print(f"Schedule: Every 2 minutes")
+    print(f"Schedule: Every 4 minutes")
     print("=" * 60)
     print("Press Ctrl+C to stop\n")
     
@@ -74,7 +75,7 @@ if __name__ == "__main__":
     run_bot()
     
     # Schedule every 2 minutes (you said 2 minutes in your code)
-    schedule.every(5).minutes.do(run_bot)
+    schedule.every(4).minutes.do(run_bot)
     
     # Or for every 5 minutes, use:
     # schedule.every(5).minutes.do(run_bot)

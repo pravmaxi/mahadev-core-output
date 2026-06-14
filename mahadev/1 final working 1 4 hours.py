@@ -16,11 +16,11 @@ from gspread_formatting import TextFormat
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 # === Settings ===
-TIMEFRAME = "4h"  # Can be "1h", "4h", "30m", "15m", "5m"
+TIMEFRAME = "1h"  # Can be "1h", "4h", "30m", "15m", "5m"
 AUTO_PERIOD = True  # Set to False to manually specify period
 PERIOD = "60d"     # Only used if AUTO_PERIOD is False
 USE_HARDCODED_DATE = True
-HARDCODED_DATE = "2026-04-24"
+HARDCODED_DATE = "2026-06-10"
 MAX_WORKERS = 8    # Thread pool size for concurrent processing
 
 # Auto period mapping

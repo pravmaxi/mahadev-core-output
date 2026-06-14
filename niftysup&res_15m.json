@@ -1,0 +1,24 @@
+{
+    "run_history": {
+        "15m": {
+            "run_start": "2026-06-10 16:11:44 IST",
+            "duration_seconds": 1.497668
+        }
+    },
+    "data": [
+        {
+            "symbol": "^NSEI",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "ASHOKLEY.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        }
+    ]
+}

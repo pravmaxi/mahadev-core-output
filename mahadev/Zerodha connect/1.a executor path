@@ -1,3 +1,8 @@
 cd "/Users/apple/Downloads/PK/visual studio/mahadev core output"
 source myenv/bin/activate
 python "mahadev/Zerodha connect/zerodha_order_executor.py"
+
+
+cd "/Users/apple/Downloads/PK/visual studio/mahadev core output"
+source myenv/bin/activate
+python "mahadev/Zerodha connect/python scheduler.py"
