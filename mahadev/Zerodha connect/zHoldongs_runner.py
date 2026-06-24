@@ -82,9 +82,13 @@ worksheet_holdings.update(
 )
 
 # -------------------------------
-# Copy ONLY stock symbols with PnL > 0 to column A of "Zsellinput"
+# Copy ONLY stock symbols with PnL > profit_threshold to column A of "Zsellinput"
 # -------------------------------
-positive_pnl_df = df_sorted[df_sorted["PnL"] > 0]   # filter positive PnL
+
+# 👇 SET YOUR DESIRED THRESHOLD HERE (in rupees)
+profit_threshold = 1000   # change this value as needed
+
+positive_pnl_df = df_sorted[df_sorted["PnL"] > profit_threshold]   # filter by threshold
 symbols = positive_pnl_df["Stock"].tolist()
 
 # Prepare data for column A (each symbol in its own row)
@@ -98,7 +102,7 @@ if symbols_column:
     worksheet_zsell.update("A1", symbols_column)
 
 print("Holdings updated (sorted by PnL descending).")
-print(f"Copied {len(symbols)} stock symbols (with positive PnL) to Zsellinput column A.")
+print(f"Copied {len(symbols)} stock symbols with PnL > {profit_threshold} to Zsellinput column A.")
 
 # -------------------------------
 # Trigger the zsell_sr_finder.py script
@@ -122,13 +126,13 @@ try:
             [sys.executable, other_script],
             capture_output=True,
             text=True,
-            timeout=60  # optional, in seconds
+            timeout=700  # optional, in seconds
         )
         print("zsell_sr_finder.py executed successfully.")
         print("STDOUT:", result.stdout)
         if result.stderr:
             print("STDERR:", result.stderr)
 except subprocess.TimeoutExpired:
-    print("Script timed out after 60 seconds.")
+    print("Script timed out after 700 seconds.")
 except Exception as e:
     print(f"Failed to run zsell_sr_finder.py: {e}")

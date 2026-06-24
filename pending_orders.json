@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "symbol": "APOLLOHOSP.NS",
+    "action": "Buy Market Order",
+    "level": 8494.0,
+    "timeframe": "15m",
+    "timestamp": "2026-06-20T17:43:30.927575+05:30",
+    "last_attempt": 1782100226.7401721
+  }
+]

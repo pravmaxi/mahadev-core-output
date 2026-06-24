@@ -1,0 +1,150 @@
+{
+    "run_history": {
+        "15m": {
+            "run_start": "2026-06-24 12:18:17 IST",
+            "duration_seconds": 12.006749
+        }
+    },
+    "data": [
+        {
+            "symbol": "KALYANKJIL.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-06-23 14:45",
+            "triggered_at": "2026-06-24 12:18:17 IST"
+        },
+        {
+            "symbol": "INDHOTEL.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "FEDERALBNK.NS",
+            "timeframe": "15m",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-06-24 11:45",
+            "triggered_at": "2026-06-24 12:18:17 IST"
+        },
+        {
+            "symbol": "NBCC.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-06-23 10:15",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "NIFTYBEES.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "GOLDBEES.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-06-24 09:15",
+            "triggered_at": "2026-06-24 12:18:17 IST"
+        },
+        {
+            "symbol": "PNB.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-06-23 10:15",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "WIPRO.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-06-23 15:00",
+            "triggered_at": "2026-06-24 12:18:17 IST"
+        },
+        {
+            "symbol": "NMDC.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-06-23 09:15",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "TATAGOLD.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-06-24 09:15",
+            "triggered_at": "2026-06-24 12:18:17 IST"
+        },
+        {
+            "symbol": "KPITTECH.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "NESTLEIND.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-06-23 15:00",
+            "triggered_at": "2026-06-24 12:18:17 IST"
+        },
+        {
+            "symbol": "TORNTPHARM.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "HCLTECH.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "TCS.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "TRENT.NS",
+            "timeframe": "15m",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-06-24 11:30",
+            "triggered_at": "2026-06-24 12:18:17 IST"
+        },
+        {
+            "symbol": "CAMS.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-06-24 09:15",
+            "triggered_at": "2026-06-24 12:18:17 IST"
+        },
+        {
+            "symbol": "ADANIGREEN.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "BHEL.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "CROMPTON.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        }
+    ]
+}

@@ -16,10 +16,9 @@ MULTI_TF_MODE = False
 SELECTED_TF = "15m"
 
 SHEET_NAME = "Stock Price Scraper"
-INPUT_SHEET = "Zsellinput" #---> Change to "input1" for trade-focused sheet or F&O
-OUTPUT_SHEET = "sroutput_multitf" if MULTI_TF_MODE else f"ZsellSRoutput_{SELECTED_TF}"
-
-JSON_FILE = f"Zsellsup&res_{SELECTED_TF}.json"
+INPUT_SHEET = "ind_input" #---> Change to "input1" for trade-focused sheet or F&O
+OUTPUT_SHEET = "sroutput_multitf" if MULTI_TF_MODE else f"ind_sroutput_{SELECTED_TF}"
+JSON_FILE = f"ind_sup&res_{SELECTED_TF}.json"
 CREDENTIALS_FILE = "Json/automation-project-429417-c51140fdff86.json"
 
 SKIPPED_SYMBOLS = set()
@@ -102,17 +101,7 @@ def connect_gsheet():
 
 def read_symbols(sheet):
     ws = sheet.worksheet(INPUT_SHEET)
-    raw_symbols = [s.strip().upper() for s in ws.col_values(1) if s.strip()]
-    
-    processed = []
-    for s in raw_symbols:
-        if s.startswith("^"):          # e.g., ^NSEI, ^NSEBANK
-            processed.append(s)
-        elif ":" in s:                 # e.g., NSE:NIFTY_50 (if needed)
-            processed.append(s)
-        else:
-            processed.append(f"{s}.NS")  # normal stock
-    return processed
+    return [f"{s.strip().upper()}.NS" for s in ws.col_values(1) if s.strip()]
 
 
 def write_output_batch(sheet, rows, summary=None):
