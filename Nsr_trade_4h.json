@@ -1,0 +1,331 @@
+{
+    "run_history": {
+        "4h": {
+            "run_start": "2026-06-14 22:46:21 IST",
+            "duration_seconds": 44.5289
+        }
+    },
+    "data": [
+        {
+            "symbol": "^NSEI",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 23263.05,
+            "resistance": 24089.55
+        },
+        {
+            "symbol": "ASHOKLEY.NS",
+            "timeframe": "4h",
+            "trend": "Sell Trend",
+            "breakout_dt": "",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 148.77,
+            "resistance": 165.79
+        },
+        {
+            "symbol": "APOLLOHOSP.NS",
+            "timeframe": "4h",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-06-09 09:15",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 7909.5,
+            "resistance": 8442.0
+        },
+        {
+            "symbol": "INFY.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 1089.1,
+            "resistance": 1278.8
+        },
+        {
+            "symbol": "IOC.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 130.63,
+            "resistance": 147.0
+        },
+        {
+            "symbol": "ALKEM.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 5162.5,
+            "resistance": 5787.0
+        },
+        {
+            "symbol": "360ONE.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 1009.0,
+            "resistance": 1146.0
+        },
+        {
+            "symbol": "ABB.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 6172.0,
+            "resistance": 7340.0
+        },
+        {
+            "symbol": "ABCAPITAL.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 339.55,
+            "resistance": 369.75
+        },
+        {
+            "symbol": "ADANIENT.NS",
+            "timeframe": "4h",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-04-27 09:15",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 1753.0,
+            "resistance": 2288.0
+        },
+        {
+            "symbol": "ADANIGREEN.NS",
+            "timeframe": "4h",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-04-06 09:15",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 801.55,
+            "resistance": 903.8
+        },
+        {
+            "symbol": "ADANIPORTS.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 1293.8,
+            "resistance": 1842.8
+        },
+        {
+            "symbol": "ALKEM.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 5162.5,
+            "resistance": 5787.0
+        },
+        {
+            "symbol": "AMBER.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 6941.0,
+            "resistance": 8973.0
+        },
+        {
+            "symbol": "AMBUJACEM.NS",
+            "timeframe": "4h",
+            "trend": "Sell Trend",
+            "breakout_dt": "",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 421.1,
+            "resistance": 462.0
+        },
+        {
+            "symbol": "APLAPOLLO.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 1736.7,
+            "resistance": 1942.5
+        },
+        {
+            "symbol": "ASHOKLEY.NS",
+            "timeframe": "4h",
+            "trend": "Sell Trend",
+            "breakout_dt": "",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 148.77,
+            "resistance": 165.79
+        },
+        {
+            "symbol": "AUBANK.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 941.55,
+            "resistance": 1024.8
+        },
+        {
+            "symbol": "AUROPHARMA.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 1412.7,
+            "resistance": 1550.0
+        },
+        {
+            "symbol": "AXISBANK.NS",
+            "timeframe": "4h",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-06-11 09:15",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 1230.5,
+            "resistance": 1316.8
+        },
+        {
+            "symbol": "BAJAJFINSV.NS",
+            "timeframe": "4h",
+            "trend": "Sell Trend",
+            "breakout_dt": "",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 1695.0,
+            "resistance": 1815.2
+        },
+        {
+            "symbol": "BAJAJHLDNG.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 9942.0,
+            "resistance": 10930.0
+        },
+        {
+            "symbol": "BAJFINANCE.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 860.45,
+            "resistance": 948.4
+        },
+        {
+            "symbol": "BANKBARODA.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 255.4,
+            "resistance": 274.25
+        },
+        {
+            "symbol": "BANKINDIA.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 134.61,
+            "resistance": 147.49
+        },
+        {
+            "symbol": "BEL.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 399.4,
+            "resistance": 443.8
+        },
+        {
+            "symbol": "LAURUSLABS.NS",
+            "timeframe": "4h",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-05-04 09:15",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 1080.0,
+            "resistance": 1144.8
+        },
+        {
+            "symbol": "CHOLAFIN.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 1444.8,
+            "resistance": 1629.5
+        },
+        {
+            "symbol": "DABUR.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 403.35,
+            "resistance": 490.45
+        },
+        {
+            "symbol": "DIVISLAB.NS",
+            "timeframe": "4h",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": "",
+            "support": 6450.5,
+            "resistance": 6965.0
+        },
+        {
+            "symbol": "AXISBANK.NS",
+            "timeframe": "4h",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-06-11 09:15",
+            "triggered_at": "2026-06-14 22:46:21 IST",
+            "support": 1230.5,
+            "resistance": 1316.8
+        }
+    ],
+    "triggered_info": {
+        "APOLLOHOSP.NS_4h": {
+            "trend": "Buy Trigger",
+            "datetime": "2026-06-09 13:15",
+            "level": 8510.5,
+            "type": "Buy",
+            "resistance_at_trigger": 8442.0,
+            "support_at_trigger": null
+        },
+        "ADANIENT.NS_4h": {
+            "trend": "Buy Trigger",
+            "datetime": "2026-04-27 13:15",
+            "level": 2328.8,
+            "type": "Buy",
+            "resistance_at_trigger": 2288.0,
+            "support_at_trigger": null
+        },
+        "ADANIGREEN.NS_4h": {
+            "trend": "Buy Trigger",
+            "datetime": "2026-04-06 13:15",
+            "level": 912.55,
+            "type": "Buy",
+            "resistance_at_trigger": 903.8,
+            "support_at_trigger": null
+        },
+        "AXISBANK.NS_4h": {
+            "trend": "Buy Trigger",
+            "datetime": "2026-06-12 09:15",
+            "level": 1330.7,
+            "type": "Buy",
+            "resistance_at_trigger": 1316.8,
+            "support_at_trigger": null
+        },
+        "LAURUSLABS.NS_4h": {
+            "trend": "Buy Trigger",
+            "datetime": "2026-05-04 13:15",
+            "level": 1165.5,
+            "type": "Buy",
+            "resistance_at_trigger": 1144.8,
+            "support_at_trigger": null
+        }
+    }
+}

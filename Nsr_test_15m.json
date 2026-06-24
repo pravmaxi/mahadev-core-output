@@ -1,0 +1,29 @@
+{
+    "run_history": {
+        "15m": {
+            "run_start": "2026-06-20 17:43:29 IST",
+            "duration_seconds": 1.634555
+        }
+    },
+    "data": [
+        {
+            "symbol": "APOLLOHOSP.NS",
+            "timeframe": "15m",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-06-19 15:00",
+            "triggered_at": "2026-06-20 17:43:29 IST",
+            "support": 8387.5,
+            "resistance": 8488.0
+        }
+    ],
+    "triggered_info": {
+        "APOLLOHOSP.NS_15m": {
+            "trend": "Buy Trigger",
+            "datetime": "2026-06-19 15:15",
+            "level": 8494.0,
+            "type": "Buy",
+            "resistance_at_trigger": 8488.0,
+            "support_at_trigger": null
+        }
+    }
+}
