@@ -4,6 +4,11 @@ git pull origin main
 Step 2: Create a new branch
 git checkout -b b10
 
+Step 3: Add the credentials file to .gitignore
+
+Edit .gitignore and add only:
+
+Json/automation-project-429417-457f50b7de60.json
 Step 4: Copy your code changes
 
 Instead of merging the old b9, copy only your Python/code changes into b10.
@@ -20,4 +25,5 @@ Then:
 
 Open GitHub.
 Create a Pull Request from b10 → main.
+Merge it.git  ds
 Merge it. -u origin b17
