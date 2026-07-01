@@ -3,3 +3,26 @@ git checkout main
 git pull origin main
 Step 2: Create a new branch
 git checkout -b b10
+
+Step 3: Add the credentials file to .gitignore
+
+Edit .gitignore and add only:
+
+Json/automation-project-429417-457f50b7de60.json
+Step 4: Copy your code changes
+
+Instead of merging the old b9, copy only your Python/code changes into b10.
+
+Step 5: Commit
+git add .
+git commit -m "NSR latest changes"
+Step 6: Push
+git push -u origin b10
+
+Now GitHub should allow the push because the secret file was never committed on this branch.
+
+Then:
+
+Open GitHub.
+Create a Pull Request from b10 → main.
+Merge it.git  ds
