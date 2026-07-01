@@ -20,4 +20,4 @@ Then:
 
 Open GitHub.
 Create a Pull Request from b10 → main.
-Merge it.
+Merge it. -u origin b17
