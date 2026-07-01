@@ -26,3 +26,4 @@ Then:
 Open GitHub.
 Create a Pull Request from b10 → main.
 Merge it.git  ds
+Merge it. -u origin b17
