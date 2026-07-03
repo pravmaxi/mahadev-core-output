@@ -13,6 +13,9 @@ PORT = 5000
 class CallbackHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
+
+
+        
         query = urllib.parse.parse_qs(parsed.query)
         request_token = query.get('request_token', [None])[0]
 
