@@ -1,25 +1,11 @@
 {
     "run_history": {
         "15m": {
-            "run_start": "2026-06-24 12:15:56 IST",
-            "duration_seconds": 16.810031
+            "run_start": "2026-07-03 11:19:32 IST",
+            "duration_seconds": 25.151193
         }
     },
     "data": [
-        {
-            "symbol": "KIRLOSBROS.NS",
-            "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
-        },
-        {
-            "symbol": "CDSL.NS",
-            "timeframe": "15m",
-            "trend": "Sell Trend",
-            "breakout_dt": "2026-06-24 11:00",
-            "triggered_at": "2026-06-24 12:15:56 IST"
-        },
         {
             "symbol": "RECLTD.NS",
             "timeframe": "15m",
@@ -30,19 +16,33 @@
         {
             "symbol": "SOUTHBANK.NS",
             "timeframe": "15m",
-            "trend": "Sell Trend",
-            "breakout_dt": "2026-06-22 09:15",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
             "triggered_at": ""
         },
         {
             "symbol": "CHOLAFIN.NS",
             "timeframe": "15m",
-            "trend": "Buy Trend",
-            "breakout_dt": "2026-06-24 10:00",
-            "triggered_at": "2026-06-24 12:15:56 IST"
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
         },
         {
             "symbol": "PHARMABEES.NS",
+            "timeframe": "15m",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-07-03 09:30",
+            "triggered_at": "2026-07-03 11:19:32 IST"
+        },
+        {
+            "symbol": "APOLLOHOSP.NS",
+            "timeframe": "15m",
+            "trend": "Buy Trend",
+            "breakout_dt": "2026-07-03 09:15",
+            "triggered_at": "2026-07-03 11:19:32 IST"
+        },
+        {
+            "symbol": "JUNIORBEES.NS",
             "timeframe": "15m",
             "trend": "Inside Trend",
             "breakout_dt": "",
