@@ -1,0 +1,628 @@
+{% extends "base.html" %}
+{% block title %}Trading · Trading App{% endblock %}
+
+{% block content %}
+<h1>Trading</h1>
+<p class="sub">Place orders. Paper mode records to a local file — never touches Zerodha.
+   Live mode places real orders (only when enabled in Settings).</p>
+
+<!-- Mode pill -->
+<div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            padding:10px 14px;margin-bottom:12px;display:flex;gap:12px;
+            flex-wrap:wrap;align-items:center">
+  <span class="lbl">Mode</span>
+  <span id="modePill" class="tag">…</span>
+  <span id="modeHint" style="color:var(--muted);font-size:11.5px"></span>
+  <span style="flex:1"></span>
+  <button id="refreshAllBtn" class="ghostBtn">↻ Refresh</button>
+</div>
+
+<div style="display:grid;grid-template-columns:420px 1fr;gap:16px;align-items:start">
+
+  <!-- ═══════════ ORDER FORM ═══════════ -->
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+              padding:16px">
+    <div class="setTitle">New order</div>
+
+    <div class="row2">
+      <div>
+        <label class="lbl">Symbol</label>
+        <input id="sym" class="setInput" placeholder="IRFC">
+      </div>
+      <div>
+        <label class="lbl">Exchange</label>
+        <select id="exch" class="setInput">
+          <option>NSE</option><option>BSE</option>
+          <option>NFO</option><option>BFO</option>
+          <option>MCX</option><option>CDS</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label class="lbl">Side</label>
+        <div style="display:flex;gap:6px">
+          <button type="button" id="sideBuy"  class="sideBtn active-buy">BUY</button>
+          <button type="button" id="sideSell" class="sideBtn">SELL</button>
+        </div>
+      </div>
+      <div>
+        <label class="lbl">Product</label>
+        <select id="product" class="setInput">
+          <option value="CNC">CNC (delivery)</option>
+          <option value="MIS">MIS (intraday)</option>
+          <option value="NRML">NRML (F&O)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="setTitle" style="margin-top:14px">Quantity</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button type="button" class="qtyTab active" data-mode="qty">Fixed qty</button>
+      <button type="button" class="qtyTab" data-mode="amt">Fixed ₹</button>
+      <button type="button" class="qtyTab" data-mode="pct">% capital</button>
+    </div>
+    <div class="row2">
+      <div>
+        <label class="lbl" id="qtyLabel">Qty</label>
+        <input id="qty" class="setInput" type="number" step="1" value="1" min="1">
+      </div>
+      <div id="qtyExtraWrap" hidden>
+        <label class="lbl" id="qtyExtraLabel">₹ amount</label>
+        <input id="qtyExtra" class="setInput" type="number" step="500" value="5000">
+      </div>
+    </div>
+    <div style="color:var(--muted);font-size:11px;margin-top:4px">
+      <span id="qtyCalcHint"></span>
+      <button type="button" id="calcQtyBtn" class="ghostBtn"
+              style="padding:2px 8px;font-size:11px;margin-left:6px">Calculate</button>
+    </div>
+
+    <div class="setTitle" style="margin-top:14px">Order</div>
+    <div class="row2">
+      <div>
+        <label class="lbl">Order type</label>
+        <select id="ordType" class="setInput">
+          <option value="MARKET">MARKET</option>
+          <option value="LIMIT">LIMIT</option>
+          <option value="SL">SL</option>
+          <option value="SL-M">SL-M</option>
+        </select>
+      </div>
+      <div>
+        <label class="lbl">Validity</label>
+        <select id="validity" class="setInput">
+          <option value="DAY">DAY</option>
+          <option value="IOC">IOC</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row2" id="priceRow" hidden>
+      <div>
+        <label class="lbl">Price</label>
+        <input id="price" class="setInput" type="number" step="0.05">
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button type="button" id="fillLtpBtn" class="ghostBtn" style="width:100%">
+          ↡ Use current LTP
+        </button>
+      </div>
+    </div>
+
+    <div class="row2" id="triggerRow" hidden>
+      <div>
+        <label class="lbl">Trigger price</label>
+        <input id="triggerPrice" class="setInput" type="number" step="0.05">
+      </div>
+    </div>
+
+    <!-- LTP + preview -->
+    <div id="ltpLine" style="color:var(--muted);font-size:11.5px;margin-top:8px">
+      LTP: <b id="ltpVal">—</b> <span id="ltpSrc" style="font-size:10px"></span>
+    </div>
+
+    <div id="previewBox"
+         style="background:var(--panel2);border:1px solid var(--border);
+                border-radius:6px;padding:10px 12px;font-size:11px;
+                font-family:ui-monospace,monospace;color:var(--muted);
+                white-space:pre-wrap;word-break:break-all;margin-top:10px"></div>
+
+    <div id="orderErr" hidden
+         style="background:#2a1414;border:1px solid #f85149;border-radius:6px;
+                padding:10px 12px;color:#f85149;font-size:12px;margin-top:10px"></div>
+
+    <button id="placeBtn" class="btnPrimary" style="width:100%;margin-top:14px">
+      Place order
+    </button>
+  </div>
+
+  <!-- ═══════════ RIGHT SIDE ═══════════ -->
+  <div>
+    <!-- Summary -->
+    <div id="tradeSummary"
+         style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+                gap:10px;margin-bottom:12px"></div>
+
+    <!-- Positions -->
+    <div class="secHead">
+      Paper positions
+      <span style="flex:1"></span>
+      <span id="posCount" style="color:var(--muted);font-size:11px"></span>
+    </div>
+    <div id="posWrap" class="tblwrap" style="margin-bottom:16px"></div>
+
+    <!-- Orders -->
+    <div class="secHead">
+      Paper orders
+      <span style="flex:1"></span>
+      <button id="clearPaperBtn" class="ghostBtn"
+              style="padding:3px 10px;font-size:11px">Clear all</button>
+    </div>
+    <div id="ordWrap" class="tblwrap"></div>
+  </div>
+</div>
+
+<!-- ═══════════ CONFIRM MODAL ═══════════ -->
+<div id="confirmModal"
+     style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;
+            display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--panel);border:2px solid #f85149;border-radius:10px;
+              width:min(480px,100%);padding:20px">
+    <div style="font-size:22px;margin-bottom:6px">⚠️</div>
+    <div id="confirmTitle" style="font-weight:700;font-size:15px;margin-bottom:10px">
+      Confirm order
+    </div>
+    <div id="confirmBody" style="font-size:12.5px;color:var(--muted);
+         font-family:ui-monospace,monospace;white-space:pre-wrap;
+         background:var(--panel2);padding:12px;border-radius:6px;
+         word-break:break-all;margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" id="confirmNo" class="ghostBtn">Cancel</button>
+      <button type="button" id="confirmYes"
+              style="background:#f85149;border:none;color:#fff;border-radius:6px;
+                     padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px">
+        Yes, place order
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .setTitle{color:var(--muted);font-size:11px;font-weight:700;
+            letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+  .secHead{display:flex;align-items:center;gap:8px;color:var(--muted);
+           font-size:11px;font-weight:700;letter-spacing:.06em;
+           text-transform:uppercase;margin-bottom:8px}
+  .setInput{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+            border-radius:6px;padding:6px 10px;font-size:12.5px;width:100%;
+            font-family:ui-monospace,monospace}
+  .setInput:focus{outline:none;border-color:var(--accent)}
+  .lbl{color:var(--muted);font-size:11px;display:block;margin-bottom:4px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .ghostBtn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+            border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer}
+  .ghostBtn:hover{color:var(--fg);border-color:var(--accent)}
+  .btnPrimary{background:var(--accent);border:none;color:#04121f;border-radius:6px;
+              padding:10px 22px;font-weight:600;cursor:pointer;font-size:13px}
+  .btnPrimary:disabled{opacity:.5;cursor:wait}
+  .sideBtn{flex:1;background:var(--panel2);border:1px solid var(--border);
+           color:var(--muted);border-radius:6px;padding:8px;font-size:12px;
+           font-weight:700;cursor:pointer;letter-spacing:.05em}
+  .sideBtn.active-buy{background:#1e4620;border-color:#3fb950;color:#7ee787}
+  .sideBtn.active-sell{background:#5c1e1e;border-color:#f85149;color:#f85149}
+  .qtyTab{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+          border-radius:6px;padding:5px 12px;font-size:11.5px;cursor:pointer}
+  .qtyTab.active{background:var(--accent);border-color:var(--accent);color:#04121f;
+                 font-weight:600}
+  .tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;
+       font-weight:700;letter-spacing:.04em}
+  .tag.ok{background:#1e4620;color:#7ee787}
+  .tag.err{background:#5c1e1e;color:#f85149}
+  .tag.warn{background:#3d3d1e;color:#e3b341}
+  table.tb{width:100%;border-collapse:collapse;font-size:12px;
+           font-variant-numeric:tabular-nums}
+  table.tb th, table.tb td{padding:7px 10px;border-bottom:1px solid var(--border);
+           text-align:right;white-space:nowrap}
+  table.tb th{color:var(--muted);font-weight:600;font-size:10.5px;
+           text-transform:uppercase;letter-spacing:.05em;
+           position:sticky;top:0;background:var(--bg);z-index:1}
+  table.tb th:first-child, table.tb td:first-child{text-align:left}
+  table.tb tr:hover{background:#141c28}
+  .buy{color:var(--good)} .sell{color:var(--bad)} .mut{color:var(--muted)}
+  .tblwrap{border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:340px}
+  .empty{padding:34px;text-align:center;color:var(--muted);font-size:12px}
+  .lil{background:transparent;border:1px solid var(--border);color:var(--muted);
+       border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:3px}
+  .lil:hover{color:var(--fg);border-color:var(--accent)}
+  .lil.del:hover{color:var(--bad);border-color:var(--bad)}
+  .card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+        padding:10px 12px}
+  .card .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;
+           letter-spacing:.05em}
+  .card .v{font-size:16px;font-weight:600;margin-top:3px;
+           font-variant-numeric:tabular-nums}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+
+let liveEnabled = false;
+let side = 'BUY';
+let qtyMode = 'qty';
+
+function fmtINR(v, dec=2){
+  if (v == null || v === '' || isNaN(v)) return '—';
+  const n = Number(v);
+  const s = n < 0 ? '-' : '';
+  const a = Math.abs(n);
+  const parts = a.toFixed(dec).split('.');
+  let intPart = parts[0], decPart = parts[1] || '';
+  let lastThree = intPart.slice(-3);
+  const rest = intPart.slice(0, -3);
+  if (rest) lastThree = ',' + lastThree;
+  return s + rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree +
+         (decPart ? '.' + decPart : '');
+}
+function cls(v){ return v > 0 ? 'buy' : v < 0 ? 'sell' : 'mut'; }
+function sign(v){ return v > 0 ? '+' : ''; }
+
+/* ── mode ─────────────────────────────────────── */
+async function fetchMode(){
+  try {
+    const r = await fetch('/api/trade/mode');
+    const d = await r.json();
+    liveEnabled = !!d.live_enabled;
+  } catch { liveEnabled = false; }
+  const pill = $('modePill'), hint = $('modeHint');
+  if (liveEnabled){
+    pill.className = 'tag err';
+    pill.textContent = '● LIVE';
+    hint.textContent = 'Orders will be sent to Zerodha. Use with extreme care.';
+  } else {
+    pill.className = 'tag warn';
+    pill.textContent = '● PAPER';
+    hint.textContent = 'Orders recorded locally. No live trades. Enable LIVE in Settings to trade real.';
+  }
+}
+
+/* ── side toggle ──────────────────────────────── */
+$('sideBuy').addEventListener('click',  () => setSide('BUY'));
+$('sideSell').addEventListener('click', () => setSide('SELL'));
+function setSide(s){
+  side = s;
+  $('sideBuy').className  = 'sideBtn' + (s === 'BUY'  ? ' active-buy'  : '');
+  $('sideSell').className = 'sideBtn' + (s === 'SELL' ? ' active-sell' : '');
+  updatePreview();
+}
+
+/* ── qty mode ─────────────────────────────────── */
+document.querySelectorAll('.qtyTab').forEach(b => {
+  b.addEventListener('click', () => {
+    qtyMode = b.dataset.mode;
+    document.querySelectorAll('.qtyTab').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    syncQtyUI();
+  });
+});
+function syncQtyUI(){
+  const extra = $('qtyExtraWrap');
+  const ql = $('qtyLabel'), el = $('qtyExtraLabel');
+  if (qtyMode === 'qty'){
+    extra.hidden = true; ql.textContent = 'Qty'; $('qty').value = $('qty').value || 1;
+  } else if (qtyMode === 'amt'){
+    extra.hidden = false; ql.textContent = 'Qty (auto)'; el.textContent = '₹ amount';
+    $('qtyExtra').value = $('qtyExtra').value || 5000;
+  } else {
+    extra.hidden = false; ql.textContent = 'Qty (auto)'; el.textContent = '% of capital';
+    $('qtyExtra').value = $('qtyExtra').value || 10;
+  }
+  updatePreview();
+}
+
+/* ── order type conditional fields ───────────── */
+function syncOrderType(){
+  const t = $('ordType').value;
+  $('priceRow').hidden   = (t === 'MARKET' || t === 'SL-M');
+  $('triggerRow').hidden = !(t === 'SL' || t === 'SL-M');
+  updatePreview();
+}
+$('ordType').addEventListener('change', syncOrderType);
+
+/* ── LTP fetch + qty calc ─────────────────────── */
+async function fetchLTP(){
+  const sym = $('sym').value.trim().toUpperCase();
+  const ex  = $('exch').value;
+  if (!sym) return null;
+  try {
+    const r = await fetch(`/api/trade/ltp?exchange=${ex}&symbol=${sym}`);
+    const d = await r.json();
+    if (!d.ok){
+      $('ltpVal').textContent = '—';
+      $('ltpSrc').textContent = '(' + (d.error || 'unavailable') + ')';
+      return null;
+    }
+    $('ltpVal').textContent = fmtINR(d.last_price);
+    $('ltpSrc').textContent = '(' + d.source + ')';
+    return d.last_price;
+  } catch { return null; }
+}
+
+$('fillLtpBtn').addEventListener('click', async () => {
+  const ltp = await fetchLTP();
+  if (ltp != null) $('price').value = ltp;
+  updatePreview();
+});
+
+$('calcQtyBtn').addEventListener('click', async () => {
+  if (qtyMode === 'qty') return;
+  const ltp = await fetchLTP();
+  if (ltp == null){ $('qtyCalcHint').textContent = 'no LTP for calc'; return; }
+  const ex = $('qtyExtra');
+  const v  = parseFloat(ex.value) || 0;
+  let qty;
+  if (qtyMode === 'amt') qty = Math.floor(v / ltp);
+  else                   qty = Math.floor((100000 * v / 100) / ltp);  // assumes 1L capital
+  qty = Math.max(1, qty);
+  $('qty').value = qty;
+  $('qtyCalcHint').textContent = `${fmtINR(ltp)} × ${qty} = ${fmtINR(ltp * qty)}`;
+  updatePreview();
+});
+
+$('sym').addEventListener('blur', () => fetchLTP());
+$('exch').addEventListener('change', () => fetchLTP());
+
+/* ── preview ──────────────────────────────────── */
+function orderPayload(){
+  const t = $('ordType').value;
+  const o = {
+    symbol:   $('sym').value.trim().toUpperCase(),
+    exchange: $('exch').value,
+    side:     side,
+    qty:      parseInt($('qty').value, 10) || 1,
+    order_type: t,
+    product:  $('product').value,
+    validity: $('validity').value,
+  };
+  if (t === 'LIMIT' || t === 'SL') o.price = parseFloat($('price').value) || null;
+  if (t === 'SL' || t === 'SL-M')  o.trigger_price = parseFloat($('triggerPrice').value) || null;
+  return o;
+}
+function updatePreview(){
+  $('previewBox').textContent = JSON.stringify(orderPayload(), null, 2);
+}
+['sym','exch','qty','price','triggerPrice','product','validity']
+  .forEach(id => $(id).addEventListener('input', updatePreview));
+$('product').addEventListener('change', updatePreview);
+$('validity').addEventListener('change', updatePreview);
+
+/* ── confirm modal ────────────────────────────── */
+let confirmResolve = null;
+function askConfirm(title, payload){
+  return new Promise(res => {
+    confirmResolve = res;
+    $('confirmTitle').textContent = title;
+    $('confirmBody').textContent = JSON.stringify(payload, null, 2);
+    $('confirmModal').style.display = 'flex';
+  });
+}
+$('confirmNo').addEventListener('click', () => {
+  $('confirmModal').style.display = 'none';
+  if (confirmResolve) confirmResolve(false);
+  confirmResolve = null;
+});
+$('confirmYes').addEventListener('click', () => {
+  $('confirmModal').style.display = 'none';
+  if (confirmResolve) confirmResolve(true);
+  confirmResolve = null;
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && $('confirmModal').style.display === 'flex'){
+    $('confirmModal').style.display = 'none';
+    if (confirmResolve) confirmResolve(false);
+    confirmResolve = null;
+  }
+});
+
+/* ── place ────────────────────────────────────── */
+$('placeBtn').addEventListener('click', async () => {
+  $('orderErr').hidden = true;
+  const p = orderPayload();
+  if (!p.symbol) return showErr('Enter a symbol');
+  if (!p.qty || p.qty < 1) return showErr('Qty must be ≥ 1');
+  if ((p.order_type === 'LIMIT' || p.order_type === 'SL') && !p.price)
+    return showErr('Price required for ' + p.order_type);
+  if ((p.order_type === 'SL' || p.order_type === 'SL-M') && !p.trigger_price)
+    return showErr('Trigger price required for ' + p.order_type);
+
+  if (liveEnabled){
+    const ok = await askConfirm('Place LIVE order on Zerodha', p);
+    if (!ok) return;
+  }
+
+  $('placeBtn').disabled = true;
+  try {
+    const url = liveEnabled ? '/api/trade/live/place' : '/api/trade/paper/place';
+    const r = await fetch(url, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(p)
+    });
+    const d = await r.json();
+    if (!d.ok){ showErr(d.error || 'failed'); return; }
+    await refreshAll();
+  } catch (e){ showErr('request failed: ' + e.message); }
+  finally { $('placeBtn').disabled = false; }
+});
+
+function showErr(msg){
+  $('orderErr').hidden = false;
+  $('orderErr').textContent = '⚠️ ' + msg;
+}
+
+/* ── refresh ─────────────────────────────────── */
+async function refreshPositions(){
+  const el = $('posWrap');
+  try {
+    const r = await fetch('/api/trade/paper/positions');
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'failed');
+    const list = d.positions || [];
+    $('posCount').textContent = `${list.length} position(s)`;
+    if (!list.length){ el.innerHTML = '<div class="empty">No paper positions yet.</div>'; return; }
+    const rows = list.map(p => {
+      const pnl = p.unrealized_pnl;
+      const pct = p.unrealized_pct;
+      const ltp = p.ltp != null ? fmtINR(p.ltp) : '—';
+      return `<tr>
+        <td><b>${p.symbol}</b><div style="color:var(--muted);font-size:10px">${p.exchange} · ${p.product}</div></td>
+        <td class="${p.qty >= 0 ? 'buy' : 'sell'}">${p.qty}</td>
+        <td>${fmtINR(p.avg_price)}</td>
+        <td>${ltp}</td>
+        <td class="${cls(pnl)}">${pnl == null ? '—' : sign(pnl) + fmtINR(pnl)}</td>
+        <td class="${cls(pct)}">${pct == null ? '—' : sign(pct) + pct.toFixed(2) + '%'}</td>
+        <td>${fmtINR(p.avg_price * Math.abs(p.qty))}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="lil" onclick="window._closePosition('${p.symbol}','${p.exchange}','${p.product}',${p.qty})">Close</button>
+        </td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<table class="tb">
+      <thead><tr>
+        <th>Symbol</th><th>Qty</th><th>Avg</th><th>LTP</th>
+        <th>P&amp;L ₹</th><th>P&amp;L %</th><th>Value</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  } catch (e){
+    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+window._closePosition = async function(symbol, exchange, product, qty){
+  const closeSide = qty > 0 ? 'SELL' : 'BUY';
+  const closeQty  = Math.abs(qty);
+  const p = { symbol, exchange, side: closeSide, qty: closeQty,
+              order_type: 'MARKET', product, validity: 'DAY' };
+  if (liveEnabled){
+    const ok = await askConfirm(`Close LIVE position: ${closeSide} ${closeQty} ${symbol} (market)`, p);
+    if (!ok) return;
+  }
+  try {
+    const url = liveEnabled ? '/api/trade/live/place' : '/api/trade/paper/place';
+    await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'},
+                       body: JSON.stringify(p) });
+    await refreshAll();
+  } catch (e){ console.error(e); }
+};
+
+async function refreshOrders(){
+  const el = $('ordWrap');
+  try {
+    const r = await fetch('/api/trade/paper/orders');
+    const d = await r.json();
+    const list = (d.orders || []).slice().reverse();
+    if (!list.length){ el.innerHTML = '<div class="empty">No paper orders yet.</div>'; return; }
+    const rows = list.map(o => {
+      const clsSide = o.side === 'BUY' ? 'buy' : 'sell';
+      const statusCls = o.status === 'FILLED'  ? 'ok'
+                      : o.status === 'CANCELLED' ? 'mut' : 'warn';
+      const px = o.fill_price || o.price || 'MKT';
+      const acts = o.status === 'OPEN'
+        ? `<button class="lil" onclick="window._fillOrder('${o.id}')">Fill</button>
+           <button class="lil del" onclick="window._cancelOrder('${o.id}')">Cancel</button>`
+        : '';
+      return `<tr>
+        <td style="color:var(--muted);font-size:11px">${o.ts.slice(11,19)}</td>
+        <td><b>${o.symbol}</b><div style="color:var(--muted);font-size:10px">${o.exchange} · ${o.product}</div></td>
+        <td class="${clsSide}">${o.side}</td>
+        <td>${o.order_type}</td>
+        <td>${o.qty}</td>
+        <td>${px !== 'MKT' ? fmtINR(px) : 'MKT'}</td>
+        <td><span class="tag ${statusCls}">${o.status}</span></td>
+        <td style="text-align:right;white-space:nowrap">${acts}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<table class="tb">
+      <thead><tr>
+        <th>Time</th><th>Symbol</th><th>Side</th><th>Type</th>
+        <th>Qty</th><th>Price</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  } catch (e){
+    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+window._fillOrder = async function(id){
+  const pxStr = prompt('Fill price?');
+  const px = parseFloat(pxStr);
+  if (isNaN(px)) return;
+  await fetch('/api/trade/paper/fill', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ order_id: id, fill_price: px })
+  });
+  await refreshAll();
+};
+
+window._cancelOrder = async function(id){
+  await fetch('/api/trade/paper/cancel', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ order_id: id })
+  });
+  await refreshAll();
+};
+
+async function refreshSummary(){
+  try {
+    const [posR, ordR] = await Promise.all([
+      fetch('/api/trade/paper/positions').then(r => r.json()),
+      fetch('/api/trade/paper/orders').then(r => r.json()),
+    ]);
+    const pos = posR.positions || [];
+    const ord = ordR.orders || [];
+    const openPos = pos.filter(p => p.qty !== 0);
+    const unreal  = openPos.reduce((s, p) => s + (p.unrealized_pnl || 0), 0);
+    const filled  = ord.filter(o => o.status === 'FILLED');
+    const openOrd = ord.filter(o => o.status === 'OPEN');
+    const cards = [
+      ['Open positions', openPos.length, ''],
+      ['Unrealized P&L', (unreal >= 0 ? '+' : '') + fmtINR(unreal), cls(unreal)],
+      ['Filled orders', filled.length, ''],
+      ['Open orders',   openOrd.length, ''],
+    ];
+    $('tradeSummary').innerHTML = cards.map(([k,v,c]) =>
+      `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+  } catch {}
+}
+
+$('clearPaperBtn').addEventListener('click', async () => {
+  if (!confirm('Clear all paper orders and positions? This cannot be undone.')) return;
+  await fetch('/api/trade/paper/clear', { method: 'POST' });
+  await refreshAll();
+});
+
+$('refreshAllBtn').addEventListener('click', refreshAll);
+
+async function refreshAll(){
+  await fetchMode();
+  await Promise.all([refreshPositions(), refreshOrders(), refreshSummary()]);
+}
+
+/* boot */
+syncQtyUI();
+syncOrderType();
+updatePreview();
+fetchMode();
+refreshAll();
+
+/* pre-fill from URL params: /trading?symbol=HAL&exchange=NSE */
+const qp = new URLSearchParams(location.search);
+if (qp.get('symbol'))   $('sym').value  = qp.get('symbol').toUpperCase();
+if (qp.get('exchange')) $('exch').value = qp.get('exchange').toUpperCase();
+if (qp.get('symbol'))   fetchLTP();
+</script>
+{% endblock %}

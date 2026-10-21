@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Settings · Trading App{% endblock %}
+
+{% block content %}
+<h1>Settings</h1>
+<p class="sub">Configuration for the whole app. Changes to keys and live-trading apply instantly.
+   Port changes need a server restart.</p>
+
+<!-- Restart banner -->
+<div id="restartBanner" hidden
+     style="background:#3d3d1e;border:2px solid #e3b341;border-radius:8px;
+            padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
+  <span style="font-size:22px">🔄</span>
+  <div style="flex:1">
+    <div style="color:#e3b341;font-weight:700">Restart required</div>
+    <div style="color:#e6edf3;font-size:12px;margin-top:3px">
+      Press <b>Ctrl + C</b> in the terminal, then run <code>python server.py</code> again for the change to take effect.
+    </div>
+  </div>
+</div>
+
+<!-- Zerodha card -->
+<div class="set-card">
+  <div class="set-title">Zerodha Kite Connect</div>
+
+  <div class="set-row">
+    <label>API key</label>
+    <input id="z_key" class="set-input" placeholder="ud3fa01mv5n39ra2">
+  </div>
+
+  <div class="set-row">
+    <label>API secret</label>
+    <div style="display:flex;gap:6px;flex:1">
+      <input id="z_secret" class="set-input" type="password" placeholder="leave blank to keep">
+      <button type="button" id="z_secret_show" class="ghostBtn">Show</button>
+    </div>
+  </div>
+  <div class="set-hint">
+    Currently: <code id="z_secret_masked">—</code>. Leave blank to keep the existing secret.
+    <br>Changing the API key invalidates your login — you'll need to Logout then Login again.
+  </div>
+
+  <div class="set-row">
+    <label>Callback port</label>
+    <input id="z_port" class="set-input" type="number" style="width:100px">
+  </div>
+  <div class="set-hint">
+    Must match your Zerodha app redirect URL: <code>http://127.0.0.1:PORT/callback</code>.
+    <b>Restart needed</b> after change.
+  </div>
+
+  <div class="set-row">
+    <label>Live trading</label>
+    <label class="toggle-wrap">
+      <input id="z_live" type="checkbox">
+      <span>Allow creating / modifying / deleting GTT and placing orders</span>
+    </label>
+  </div>
+  <div class="set-hint" id="z_live_hint">
+    <b>OFF</b> — all order-modifying actions are blocked. Only read-only views work.
+  </div>
+</div>
+
+<!-- Google Sheets card -->
+<div class="set-card">
+  <div class="set-title">Google Sheets</div>
+
+  <div class="set-row">
+    <label>Service account</label>
+    <input id="s_email" class="set-input" readonly>
+    <button type="button" id="s_copy" class="ghostBtn">Copy</button>
+  </div>
+  <div class="set-hint">
+    Share any new Google Sheet with this email as <b>Editor</b> to grant access.
+  </div>
+
+  <div class="set-row">
+    <label>Credentials file</label>
+    <input id="s_creds" class="set-input" readonly>
+  </div>
+</div>
+
+<!-- System card -->
+<div class="set-card">
+  <div class="set-title">System</div>
+
+  <div class="set-row">
+    <label>App port</label>
+    <input id="sys_port" class="set-input" type="number" style="width:100px">
+  </div>
+  <div class="set-hint">
+    Port of the Flask web app itself (not Zerodha). <b>Restart needed</b> after change.
+  </div>
+
+  <div class="set-row">
+    <label>Env file</label>
+    <input id="sys_env" class="set-input" readonly>
+  </div>
+
+  <div class="set-row">
+    <label>App password</label>
+    <input id="app_pass" class="set-input" type="password" placeholder="leave blank to keep">
+  </div>
+  <div class="set-hint">
+    Used later when the login page is added. Not enforced yet.
+  </div>
+</div>
+
+<!-- Save row -->
+<div style="display:flex;align-items:center;gap:12px;margin-top:20px">
+  <button id="saveBtn" class="btnPrimary">Save all changes</button>
+  <span id="saveStatus" style="color:var(--muted);font-size:12px"></span>
+</div>
+
+<style>
+  .set-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            padding:16px;margin-bottom:14px}
+  .set-title{color:var(--muted);font-size:11px;font-weight:700;
+             letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+  .set-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .set-row > label:first-child{width:140px;color:var(--muted);font-size:12px;flex-shrink:0}
+  .set-input{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+             border-radius:6px;padding:6px 10px;font-size:12.5px;flex:1;min-width:0;
+             font-family:ui-monospace,monospace}
+  .set-input:read-only{opacity:.7;cursor:default}
+  .set-input:focus{outline:none;border-color:var(--accent)}
+  .ghostBtn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+            border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;flex-shrink:0}
+  .ghostBtn:hover{color:var(--fg);border-color:var(--accent)}
+  .set-hint{color:var(--muted);font-size:11px;margin:0 0 12px 152px;line-height:1.5}
+  .set-hint code{background:var(--panel2);padding:1px 5px;border-radius:3px;
+                 font-family:ui-monospace,monospace;font-size:11px}
+  .toggle-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;
+               flex:1}
+  .toggle-wrap input{width:16px;height:16px;cursor:pointer}
+  .btnPrimary{background:var(--accent);border:none;color:#04121f;border-radius:6px;
+              padding:10px 22px;font-weight:600;cursor:pointer;font-size:13px}
+  .btnPrimary:disabled{opacity:.5;cursor:wait}
+  .ok{color:var(--good)} .err{color:var(--bad)}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+
+function status(txt, kind){
+  const el = $('saveStatus');
+  el.textContent = txt;
+  el.className = kind === 'err' ? 'err' : kind === 'ok' ? 'ok' : '';
+}
+
+function updateLiveHint(){
+  $('z_live_hint').innerHTML = $('z_live').checked
+    ? '<b style="color:#f85149">ON</b> — LIVE orders will be sent to Zerodha. Use with extreme care.'
+    : '<b>OFF</b> — all order-modifying actions are blocked. Only read-only views work.';
+}
+
+async function loadSettings(){
+  try {
+    const r = await fetch('/api/settings');
+    const d = await r.json();
+    if (!d.ok){ status('load failed', 'err'); return; }
+    $('z_key').value             = d.zerodha_api_key || '';
+    $('z_secret_masked').textContent = d.zerodha_secret_present ? d.zerodha_secret_masked : 'not set';
+    $('z_port').value            = d.zerodha_callback_port;
+    $('z_live').checked          = !!d.zerodha_live_trading;
+    $('s_email').value           = d.service_account_email || '(not configured)';
+    $('s_creds').value           = d.credentials_file || '';
+    $('sys_port').value          = d.port || '8000';
+    $('sys_env').value           = d.env_file || '';
+    updateLiveHint();
+  } catch (e){
+    status('load failed: ' + e.message, 'err');
+  }
+}
+
+$('z_live').addEventListener('change', updateLiveHint);
+
+$('z_secret_show').addEventListener('click', () => {
+  const el = $('z_secret');
+  el.type = el.type === 'password' ? 'text' : 'password';
+  $('z_secret_show').textContent = el.type === 'password' ? 'Show' : 'Hide';
+});
+
+$('s_copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('s_email').value);
+    status('email copied', 'ok');
+    setTimeout(() => status(''), 2000);
+  } catch(e){ status('copy failed', 'err'); }
+});
+
+$('saveBtn').addEventListener('click', async () => {
+  $('saveBtn').disabled = true;
+  status('saving…');
+
+  const values = {};
+  if ($('z_key').value.trim()) values.ZERODHA_API_KEY = $('z_key').value.trim();
+  // only send secret if user typed something new (not masked, not empty)
+  const secVal = $('z_secret').value.trim();
+  if (secVal && !secVal.startsWith('*')) values.ZERODHA_API_SECRET = secVal;
+  if ($('z_port').value) values.ZERODHA_CALLBACK_PORT = $('z_port').value;
+  values.ZERODHA_LIVE_TRADING = $('z_live').checked ? '1' : '0';
+  if ($('sys_port').value) values.PORT = $('sys_port').value;
+  if ($('app_pass').value) values.APP_PASSWORD = $('app_pass').value;
+
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ values })
+    });
+    const d = await r.json();
+    if (!d.ok){ status(d.error || 'save failed', 'err'); return; }
+
+    $('z_secret').value = '';
+    $('app_pass').value = '';
+    if (d.restart_required){
+      $('restartBanner').hidden = false;
+      status('saved · restart required', 'ok');
+    } else {
+      status('saved · applied', 'ok');
+    }
+    await loadSettings();
+    setTimeout(() => status(''), 3000);
+  } catch (e){
+    status('save failed: ' + e.message, 'err');
+  } finally {
+    $('saveBtn').disabled = false;
+  }
+});
+
+loadSettings();
+</script>
+{% endblock %}

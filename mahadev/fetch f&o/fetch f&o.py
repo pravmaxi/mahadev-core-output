@@ -15,7 +15,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 SHEET_NAME = "Stock Price Scraper"
 FO_SHEET = "F&O"
 
-CREDENTIALS_FILE = "/Users/apple/Downloads/learning/automation-project-429417-c51140fdff86.json"
+CREDENTIALS_FILE = "Json/automation-project-429417-c51140fdff86.json"
 
 # =====================================================
 # GOOGLE SHEET CONNECTION

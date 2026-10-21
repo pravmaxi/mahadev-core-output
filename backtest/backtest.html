@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Indicator Backtester</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2a313c;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --good:#3fb950; --bad:#f85149;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;
+         align-items:baseline;gap:12px;background:var(--panel)}
+  header h1{font-size:15px;margin:0;font-weight:600}
+  header .sub{color:var(--muted);font-size:12px}
+  .layout{display:grid;grid-template-columns:320px 1fr;height:calc(100% - 45px)}
+  .sidebar{border-right:1px solid var(--border);overflow-y:auto;padding:14px;background:var(--panel)}
+  .main{overflow-y:auto;padding:16px 18px}
+  h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+     margin:18px 0 8px;font-weight:600}
+  h2:first-child{margin-top:0}
+  .field{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+  .field span{color:var(--muted);font-size:12px;flex:1}
+  .field input,.field select{width:110px;background:var(--panel2);border:1px solid var(--border);
+     color:var(--fg);border-radius:6px;padding:5px 7px;font-size:12px;outline:none}
+  .field input:focus,.field select:focus{border-color:var(--accent)}
+  select{width:100%}
+  button{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+     border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#04121f;font-weight:600;width:100%;padding:10px}
+  button.primary:hover{filter:brightness(1.1);color:#04121f}
+  .btnrow{display:flex;gap:6px;margin-bottom:8px}
+  .btnrow button{flex:1}
+  textarea{width:100%;height:90px;background:var(--panel2);border:1px solid var(--border);
+     color:var(--fg);border-radius:6px;padding:7px;font:11px/1.4 ui-monospace,Consolas,monospace;resize:vertical}
+  .hint{color:var(--muted);font-size:11px;margin:6px 0 0}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:9px 11px}
+  .card .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+  .card .v{font-size:17px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  canvas.chart{display:block;width:100%;height:280px;background:var(--panel);
+     border:1px solid var(--border);border-radius:8px}
+  .chartwrap{margin-bottom:14px}
+  .chartwrap .cap{color:var(--muted);font-size:11px;margin:0 0 5px 2px}
+  table{width:100%;border-collapse:collapse;font-size:11.5px;font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{color:var(--muted);font-weight:600;text-align:right;position:sticky;top:0;background:var(--bg)}
+  th:first-child,td:first-child{text-align:left}
+  .tablebox{max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:8px;margin-top:8px}
+  details{margin-top:14px;color:var(--muted);font-size:12px}
+  details summary{cursor:pointer;color:var(--fg)}
+  details pre{background:var(--panel);border:1px solid var(--border);border-radius:6px;
+     padding:10px;overflow:auto;font-size:11px;line-height:1.5}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #status{color:var(--muted);font-size:11px;margin-top:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Indicator Backtester</h1>
+  <span class="sub">signals evaluated on bar close · executed on next bar open · no look‑ahead</span>
+</header>
+
+<div class="layout">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+
+    <h2>1 · Data</h2>
+    <div class="btnrow">
+      <button id="btnSample">Sample data</button>
+      <button id="btnFile">Load CSV</button>
+    </div>
+    <input type="file" id="fileInput" accept=".csv,.txt" hidden>
+    <details>
+      <summary>Paste CSV instead</summary>
+      <textarea id="csvText" placeholder="date,open,high,low,close,volume
+2023-01-02,100,102,99,101,120000
+..."></textarea>
+      <button id="btnParse" style="margin-top:6px;width:100%">Parse pasted CSV</button>
+    </details>
+    <p class="hint" id="dataInfo">No data loaded.</p>
+
+    <h2>2 · Strategy</h2>
+    <label class="field"><span>Type</span>
+      <select id="strategyMode">
+        <option value="builtin">Built‑in strategy</option>
+        <option value="generic">Generic: price vs indicator</option>
+      </select>
+    </label>
+
+    <div id="builtinBox">
+      <label class="field"><span>Strategy</span>
+        <select id="stratSelect"></select>
+      </label>
+    </div>
+
+    <div id="genericBox" hidden>
+      <label class="field"><span>Indicator</span>
+        <select id="indSelect"></select>
+      </label>
+      <label class="field"><span>Rule</span>
+        <select id="indMode">
+          <option value="crossAbove">Price crosses ABOVE line → Long</option>
+          <option value="crossBelow">Price crosses BELOW line → Short</option>
+          <option value="above">Hold long while price ABOVE line</option>
+          <option value="below">Hold short while price BELOW line</option>
+        </select>
+      </label>
+      <label class="field" id="variantRow" hidden><span>Band</span>
+        <select id="indVariant"></select>
+      </label>
+    </div>
+
+    <h2>3 · Parameters</h2>
+    <div id="paramBox"></div>
+
+    <h2>4 · Execution</h2>
+    <label class="field"><span>Initial capital</span><input id="capital" type="number" value="100000" step="1000"></label>
+    <label class="field"><span>Position size %</span><input id="positionPct" type="number" value="100" step="5"></label>
+    <label class="field"><span>Commission % / side</span><input id="commission" type="number" value="0.05" step="0.01"></label>
+    <label class="field"><span>Slippage %</span><input id="slippage" type="number" value="0.02" step="0.01"></label>
+    <label class="field"><span>Allow short</span><input id="allowShort" type="checkbox"></label>
+    <label class="field"><span>Bars per year</span><input id="barsPerYear" type="number" value="252" step="1"></label>
+
+    <button class="primary" id="btnRun" style="margin-top:14px">▶ Run Backtest</button>
+    <p id="status"></p>
+
+    <details>
+      <summary>How to add your own indicator</summary>
+      <p>Open the file and add an entry to the <b>Ind</b> object. It will instantly appear in the
+      “Generic: price vs indicator” dropdown.</p>
+<pre>Ind.myInd = {
+  label: 'My Indicator',
+  params: { period: { label:'Period', def:14, min:2, max:300, step:1 } },
+  // must return an array of numbers (NaN during warm‑up)
+  // or an object of arrays, e.g. { mid:[], upper:[], lower:[] }
+  compute(candles, p) {
+    const src = candles.map(c =&gt; c.c);
+    return TA.sma(src, p.period);       // any array works
+  },
+  // optional: if compute returns an object, list selectable bands
+  variants: ['mid','upper','lower']
+};</pre>
+      <p>For a fully custom rule, add to the <b>Strategies</b> object instead — see the examples
+      already in the file.</p>
+    </details>
+
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <main class="main">
+    <div class="cards" id="cards"></div>
+    <div class="chartwrap">
+      <p class="cap">Price + indicator + trades</p>
+      <canvas class="chart" id="priceChart"></canvas>
+    </div>
+        <div class="chartwrap" id="oscWrap" hidden>
+      <p class="cap" id="oscCap">Indicator</p>
+      <canvas class="chart" id="oscChart" style="height:150px"></canvas>
+    </div>
+    <div class="chartwrap">
+      <p class="cap">Equity curve</p>
+      <canvas class="chart" id="equityChart" style="height:200px"></canvas>
+    </div>
+    <div id="tradesWrap"></div>
+  </main>
+</div>
+
+<script>
+/* =========================================================================
+   0. SMALL UTILITIES
+   ========================================================================= */
+const fin = v => typeof v === 'number' && isFinite(v);
+const sum = a => a.reduce((x, y) => x + y, 0);
+const avg = a => a.length ? sum(a) / a.length : 0;
+function std(a){ if (a.length < 2) return 0; const m = avg(a);
+  return Math.sqrt(sum(a.map(x => (x - m) ** 2)) / (a.length - 1)); }
+
+function crossOver(a, b, i){
+  if (i < 1) return false;
+  const [a0,b0,a1,b1] = [a[i-1], b[i-1], a[i], b[i]];
+  return fin(a0)&&fin(b0)&&fin(a1)&&fin(b1) && a0 <= b0 && a1 > b1;
+}
+function crossUnder(a, b, i){
+  if (i < 1) return false;
+  const [a0,b0,a1,b1] = [a[i-1], b[i-1], a[i], b[i]];
+  return fin(a0)&&fin(b0)&&fin(a1)&&fin(b1) && a0 >= b0 && a1 < b1;
+}
+
+/* =========================================================================
+   1. TECHNICAL ANALYSIS PRIMITIVES
+   ========================================================================= */
+const TA = {
+  sma(src, p){
+    const o = new Array(src.length).fill(NaN); let s = 0;
+    for (let i = 0; i < src.length; i++){
+      s += src[i];
+      if (i >= p) s -= src[i - p];
+      if (i >= p - 1) o[i] = s / p;
+    }
+    return o;
+  },
+  ema(src, p){
+    const o = new Array(src.length).fill(NaN);
+    const k = 2 / (p + 1);
+    let prev = null, seed = 0;
+    for (let i = 0; i < src.length; i++){
+      const v = src[i];
+      if (!fin(v)) continue;
+      if (prev === null){
+        seed += v;
+        if (i + 1 >= p){ prev = seed / p; o[i] = prev; }
+      } else {
+        prev = v * k + prev * (1 - k);
+        o[i] = prev;
+      }
+    }
+    return o;
+  },
+  rsi(src, p){
+    const o = new Array(src.length).fill(NaN);
+    let g = 0, l = 0;
+    for (let i = 1; i < src.length; i++){
+      const ch = src[i] - src[i - 1];
+      const up = Math.max(ch, 0), dn = Math.max(-ch, 0);
+      if (i <= p){
+        g += up; l += dn;
+        if (i === p){ g /= p; l /= p; o[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l); }
+      } else {
+        g = (g * (p - 1) + up) / p;
+        l = (l * (p - 1) + dn) / p;
+        o[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+      }
+    }
+    return o;
+  },
+  atr(candles, p){
+    const tr = candles.map((c, i) => {
+      const prev = i > 0 ? candles[i - 1].c : c.o;
+      return Math.max(c.h - c.l, Math.abs(c.h - prev), Math.abs(c.l - prev));
+    });
+    return TA.ema(tr, p);
+  },
+  highest(src, p){
+    const o = new Array(src.length).fill(NaN);
+    for (let i = p - 1; i < src.length; i++){
+      let m = -Infinity;
+      for (let j = i - p + 1; j <= i; j++) m = Math.max(m, src[j]);
+      o[i] = m;
+    }
+    return o;
+  },
+  lowest(src, p){
+    const o = new Array(src.length).fill(NaN);
+    for (let i = p - 1; i < src.length; i++){
+      let m = Infinity;
+      for (let j = i - p + 1; j <= i; j++) m = Math.min(m, src[j]);
+      o[i] = m;
+    }
+    return o;
+  },
+  stdev(src, p){
+    const o = new Array(src.length).fill(NaN);
+    for (let i = p - 1; i < src.length; i++){
+      const w = src.slice(i - p + 1, i + 1);
+      const m = avg(w);
+      o[i] = Math.sqrt(avg(w.map(x => (x - m) ** 2)));
+    }
+    return o;
+  }
+};
+
+/* =========================================================================
+   2. INDICATOR REGISTRY  ◄── ADD YOUR INDICATORS HERE
+   -------------------------------------------------------------------------
+   Each entry:
+     label    : shown in the UI
+     params   : { key: { label, def, min, max, step } }  -> auto‑generated inputs
+     compute  : (candles, params) => number[]  OR  { band: number[], ... }
+     variants : optional list of band names if compute returns an object
+   ========================================================================= */
+const Ind = {
+  sma: {
+    label: 'SMA (close)',
+    params: { period: { label: 'Period', def: 20, min: 2, max: 400, step: 1 } },
+    compute: (c, p) => TA.sma(c.map(x => x.c), p.period)
+  },
+  ema: {
+    label: 'EMA (close)',
+    params: { period: { label: 'Period', def: 20, min: 2, max: 400, step: 1 } },
+    compute: (c, p) => TA.ema(c.map(x => x.c), p.period)
+  },
+  rsi: {
+    label: 'RSI',
+    params: { period: { label: 'Period', def: 14, min: 2, max: 100, step: 1 } },
+    compute: (c, p) => TA.rsi(c.map(x => x.c), p.period)
+  },
+  atr: {
+    label: 'ATR',
+    params: { period: { label: 'Period', def: 14, min: 2, max: 100, step: 1 } },
+    compute: (c, p) => TA.atr(c, p.period)
+  },
+  bb: {
+    label: 'Bollinger Bands',
+    params: {
+      period: { label: 'Period', def: 20, min: 3, max: 200, step: 1 },
+      mult:   { label: 'StdDev ×', def: 2, min: 0.5, max: 5, step: 0.1 }
+    },
+    variants: ['mid', 'upper', 'lower'],
+    compute(c, p){
+      const src = c.map(x => x.c);
+      const mid = TA.sma(src, p.period);
+      const sd  = TA.stdev(src, p.period);
+      return {
+        mid,
+        upper: mid.map((m, i) => fin(m) ? m + p.mult * sd[i] : NaN),
+        lower: mid.map((m, i) => fin(m) ? m - p.mult * sd[i] : NaN)
+      };
+    }
+  },
+  donchian: {
+    label: 'Donchian Channel',
+    params: { period: { label: 'Period', def: 20, min: 2, max: 300, step: 1 } },
+    variants: ['upper', 'lower', 'mid'],
+    compute(c, p){
+      const upper = TA.highest(c.map(x => x.h), p.period);
+      const lower = TA.lowest(c.map(x => x.l), p.period);
+      return { upper, lower, mid: upper.map((u, i) => fin(u) ? (u + lower[i]) / 2 : NaN) };
+    }
+  }
+  /* ---- your indicator goes here, e.g.:
+  , myInd: {
+      label: 'My Indicator',
+      params: { period: { label: 'Period', def: 14, min: 2, max: 300, step: 1 } },
+      compute(candles, p){ return TA.sma(candles.map(c => c.c), p.period); }
+    }
+  */
+};
+
+function pickLine(out, variant){
+  if (Array.isArray(out)) return out;
+  if (variant && Array.isArray(out[variant])) return out[variant];
+  for (const k of ['mid', 'line', 'value', 'upper', 'lower'])
+    if (Array.isArray(out[k])) return out[k];
+  return null;
+}
+
+/* =========================================================================
+   3. STRATEGY REGISTRY  ◄── ADD YOUR STRATEGIES HERE
+   -------------------------------------------------------------------------
+   build(params) must return:
+     { label, plot:[seriesKeys], compute(candles)->seriesObj, signal(series,i,side,candles) }
+   signal returns: 'long' | 'short' | 'exit' | null   (or undefined)
+   ========================================================================= */
+/* Pandas-style EMA — matches ewm(span=n, adjust=False) in your Python */
+function emaSpan(src, span){
+  const alpha = 2 / (span + 1);
+  const out = new Array(src.length).fill(NaN);
+  let prev = null;
+  for (let i = 0; i < src.length; i++){
+    const v = src[i];
+    if (!fin(v)) continue;
+    prev = prev === null ? v : alpha * v + (1 - alpha) * prev;
+    out[i] = prev;
+  }
+  return out;
+}
+
+const Strategies = {
+  wtCross: {
+    label: 'WaveTrend Cross',
+    params: {
+      n1: { label: 'Channel Len (n1)', def: 15, min: 2, max: 100, step: 1 },
+      n2: { label: 'Average Len (n2)', def: 27, min: 2, max: 200, step: 1 }
+    },
+    build(p){
+      return {
+        label: `WaveTrend ${p.n1}/${p.n2}`,
+        panel: 'oscillator',
+        plot: ['wt1', 'wt2'],
+        compute(c){
+          const ap = c.map(x => (x.h + x.l + x.c) / 3);
+          const esa = emaSpan(ap, p.n1);
+          const absDiff = ap.map((v,i) => fin(esa[i]) ? Math.abs(v - esa[i]) : NaN);
+          const d = emaSpan(absDiff, p.n1);
+          const ci = ap.map((v,i) =>
+            fin(d[i]) && d[i] !== 0 ? (v - esa[i]) / (0.015 * d[i]) : NaN);
+          const wt1 = emaSpan(ci, p.n2);
+          const wt2 = new Array(wt1.length).fill(NaN);
+          for (let i = 3; i < wt1.length; i++){
+            const a = wt1[i], b = wt1[i-1], c2 = wt1[i-2], e = wt1[i-3];
+            if (fin(a) && fin(b) && fin(c2) && fin(e))
+              wt2[i] = (a + b + c2 + e) / 4;
+          }
+          return { wt1, wt2 };
+        },
+        signal(s, i, side){
+          if (crossOver(s.wt1, s.wt2, i)  && side <= 0) return 'long';
+          if (crossUnder(s.wt1, s.wt2, i) && side >= 0) return 'short';
+          return null;
+        }
+      };
+    }
+  },
+
+
+  smaCross: {
+    label: 'SMA Crossover (long only)',
+    params: {
+      fast: { label: 'Fast SMA', def: 9,  min: 2, max: 200, step: 1 },
+      slow: { label: 'Slow SMA', def: 21, min: 3, max: 400, step: 1 }
+    },
+    build(p){
+      return {
+        label: `SMA ${p.fast}/${p.slow} cross`,
+        plot: ['fast', 'slow'],
+        compute(c){
+          const s = c.map(x => x.c);
+          return { fast: TA.sma(s, p.fast), slow: TA.sma(s, p.slow) };
+        },
+        signal(s, i){
+          if (crossOver(s.fast, s.slow, i))  return 'long';
+          if (crossUnder(s.fast, s.slow, i)) return 'exit';
+          return null;
+        }
+      };
+    }
+  },
+
+  rsiRev: {
+    label: 'RSI Mean Reversion',
+    params: {
+      period: { label: 'RSI period', def: 14, min: 2, max: 100, step: 1 },
+      buy:    { label: 'Buy below',  def: 30, min: 1, max: 50, step: 1 },
+      sell:   { label: 'Exit above', def: 70, min: 50, max: 99, step: 1 }
+    },
+    build(p){
+      return {
+        label: `RSI(${p.period}) ${p.buy}/${p.sell}`,
+        plot: ['rsi'],
+        compute(c){ return { rsi: TA.rsi(c.map(x => x.c), p.period) }; },
+        signal(s, i, side){
+          const r = s.rsi[i];
+          if (!fin(r)) return null;
+          if (r < p.buy  && side <= 0) return 'long';
+          if (r > p.sell && side > 0)  return 'exit';
+          return null;
+        }
+      };
+    }
+  },
+
+  donchianBreak: {
+    label: 'Donchian Breakout',
+    params: {
+      entry: { label: 'Entry lookback', def: 20, min: 2, max: 300, step: 1 },
+      exit:  { label: 'Exit lookback',  def: 10, min: 2, max: 300, step: 1 }
+    },
+    build(p){
+      return {
+        label: `Donchian ${p.entry}/${p.exit}`,
+        plot: ['upper', 'lower'],
+        compute(c){
+          return {
+            upper: TA.highest(c.map(x => x.h), p.entry),
+            lower: TA.lowest(c.map(x => x.l), p.exit)
+          };
+        },
+        signal(s, i, side, c){
+          const px = c[i].c;
+          if (i < 1) return null;
+          if (fin(s.upper[i-1]) && px > s.upper[i-1] && side <= 0) return 'long';
+          if (fin(s.lower[i-1]) && px < s.lower[i-1] && side > 0)  return 'exit';
+          return null;
+        }
+      };
+    }
+  }
+};
+
+/* Generic strategy: price vs any registered indicator */
+function makeGenericStrategy(indKey, indParams, mode, variant){
+  const ind = Ind[indKey];
+  return {
+    label: `${ind.label} · ${mode}`,
+    plot: ['line'],
+    compute(candles){
+      const out  = ind.compute(candles, indParams);
+      const line = pickLine(out, variant);
+      return { line, price: candles.map(c => c.c) };
+    },
+    signal(s, i, side){
+      const L = s.line, P = s.price;
+      if (!L || !fin(L[i])) return null;
+      if (mode === 'crossAbove'){
+        if (crossOver(P, L, i))  return 'long';
+        if (crossUnder(P, L, i)) return 'exit';
+      } else if (mode === 'crossBelow'){
+        if (crossUnder(P, L, i)) return 'short';
+        if (crossOver(P, L, i))  return 'exit';
+      } else if (mode === 'above'){
+        if (P[i] > L[i] && side <= 0) return 'long';
+        if (P[i] < L[i] && side > 0)  return 'exit';
+      } else if (mode === 'below'){
+        if (P[i] < L[i] && side >= 0) return 'short';
+        if (P[i] > L[i] && side < 0)  return 'exit';
+      }
+      return null;
+    }
+  };
+}
+
+/* =========================================================================
+   4. BACKTEST ENGINE
+   -------------------------------------------------------------------------
+   Loop invariant:
+     - signal(i) is computed from bar i's CLOSE
+     - the order is executed at bar i+1's OPEN   → zero look‑ahead
+   ========================================================================= */
+function runBacktest(candles, strat, cfg){
+  const series = strat.compute(candles);
+  const n = candles.length;
+
+  let cash = cfg.capital;
+  let units = 0;              // signed: + long, − short
+  let side = 0;               // -1 / 0 / +1
+  let entry = null;
+  let pending = null;         // desired side, executed next bar open
+
+  const equity = new Array(n).fill(NaN);
+  const trades = [];
+  const slip = cfg.slippage / 100;
+  const comm = cfg.commission / 100;
+
+  function open(sideSign, i, rawPx){
+    const fill = rawPx * (1 + sideSign * slip);
+    const notional = cash * cfg.positionPct / 100;
+    const u = notional / fill;
+    cash -= sideSign * u * fill;          // long: cash down, short: cash up
+    cash -= notional * comm;
+    units = sideSign * u;
+    side  = sideSign;
+    entry = { i, t: candles[i].t, px: fill, eq: cash + units * fill, side: sideSign };
+  }
+
+  function close(i, rawPx, reason){
+    const fill = rawPx * (1 - side * slip);
+    const notional = Math.abs(units * fill);
+    cash += units * fill - notional * comm;
+    units = 0;
+    const pnl = cash - entry.eq;
+    trades.push({
+      side: entry.side,
+      entryI: entry.i, exitI: i,
+      entryT: entry.t, exitT: candles[i].t,
+      entryPx: entry.px, exitPx: fill,
+      bars: i - entry.i,
+      pnl, ret: pnl / entry.eq * 100,
+      reason
+    });
+    side = 0; entry = null;
+  }
+
+  for (let i = 0; i < n; i++){
+    const bar = candles[i];
+
+    /* --- execute pending order at this bar's open --- */
+    if (pending !== null && i > 0 && pending !== side){
+      if (side !== 0) close(i, bar.o, pending === 0 ? 'exit' : 'reverse');
+      if (pending !== 0) open(pending, i, bar.o);
+    }
+    pending = null;
+
+    /* --- mark to market at this bar's close --- */
+    equity[i] = cash + units * bar.c;
+
+    /* --- evaluate signal on this bar's close --- */
+    if (i < n - 1){
+      const sig = strat.signal(series, i, side, candles);
+      if (sig === 'long')       pending = 1;
+      else if (sig === 'short') pending = cfg.allowShort ? -1 : 0;
+      else if (sig === 'exit')  pending = 0;
+    }
+  }
+
+  /* force-close any open position at the last close so stats are complete */
+  if (side !== 0){
+    close(n - 1, candles[n - 1].c, 'eod');
+    equity[n - 1] = cash;
+  }
+
+  return { series, equity, trades, finalEquity: cash };
+}
+
+/* =========================================================================
+   5. METRICS
+   ========================================================================= */
+function computeMetrics(candles, equity, trades, cfg){
+  const n = equity.length;
+  const final = equity[n - 1];
+  const totalRet = (final / cfg.capital - 1) * 100;
+  const buyHold  = (candles[n - 1].c / candles[0].c - 1) * 100;
+
+  let peak = -Infinity, maxDD = 0;
+  for (const e of equity){
+    if (e > peak) peak = e;
+    const dd = (e - peak) / peak;
+    if (dd < maxDD) maxDD = dd;
+  }
+
+  const rets = [];
+  for (let i = 1; i < n; i++)
+    if (equity[i - 1] > 0) rets.push(equity[i] / equity[i - 1] - 1);
+  const sd = std(rets);
+  const sharpe = sd > 0 ? (avg(rets) / sd) * Math.sqrt(cfg.barsPerYear) : 0;
+
+  const wins   = trades.filter(t => t.pnl > 0);
+  const losses = trades.filter(t => t.pnl <= 0);
+  const grossWin  = sum(wins.map(t => t.pnl));
+  const grossLoss = -sum(losses.map(t => t.pnl));
+  const pf = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? Infinity : 0);
+  const winRate = trades.length ? wins.length / trades.length * 100 : 0;
+  const expectancy = trades.length ? sum(trades.map(t => t.pnl)) / trades.length : 0;
+  const avgWin  = wins.length   ? grossWin / wins.length : 0;
+  const avgLoss = losses.length ? -grossLoss / losses.length : 0;
+
+  const years = n / cfg.barsPerYear;
+  const cagr = years > 0 && final > 0
+    ? (Math.pow(final / cfg.capital, 1 / years) - 1) * 100 : 0;
+
+  return { final, totalRet, buyHold, maxDD: maxDD * 100, sharpe, cagr,
+           trades: trades.length, winRate, pf, expectancy, avgWin, avgLoss,
+           grossWin, grossLoss };
+}
+
+/* =========================================================================
+   6. CSV PARSING + SAMPLE DATA
+   ========================================================================= */
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return [];
+  const delim = lines[0].includes('\t') ? '\t' : (lines[0].split(';').length > lines[0].split(',').length ? ';' : ',');
+  let head = lines[0].split(delim).map(s => s.trim().toLowerCase().replace(/"/g, ''));
+  let start = 1;
+  if (head.every(h => !isNaN(parseFloat(h)))){
+    head = ['date', 'open', 'high', 'low', 'close', 'volume'];
+    start = 0;
+  }
+  const idx = (...names) => {
+    for (const nm of names){ const i = head.indexOf(nm); if (i >= 0) return i; }
+    return -1;
+  };
+  const iT = idx('date','time','timestamp','datetime','dt');
+  let iO = idx('open','o'), iH = idx('high','h'), iL = idx('low','l');
+  let iC = idx('close','c','price','adj close','adj_close','last'), iV = idx('volume','vol','v');
+
+  if (iC < 0){                                  // no recognisable header → positional
+    iT = 0; iO = 1; iH = 2; iL = 3; iC = 4; iV = 5;
+  }
+  if (iO < 0) iO = iC;
+  if (iH < 0) iH = iC;
+  if (iL < 0) iL = iC;
+
+  const out = [];
+  for (let i = start; i < lines.length; i++){
+    const p = lines[i].split(delim).map(s => s.trim().replace(/"/g, ''));
+    const c = parseFloat(p[iC]);
+    if (!isFinite(c)) continue;
+    const o = parseFloat(p[iO]), h = parseFloat(p[iH]), l = parseFloat(p[iL]);
+    out.push({
+      t: iT >= 0 ? (p[iT] || i) : i,
+      o: isFinite(o) ? o : c,
+      h: isFinite(h) ? h : c,
+      l: isFinite(l) ? l : c,
+      c,
+      v: iV >= 0 ? (parseFloat(p[iV]) || 0) : 0
+    });
+  }
+  return out;
+}
+
+function randn(){
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function makeSampleData(n = 1500){
+  const out = [];
+  let px = 100;
+  let d = new Date(2019, 0, 1);
+  for (let i = 0; i < n; i++){
+    const drift = 0.0004 + 0.0011 * Math.sin(i / 110);   // trending cycles
+    const r = drift + 0.012 * randn();
+    const o = px;
+    const c = Math.max(0.5, o * (1 + r));
+    const h = Math.max(o, c) * (1 + Math.abs(randn()) * 0.004);
+    const l = Math.min(o, c) * (1 - Math.abs(randn()) * 0.004);
+    out.push({ t: new Date(d), o, h, l, c, v: Math.round(1e6 * (0.5 + Math.random())) });
+    px = c;
+    d = new Date(d.getTime() + 86400000);
+    while (d.getDay() === 0 || d.getDay() === 6) d = new Date(d.getTime() + 86400000);
+  }
+  return out;
+}
+
+/* =========================================================================
+   7. CHART RENDERING (pure canvas, no dependencies)
+   ========================================================================= */
+const PALETTE = ['#58a6ff', '#f0883e', '#d2a8ff', '#7ee787', '#ffa657', '#79c0ff'];
+
+function fitCanvas(cv){
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  cv.width  = Math.max(1, Math.floor(r.width  * dpr));
+  cv.height = Math.max(1, Math.floor(r.height * dpr));
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+
+function fmtDate(t){
+  if (t instanceof Date) return t.toISOString().slice(0, 10);
+  const s = String(t);
+  return s.length > 10 ? s.slice(0, 10) : s;
+}
+
+function drawPriceChart(cv, candles, series, plotKeys, trades){
+  const { ctx, w, h } = fitCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  const n = candles.length;
+  if (!n) return;
+
+  const padL = 8, padR = 62, padT = 12, padB = 20;
+  const X = i => padL + (w - padL - padR) * (n <= 1 ? 0 : i / (n - 1));
+
+  let lo = Infinity, hi = -Infinity;
+  for (const c of candles){ lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
+  for (const k of plotKeys){
+    const arr = series[k];
+    if (!Array.isArray(arr)) continue;
+    for (const v of arr) if (fin(v)){ lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  }
+  const pad = (hi - lo) * 0.06 || 1; lo -= pad; hi += pad;
+  const Y = v => padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+  /* grid + right axis labels */
+  ctx.strokeStyle = '#222a35'; ctx.fillStyle = '#8b949e';
+  ctx.font = '10px system-ui'; ctx.lineWidth = 1;
+  for (let g = 0; g <= 4; g++){
+    const v = lo + (hi - lo) * g / 4;
+    const y = Y(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(v.toFixed(2), w - padR + 6, y + 3);
+  }
+
+  /* price line */
+  ctx.strokeStyle = '#5c6b7f'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  candles.forEach((c, i) => { const x = X(i), y = Y(c.c); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+  ctx.stroke();
+
+  /* indicator lines */
+  plotKeys.forEach((k, ki) => {
+    const arr = series[k];
+    if (!Array.isArray(arr)) return;
+    ctx.strokeStyle = PALETTE[ki % PALETTE.length];
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < n; i++){
+      const v = arr[i];
+      if (!fin(v)){ started = false; continue; }
+      const x = X(i), y = Y(v);
+      if (!started){ ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+
+  /* trade markers */
+  for (const t of trades){
+    const long = t.side > 0;
+    const ex = X(t.entryI), ey = Y(t.entryPx);
+    ctx.fillStyle = long ? '#3fb950' : '#f85149';
+    ctx.beginPath();
+    if (long){ ctx.moveTo(ex, ey - 7); ctx.lineTo(ex - 4.5, ey + 2); ctx.lineTo(ex + 4.5, ey + 2); }
+    else     { ctx.moveTo(ex, ey + 7); ctx.lineTo(ex - 4.5, ey - 2); ctx.lineTo(ex + 4.5, ey - 2); }
+    ctx.closePath(); ctx.fill();
+
+    const xx = X(t.exitI), xy = Y(t.exitPx);
+    ctx.fillStyle = '#8b949e';
+    ctx.beginPath(); ctx.arc(xx, xy, 2.4, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawEquityChart(cv, equity, capital){
+  const { ctx, w, h } = fitCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  const n = equity.length;
+  if (!n) return;
+
+  const padL = 8, padR = 62, padT = 10, padB = 18;
+  const X = i => padL + (w - padL - padR) * (n <= 1 ? 0 : i / (n - 1));
+
+  let lo = Infinity, hi = -Infinity;
+  for (const e of equity){ if (!fin(e)) continue; lo = Math.min(lo, e); hi = Math.max(hi, e); }
+  const pad = (hi - lo) * 0.08 || 1; lo -= pad; hi += pad;
+  const Y = v => padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+  ctx.strokeStyle = '#222a35'; ctx.fillStyle = '#8b949e';
+  ctx.font = '10px system-ui';
+  for (let g = 0; g <= 3; g++){
+    const v = lo + (hi - lo) * g / 3;
+    const y = Y(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(Math.round(v).toLocaleString(), w - padR + 6, y + 3);
+  }
+
+  /* capital baseline */
+  if (capital >= lo && capital <= hi){
+    ctx.strokeStyle = '#3d4552'; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(padL, Y(capital)); ctx.lineTo(w - padR, Y(capital)); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* area fill */
+  const grad = ctx.createLinearGradient(0, padT, 0, h - padB);
+  grad.addColorStop(0, 'rgba(88,166,255,.28)');
+  grad.addColorStop(1, 'rgba(88,166,255,0)');
+  ctx.beginPath();
+  ctx.moveTo(X(0), Y(equity[0]));
+  for (let i = 1; i < n; i++) ctx.lineTo(X(i), Y(equity[i]));
+  ctx.lineTo(X(n - 1), h - padB); ctx.lineTo(X(0), h - padB);
+  ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+
+  /* line */
+  ctx.beginPath();
+  for (let i = 0; i < n; i++){ const x = X(i), y = Y(equity[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 1.5; ctx.stroke();
+
+
+}
+
+function drawOscillatorChart(cv, series, plotKeys, trades){
+  const { ctx, w, h } = fitCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  const n = CANDLES.length;
+  if (!n) return;
+
+  const padL = 8, padR = 62, padT = 8, padB = 14;
+  const X = i => padL + (w - padL - padR) * (n <= 1 ? 0 : i / (n - 1));
+
+  let lo = Infinity, hi = -Infinity;
+  for (const k of plotKeys){
+    const arr = series[k];
+    if (!Array.isArray(arr)) continue;
+    for (const v of arr) if (fin(v)){ lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  }
+  if (!isFinite(lo)){ lo = -1; hi = 1; }
+  const span = Math.max(Math.abs(lo), Math.abs(hi)) * 1.1;
+  lo = -span; hi = span;
+  const Y = v => padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+  /* grid: zero line + half lines */
+  ctx.font = '10px system-ui';
+  const zeroY = Y(0);
+  ctx.strokeStyle = '#3d4552';
+  ctx.beginPath(); ctx.moveTo(padL, zeroY); ctx.lineTo(w - padR, zeroY); ctx.stroke();
+  ctx.fillStyle = '#8b949e';
+  ctx.fillText('0', w - padR + 6, zeroY + 3);
+
+  for (const v of [-span * 0.5, span * 0.5]){
+    const y = Y(v);
+    ctx.strokeStyle = '#1a212b';
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillStyle = '#8b949e';
+    ctx.fillText(v.toFixed(0), w - padR + 6, y + 3);
+  }
+
+  /* series lines */
+  plotKeys.forEach((k, ki) => {
+    const arr = series[k];
+    if (!Array.isArray(arr)) return;
+    ctx.strokeStyle = PALETTE[ki % PALETTE.length];
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < n; i++){
+      const v = arr[i];
+      if (!fin(v)){ started = false; continue; }
+      const x = X(i), y = Y(v);
+      if (!started){ ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+
+  /* trade markers on the first series */
+  const baseArr = series[plotKeys[0]];
+  if (Array.isArray(baseArr)){
+    for (const t of trades){
+      const v = baseArr[t.entryI];
+      if (!fin(v)) continue;
+      const x = X(t.entryI), y = Y(v);
+      const long = t.side > 0;
+      ctx.fillStyle = long ? '#3fb950' : '#f85149';
+      ctx.beginPath();
+      if (long){ ctx.moveTo(x, y - 7); ctx.lineTo(x - 4.5, y + 1); ctx.lineTo(x + 4.5, y + 1); }
+      else     { ctx.moveTo(x, y + 7); ctx.lineTo(x - 4.5, y - 1); ctx.lineTo(x + 4.5, y - 1); }
+      ctx.closePath(); ctx.fill();
+    }
+  }
+}
+
+
+/* =========================================================================
+   8. UI WIRING
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+const ui = {
+  strategyMode: $('strategyMode'), stratSelect: $('stratSelect'),
+  builtinBox: $('builtinBox'), genericBox: $('genericBox'),
+  indSelect: $('indSelect'), indMode: $('indMode'),
+  indVariant: $('indVariant'), variantRow: $('variantRow'),
+  paramBox: $('paramBox'), dataInfo: $('dataInfo'), status: $('status'),
+  cards: $('cards'), tradesWrap: $('tradesWrap'),
+    priceChart: $('priceChart'), equityChart: $('equityChart'),
+  oscChart: $('oscChart'), oscWrap: $('oscWrap'), oscCap: $('oscCap')
+};
+
+let CANDLES = [];
+let LAST = null;   // last render payload, for resize redraw
+
+/* ---- populate selects ---- */
+for (const [k, s] of Object.entries(Strategies)){
+  const o = document.createElement('option');
+  o.value = k; o.textContent = s.label;
+  ui.stratSelect.appendChild(o);
+}
+for (const [k, ind] of Object.entries(Ind)){
+  const o = document.createElement('option');
+  o.value = k; o.textContent = ind.label;
+  ui.indSelect.appendChild(o);
+}
+
+/* ---- dynamic parameter form ---- */
+function buildParams(){
+  const box = ui.paramBox;
+  box.innerHTML = '';
+  const spec = ui.strategyMode.value === 'generic'
+    ? Ind[ui.indSelect.value].params
+    : Strategies[ui.stratSelect.value].params;
+  for (const [k, d] of Object.entries(spec || {})){
+    const label = document.createElement('label');
+    label.className = 'field';
+    const span = document.createElement('span');
+    span.textContent = d.label || k;
+    const el = document.createElement('input');
+    el.type = 'number';
+    el.min = d.min; el.max = d.max; el.step = d.step || 1;
+    el.value = d.def;
+    el.dataset.param = k;
+    label.appendChild(span); label.appendChild(el);
+    box.appendChild(label);
+  }
+}
+
+function readParams(spec){
+  const out = {};
+  for (const [k] of Object.entries(spec || {})){
+    const el = ui.paramBox.querySelector(`[data-param="${k}"]`);
+    out[k] = el ? parseFloat(el.value) : undefined;
+  }
+  return out;
+}
+
+/* ---- variant select (for multi-band indicators) ---- */
+function refreshVariants(){
+  const ind = Ind[ui.indSelect.value];
+  if (ind && ind.variants && ind.variants.length){
+    ui.variantRow.hidden = false;
+    ui.indVariant.innerHTML = '';
+    for (const v of ind.variants){
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v;
+      ui.indVariant.appendChild(o);
+    }
+  } else {
+    ui.variantRow.hidden = true;
+    ui.indVariant.innerHTML = '';
+  }
+}
+
+/* ---- current strategy factory ---- */
+function currentStrategy(){
+  if (ui.strategyMode.value === 'generic'){
+    const key = ui.indSelect.value;
+    const ind = Ind[key];
+    const p = readParams(ind.params);
+    const mode = ui.indMode.value;
+    const variant = (!ui.variantRow.hidden && ui.indVariant.value) ? ui.indVariant.value : null;
+    return makeGenericStrategy(key, p, mode, variant);
+  }
+  const key = ui.stratSelect.value;
+  const strat = Strategies[key];
+  return strat.build(readParams(strat.params));
+}
+
+/* ---- settings ---- */
+function readCfg(){
+  return {
+    capital:     parseFloat($('capital').value) || 100000,
+    positionPct: parseFloat($('positionPct').value) || 100,
+    commission:  parseFloat($('commission').value) || 0,
+    slippage:    parseFloat($('slippage').value) || 0,
+    allowShort:  $('allowShort').checked,
+    barsPerYear: parseFloat($('barsPerYear').value) || 252
+  };
+}
+
+/* ---- main run ---- */
+function run(){
+  if (!CANDLES.length){ setStatus('Load some data first.', true); return; }
+
+  const strat = currentStrategy();
+  const cfg = readCfg();
+
+  const t0 = performance.now();
+  const res = runBacktest(CANDLES, strat, cfg);
+  const m = computeMetrics(CANDLES, res.equity, res.trades, cfg);
+  const ms = performance.now() - t0;
+
+  renderCards(m, cfg);
+  renderCharts(res, strat, cfg);
+  renderTrades(res.trades);
+
+  setStatus(`${CANDLES.length} bars · ${res.trades.length} trades · computed in ${ms.toFixed(0)} ms`);
+
+  LAST = { res, strat, cfg };
+}
+
+function setStatus(msg, isErr){
+  ui.status.textContent = msg;
+  ui.status.style.color = isErr ? 'var(--bad)' : 'var(--muted)';
+}
+
+/* ---- result cards ---- */
+function cls(v){ return v >= 0 ? 'pos' : 'neg'; }
+function money(v){ return v.toLocaleString(undefined, { maximumFractionDigits: 0 }); }
+
+function renderCards(m, cfg){
+  const cards = [
+    ['Final equity',   money(m.final), ''],
+    ['Total return',   m.totalRet.toFixed(2) + '%', cls(m.totalRet)],
+    ['Buy & hold',     m.buyHold.toFixed(2) + '%', cls(m.buyHold)],
+    ['CAGR',           m.cagr.toFixed(2) + '%', cls(m.cagr)],
+    ['Max drawdown',   m.maxDD.toFixed(2) + '%', 'neg'],
+    ['Sharpe (ann.)',  m.sharpe.toFixed(2), cls(m.sharpe)],
+    ['Trades',         String(m.trades), ''],
+    ['Win rate',       m.winRate.toFixed(1) + '%', ''],
+    ['Profit factor',  isFinite(m.pf) ? m.pf.toFixed(2) : '∞', cls(m.pf - 1)],
+    ['Expectancy',     money(m.expectancy), cls(m.expectancy)],
+    ['Avg win',        money(m.avgWin), 'pos'],
+    ['Avg loss',       money(m.avgLoss), 'neg']
+  ];
+  ui.cards.innerHTML = cards.map(([k, v, c]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+}
+
+/* ---- charts ---- */
+function renderCharts(res, strat, cfg){
+  const plotKeys = (strat.plot || []).filter(k => Array.isArray(res.series[k]));
+  const isOsc = strat.panel === 'oscillator';
+
+  if (isOsc){
+    /* price chart without overlay lines — just trades */
+    drawPriceChart(ui.priceChart, CANDLES, res.series, [], res.trades);
+    ui.oscWrap.hidden = false;
+    ui.oscCap.textContent = strat.label || 'Indicator';
+    drawOscillatorChart(ui.oscChart, res.series, plotKeys, res.trades);
+  } else {
+    drawPriceChart(ui.priceChart, CANDLES, res.series, plotKeys, res.trades);
+    ui.oscWrap.hidden = true;
+  }
+  drawEquityChart(ui.equityChart, res.equity, cfg.capital);
+}
+
+/* ---- trades table ---- */
+function renderTrades(trades){
+  if (!trades.length){
+    ui.tradesWrap.innerHTML = '<p class="hint">No trades were generated by this configuration.</p>';
+    return;
+  }
+  const rows = trades.slice(0, 800).map((t, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${t.side > 0 ? 'Long' : 'Short'}</td>
+      <td>${fmtDate(t.entryT)}</td>
+      <td>${t.entryPx.toFixed(3)}</td>
+      <td>${fmtDate(t.exitT)}</td>
+      <td>${t.exitPx.toFixed(3)}</td>
+      <td>${t.bars}</td>
+      <td class="${cls(t.pnl)}">${t.pnl.toFixed(2)}</td>
+      <td class="${cls(t.ret)}">${t.ret.toFixed(2)}%</td>
+      <td>${t.reason}</td>
+    </tr>`).join('');
+
+  ui.tradesWrap.innerHTML = `
+    <h2>Trade log${trades.length > 800 ? ' (first 800)' : ''}</h2>
+    <div class="tablebox"><table>
+      <thead><tr>
+        <th>#</th><th>Side</th><th>Entry date</th><th>Entry px</th>
+        <th>Exit date</th><th>Exit px</th><th>Bars</th><th>P&amp;L</th><th>Return</th><th>Reason</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+/* =========================================================================
+   9. EVENT HANDLERS
+   ========================================================================= */
+ui.strategyMode.addEventListener('change', () => {
+  const generic = ui.strategyMode.value === 'generic';
+  ui.genericBox.hidden = !generic;
+  ui.builtinBox.hidden = generic;
+  refreshVariants();
+  buildParams();
+});
+ui.stratSelect.addEventListener('change', buildParams);
+ui.indSelect.addEventListener('change', () => { refreshVariants(); buildParams(); });
+
+$('btnRun').addEventListener('click', run);
+
+$('btnSample').addEventListener('click', () => {
+  CANDLES = makeSampleData(1500);
+  updateDataInfo('synthetic random walk');
+  run();
+});
+
+$('btnFile').addEventListener('click', () => $('fileInput').click());
+$('fileInput').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    CANDLES = parseCSV(r.result);
+    if (!CANDLES.length){ setStatus('Could not parse any rows from that file.', true); return; }
+    updateDataInfo(f.name);
+    run();
+  };
+  r.readAsText(f);
+});
+
+$('btnParse').addEventListener('click', () => {
+  CANDLES = parseCSV($('csvText').value);
+  if (!CANDLES.length){ setStatus('Could not parse any rows from the pasted text.', true); return; }
+  updateDataInfo('pasted CSV');
+  run();
+});
+
+function updateDataInfo(src){
+  const a = CANDLES[0], b = CANDLES[CANDLES.length - 1];
+  ui.dataInfo.textContent =
+    `${CANDLES.length} bars · ${fmtDate(a.t)} → ${fmtDate(b.t)} · ${src}`;
+}
+
+/* redraw charts on resize */
+let rzTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(rzTimer);
+  rzTimer = setTimeout(() => {
+    if (LAST) renderCharts(LAST.res, LAST.strat, LAST.cfg);
+  }, 120);
+});
+
+/* =========================================================================
+   10. BOOT
+   ========================================================================= */
+refreshVariants();
+buildParams();
+CANDLES = makeSampleData(1500);
+updateDataInfo('synthetic random walk');
+run();
+</script>
+</body>
+</html>

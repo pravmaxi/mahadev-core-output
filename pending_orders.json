@@ -1,10 +1,65 @@
 [
-  {
-    "symbol": "APOLLOHOSP.NS",
-    "action": "Buy Market Order",
-    "level": 8494.0,
-    "timeframe": "15m",
-    "timestamp": "2026-06-20T17:43:30.927575+05:30",
-    "last_attempt": 1782100226.7401721
-  }
+    {
+        "symbol": "360ONE.NS",
+        "action": "Buy Market Order",
+        "level": 1134.4,
+        "timeframe": "1wk",
+        "timestamp": "2026-07-10T17:35:24.960550+05:30"
+    },
+    {
+        "symbol": "ABB.NS",
+        "action": "Buy Market Order",
+        "level": 5843.1,
+        "timeframe": "1wk",
+        "timestamp": "2026-07-10T17:35:24.986438+05:30"
+    },
+    {
+        "symbol": "ABCAPITAL.NS",
+        "action": "Buy Market Order",
+        "level": 375.95,
+        "timeframe": "1wk",
+        "timestamp": "2026-07-10T17:35:25.012698+05:30"
+    },
+    {
+        "symbol": "ADANIENT.NS",
+        "action": "Buy Market Order",
+        "level": 2442.71,
+        "timeframe": "1wk",
+        "timestamp": "2026-07-10T17:35:25.037744+05:30"
+    },
+    {
+        "symbol": "ADANIGREEN.NS",
+        "action": "Buy Market Order",
+        "level": 1140.0,
+        "timeframe": "1wk",
+        "timestamp": "2026-07-10T17:35:25.062379+05:30"
+    },
+    {
+        "symbol": "ADANIPORTS.NS",
+        "action": "Buy Market Order",
+        "level": 1612.01,
+        "timeframe": "1wk",
+        "timestamp": "2026-07-10T17:35:25.087237+05:30"
+    },
+    {
+        "symbol": "AMBER.NS",
+        "action": "Buy Market Order",
+        "level": 7992.5,
+        "timeframe": "1wk",
+        "timestamp": "2026-07-10T17:35:25.140253+05:30"
+    },
+    {
+        "symbol": "APLAPOLLO.NS",
+        "action": "Sell Market Order",
+        "level": 1821.7,
+        "timeframe": "1wk",
+        "timestamp": "2026-07-10T17:35:25.189695+05:30"
+    },
+    {
+        "symbol": "AUBANK.NS",
+        "action": "Buy Market Order",
+        "level": 1062.9,
+        "timeframe": "1wk",
+        "timestamp": "2026-07-10T17:35:25.238755+05:30"
+    }
 ]

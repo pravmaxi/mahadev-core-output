@@ -1,52 +1,80 @@
 {
     "run_history": {
         "15m": {
-            "run_start": "2026-07-03 11:19:32 IST",
-            "duration_seconds": 25.151193
+            "run_start": "2026-08-28 13:27:24 IST",
+            "duration_seconds": 14.089148
         }
     },
     "data": [
         {
             "symbol": "RECLTD.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-08-28 12:45",
+            "triggered_at": "2026-08-28 13:27:24 IST"
         },
         {
-            "symbol": "SOUTHBANK.NS",
+            "symbol": "TVSMOTOR.NS",
             "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
-        },
-        {
-            "symbol": "CHOLAFIN.NS",
-            "timeframe": "15m",
-            "trend": "Inside Trend",
-            "breakout_dt": "",
-            "triggered_at": ""
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-08-28 11:00",
+            "triggered_at": "2026-08-28 13:27:24 IST"
         },
         {
             "symbol": "PHARMABEES.NS",
             "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "DIVISLAB.NS",
+            "timeframe": "15m",
             "trend": "Buy Trend",
-            "breakout_dt": "2026-07-03 09:30",
-            "triggered_at": "2026-07-03 11:19:32 IST"
+            "breakout_dt": "2026-08-28 10:15",
+            "triggered_at": "2026-08-28 13:27:24 IST"
         },
         {
             "symbol": "APOLLOHOSP.NS",
             "timeframe": "15m",
             "trend": "Buy Trend",
-            "breakout_dt": "2026-07-03 09:15",
-            "triggered_at": "2026-07-03 11:19:32 IST"
+            "breakout_dt": "2026-08-28 10:45",
+            "triggered_at": "2026-08-28 13:27:24 IST"
         },
         {
-            "symbol": "JUNIORBEES.NS",
+            "symbol": "SUNPHARMA.NS",
             "timeframe": "15m",
             "trend": "Inside Trend",
             "breakout_dt": "",
             "triggered_at": ""
+        },
+        {
+            "symbol": "IDFCFIRSTB.NS",
+            "timeframe": "15m",
+            "trend": "Inside Trend",
+            "breakout_dt": "",
+            "triggered_at": ""
+        },
+        {
+            "symbol": "HAL.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-08-28 12:00",
+            "triggered_at": "2026-08-28 13:27:24 IST"
+        },
+        {
+            "symbol": "JUNIORBEES.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-08-28 11:15",
+            "triggered_at": "2026-08-28 13:27:24 IST"
+        },
+        {
+            "symbol": "ICICIBANK.NS",
+            "timeframe": "15m",
+            "trend": "Sell Trend",
+            "breakout_dt": "2026-08-28 11:15",
+            "triggered_at": "2026-08-28 13:27:24 IST"
         }
     ]
 }

@@ -1,0 +1,631 @@
+{
+    "run_start": "2026-09-08 10:46:25 IST",
+    "duration": "46.6s",
+    "triggered_info": {
+        "AARTIIND.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-21 13:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "AARTIPHARM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ACC.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-26 09:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "ALKEM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-19 13:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "AMBUJACEM.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-26 09:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "APOLLOHOSP.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 13:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "APOLLOTYRE.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-21 11:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "APTECHT.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-19 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ASHOKLEY.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 15:15",
+            "indicator_value": "MILD BULL"
+        },
+        "AURUM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "BANKBEES.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-26 09:15",
+            "indicator_value": "MILD BULL"
+        },
+        "BEL.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 12:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "BERGEPAINT.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-17 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "BHARTIARTL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-24 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "BPCL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-21 13:15",
+            "indicator_value": "MILD BULL"
+        },
+        "BUTTERFLY.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-17 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "CDSL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-20 10:15",
+            "indicator_value": "MILD BULL"
+        },
+        "CHOLAFIN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-26 09:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "CIPLA.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 09:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "COALINDIA.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-25 12:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "COCHINSHIP.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-04 11:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "CYIENT.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-19 09:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "DABUR.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-07-30 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "DIAMONDYD.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 15:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "DIVISLAB.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-25 10:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "DOLLAR.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-31 15:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "EQUITASBNK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-24 12:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "EXIDEIND.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-14 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "FEDERALBNK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-24 12:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "GABRIEL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-19 11:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "GAIL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "GIPCL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-21 15:15",
+            "indicator_value": "MILD BULL"
+        },
+        "GODREJCP.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-21 12:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "GOLDBEES.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-07 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "GRASIM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 15:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "GSFC.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 10:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "HAL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-04 10:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "HAVELLS.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-19 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "HCLTECH.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-20 14:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "HDFCBANK.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "HINDUNILVR.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ICICIBANK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-21 09:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "ICICIGI.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-21 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ICICIPRULI.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 14:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "IDFCFIRSTB.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-24 14:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "INDIGO.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-26 09:15",
+            "indicator_value": "MILD BULL"
+        },
+        "INDUSINDBK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-26 10:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "INDUSTOWER.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 15:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "INFY.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-06-18 11:15",
+            "indicator_value": "MILD BULL"
+        },
+        "IOC.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 12:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "IRCTC.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-26 11:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "IRFC.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ITBEES.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ITCHOTELS.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "JAMNAAUTO.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 13:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "JIOFIN.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-07 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "JKTYRE.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 14:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "JUNIORBEES.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 14:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "KIRLOSBROS.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-20 14:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "KPITTECH.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-01 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "KPRMILL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 14:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "LAURUSLABS.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 10:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "LICI.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-26 13:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "LINCOLN.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-26 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "LT.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-26 12:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "LTF.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-28 11:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "MAHABANK.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-24 11:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "MANAPPURAM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "MARICO.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-21 10:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "MON100.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-07 09:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "MOTILALOFS.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "MSUMI.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 14:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "MUKANDLTD.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-26 14:15",
+            "indicator_value": "MILD BULL"
+        },
+        "NATCOPHARM.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-14 15:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "NEWGEN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "NUCLEUS.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-25 13:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ONGC.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-04 12:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "PETRONET.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-26 13:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "PHARMABEES.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 14:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "POWERGRID.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-26 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "PTC.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-25 13:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "RAIN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "RECLTD.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-03 12:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "RELIANCE.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-26 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "RVNL.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-24 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "SAGCEM.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 14:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "SBILIFE.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-04 12:15",
+            "indicator_value": "MILD BULL"
+        },
+        "SBIN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 14:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "SHRIRAMFIN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-26 13:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "SILVERBEES.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-31 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "SOUTHBANK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 09:15",
+            "indicator_value": "MILD BULL"
+        },
+        "SUNPHARMA.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-24 09:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "SUNTV.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-18 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "TATACONSUM.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-17 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "TATAGOLD.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-07 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "TATAINVEST.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-12 12:15",
+            "indicator_value": "MILD BULL"
+        },
+        "TATAPOWER.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-18 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "TATASTEEL.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-24 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "TCS.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-28 10:15",
+            "indicator_value": "MILD BULL"
+        },
+        "TECHM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 11:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "TIINDIA.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-24 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "TIRUMALCHM.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-20 15:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "TMB.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-20 10:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "TMCV.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 12:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "TMPV.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 14:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "TVSMOTOR.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-25 11:15",
+            "indicator_value": "STRONG BULL"
+        },
+        "UBL.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "UJJIVANSFB.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-21 10:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "UPL.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-24 15:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "VSTIND.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-06 10:15",
+            "indicator_value": "MILD BULL"
+        },
+        "WIPRO.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-25 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "360ONE.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-28 15:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ABB.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 14:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ABCAPITAL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-28 09:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ADANIENT.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-31 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ADANIGREEN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-28 12:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ADANIPORTS.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-31 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "AMBER.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-01 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "APLAPOLLO.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-05-29 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "AUBANK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-27 10:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "AXISBANK.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-26 10:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "NV20IETF.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-01 13:15",
+            "indicator_value": "MILD BEAR"
+        },
+        "SENSEXETF.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 11:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "PFC.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-03 13:15",
+            "indicator_value": "STRONG BEAR"
+        },
+        "ITC.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "indicator_value": "STRONG BEAR"
+        }
+    }
+}

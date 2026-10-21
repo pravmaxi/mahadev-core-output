@@ -1,0 +1,1526 @@
+{% extends "base.html" %}
+{% block title %}Scanner · Trading App{% endblock %}
+
+{% block content %}
+<h1>Scanner</h1>
+<p class="sub">Live scan of T3 · WaveTrend · Chandelier Exit on your F&amp;O list.</p>
+
+<!-- ===== RUN CONTROLS ===== -->
+<div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            padding:14px;margin-bottom:14px">
+  <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;
+              padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <span style="color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.06em">INDICATORS TO RUN</span>
+    <label class="runChk"><input type="checkbox" id="ind_t3" checked> T3 (Tillson)</label>
+    <label class="runChk"><input type="checkbox" id="ind_wt" checked> WaveTrend</label>
+    <label class="runChk"><input type="checkbox" id="ind_ce" checked> Chandelier Exit</label>
+    <label class="runChk"><input type="checkbox" id="ind_st"> ST (S/R)</label>
+    <span style="flex:1"></span>
+    <button id="run" class="btnPrimary">▶ Run Scan</button>
+    <button id="stop" hidden class="btnDanger">■ Stop</button>
+    <span style="color:var(--muted);font-size:11.5px" id="status">idle</span>
+  </div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding-top:12px">
+    <label class="lbl">Source</label>
+    <select id="source" class="inp">
+      <option value="manual" selected>Manual symbols</option>
+      <option value="sheet">Google Sheet</option>
+      <option value="watchlist">Local watchlist</option>
+      <option value="both">Sheet + Watchlist</option>
+    </select>
+
+    <input type="text" id="manualSymbols" class="inp" style="flex:1;min-width:280px"
+           placeholder="HAL, WIPRO, RELIANCE, TCS, ^NSEI"
+           value="HAL, WIPRO, RELIANCE, TCS, INFY, SBIN">
+
+    
+    <label class="lbl" id="bookLbl" hidden>Book</label>
+    <select id="cfg_sheet" class="inp" hidden>
+      <option value="Stock Price Scraper">Stock Price Scraper</option>
+      <option value="scanner output" selected>scanner output</option>
+    </select>
+
+
+    <label class="lbl" id="tabLbl" hidden>Symbols tab</label>
+    <select id="cfg_input" class="inp" hidden>
+      <option value="F&O">F&O</option>
+    </select>
+
+    <label class="lbl">Timeframe</label>
+    <select id="tf" class="inp">
+      <option>5m</option><option>15m</option><option>30m</option>
+      <option selected>1h</option><option>1d</option>
+    </select>
+
+    <span style="flex:1"></span>
+    <button id="toggleSettings" class="ghost">⚙ Settings ▾</button>
+  </div>
+
+  <!-- ===== LOAD SAVED RESULTS ===== -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+              padding-top:12px;margin-top:12px;border-top:1px solid var(--border)">
+    <label class="lbl">📂 Load saved</label>
+    <select id="loadBook" class="inp" style="width:180px">
+      <option value="scanner output" selected>scanner output</option>
+      <option value="Stock Price Scraper">Stock Price Scraper</option>
+    </select>
+    <select id="loadTab" class="inp" style="width:200px">
+      <option value="">(pick a tab)</option>
+    </select>
+    <button id="loadSavedBtn" class="pillBtn primary">📂 Load</button>
+    <span id="loadStatus" style="color:var(--muted);font-size:11.5px"></span>
+  </div>
+
+  <!-- ===== SETTINGS PANEL ===== -->
+  <div id="settingsPanel" hidden
+       style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">
+
+      <div id="secRules">
+        <div class="setHead">Rules</div>
+        <label class="chk"><input type="checkbox" id="cfg_ha" checked> Use Heikin Ashi candles</label>
+        <label class="chk"><input type="checkbox" id="cfg_fno" checked> F&amp;O filter (drop ≥ 15:15 IST)</label>
+        <label class="chk"><input type="checkbox" id="cfg_ltp" checked> Include LTP (live price)</label>
+        <label class="chk"><input type="checkbox" id="cfg_market" checked> Market order (else limit)</label>
+        <div class="numRow"><span>Investment ₹</span><input type="number" id="cfg_invest" value="5000" step="500"></div>
+        <div class="numRow"><span>Profit target %</span><input type="number" id="cfg_target" value="5" step="0.5"></div>
+      </div>
+
+      <div id="secT3">
+        <div class="setHead">T3 (Tillson)</div>
+        <div class="numRow"><span>Length</span><input type="number" id="cfg_t3_len" value="8" step="1"></div>
+        <div class="numRow"><span>V-Factor</span><input type="number" id="cfg_t3_vfactor" value="0.7" step="0.05"></div>
+      </div>
+
+      <div id="secWT">
+        <div class="setHead">WaveTrend</div>
+        <div class="numRow"><span>Channel length (n1)</span><input type="number" id="cfg_wt_n1" value="15" step="1"></div>
+        <div class="numRow"><span>Average length (n2)</span><input type="number" id="cfg_wt_n2" value="27" step="1"></div>
+
+        <div class="setHead" style="margin-top:10px">WT extreme filter</div>
+        <label class="chk"><input type="checkbox" id="cfg_wt_filter"> 🎯 Dim non-extreme signals</label>
+        <div class="numRow"><span>Buy max WT val</span><input type="number" id="cfg_wt_buy_max" value="-40" step="5"></div>
+        <div class="numRow"><span>Sell min WT val</span><input type="number" id="cfg_wt_sell_min" value="40" step="5"></div>
+      </div>
+
+      <div id="secCE">
+        <div class="setHead">Chandelier Exit</div>
+        <div class="numRow"><span>Length</span><input type="number" id="cfg_ce_len" value="22" step="1"></div>
+        <div class="numRow"><span>Multiplier</span><input type="number" id="cfg_ce_mult" value="3.0" step="0.1"></div>
+        <label class="chk"><input type="checkbox" id="cfg_ce_close" checked> Use close for high/low</label>
+      </div>
+
+      <div id="secST">
+        <div class="setHead">Support/Resistance</div>
+        <div class="numRow"><span>Left bars</span><input type="number" id="cfg_st_left" value="15" step="1"></div>
+        <div class="numRow"><span>Right bars</span><input type="number" id="cfg_st_right" value="15" step="1"></div>
+
+        <div class="setHead" style="margin-top:10px">Valid-candle mode</div>
+        <label class="chk">
+          <input type="radio" name="st_mode" value="strict" checked>
+          <b>Strict</b> — high &amp; close must break R (valid → wait → trigger)
+        </label>
+        <label class="chk">
+          <input type="radio" name="st_mode" value="loose">
+          <b>Loose</b> — any cross of R = valid + trigger (immediate)
+        </label>
+
+        <div style="color:var(--muted);font-size:10.5px;margin-top:6px">
+          Pivot window: a high is a resistance only if it's the max over left+right+1 bars.
+          Higher values = fewer, stronger levels.
+        </div>
+      </div>
+
+      <div id="secOrders">
+        <div class="setHead">Order switches</div>
+        <label class="chk"><input type="checkbox" id="cfg_zerodha"> Enable Zerodha action</label>
+        <label class="chk"><input type="checkbox" id="cfg_buy" checked> Allow Buy orders</label>
+        <label class="chk"><input type="checkbox" id="cfg_sell" checked> Allow Sell orders</label>
+      </div>
+
+      <div id="secOutput">
+        <div class="setHead">Output sheet</div>
+        <label class="chk" style="margin-bottom:8px">
+          <input type="checkbox" id="cfg_write_sheet">
+          Write results to sheet
+        </label>
+        <div class="numRow">
+          <span>Tab name</span>
+          <input type="text" id="cfg_output" value="ind_T3_WT_CE_1h" style="width:180px">
+          <button type="button" id="resetOutput" class="lil" title="Reset to auto">↻</button>
+        </div>
+        <div style="color:var(--muted);font-size:10.5px">
+          Auto-named from ticked indicators + timeframe. Tab auto-created if missing.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== VIEW BAR ===== -->
+<div id="viewBar"
+     style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+            padding:9px 14px;margin-bottom:8px;display:none;
+            align-items:center;gap:14px;flex-wrap:wrap">
+  <span class="lbl" style="font-weight:700;letter-spacing:.06em">SHOW COLUMNS FOR</span>
+  <label class="viewChk" data-key="t3"><input type="checkbox" id="view_t3" checked> T3</label>
+  <label class="viewChk" data-key="wt"><input type="checkbox" id="view_wt" checked> WaveTrend</label>
+  <label class="viewChk" data-key="ce"><input type="checkbox" id="view_ce" checked> Chandelier</label>
+  <label class="viewChk" data-key="st"><input type="checkbox" id="view_st"> ST</label>
+  <span style="flex:1"></span>
+  <span style="color:var(--muted);font-size:11px">click header to sort (again = change/remove) · drag border to resize</span>
+</div>
+
+<!-- ===== TOOLBAR ===== -->
+<div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+            padding:6px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;
+            flex-wrap:wrap">
+  <button id="toggleFilters"   class="pillBtn">🔍 Filters <span id="filterCount" style="opacity:.6"></span></button>
+  <button id="toggleFilterPresets" class="pillBtn">⭐ Filter presets</button>
+  <button id="toggleInputPresets"  class="pillBtn">📁 Input presets</button>
+  <button id="toggleColumns" class="pillBtn">📋 Columns</button>
+  <label class="runChk" style="margin-left:8px;gap:5px">
+    <input type="checkbox" id="autoRefresh"> 🔁 Auto
+  </label>
+  <select id="autoInterval" class="inp" style="width:90px">
+    <option value="30">30s</option>
+    <option value="60" selected>1 min</option>
+    <option value="120">2 min</option>
+    <option value="300">5 min</option>
+    <option value="900">15 min</option>
+    <option value="1800">30 min</option>
+  </select>
+  <span id="autoCountdown" style="color:var(--muted);font-size:11.5px;
+        font-variant-numeric:tabular-nums;min-width:90px"></span>
+  <label class="runChk" style="gap:5px">
+    <input type="checkbox" id="autoSound" checked> 🔔 Sound
+  </label>
+
+  <span id="sortPills" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></span>
+  <span style="flex:1"></span>
+  <button id="clearSortBtn" class="pillBtn" hidden>Clear sort</button>
+</div>
+
+<!-- ===== FILTER PANEL ===== -->
+<div id="filterPanel" hidden class="panel">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <div id="filterChips" style="display:flex;gap:6px;flex-wrap:wrap;flex:1;align-items:center;min-height:22px">
+      <span style="color:var(--muted);font-size:11.5px">no filters applied</span>
+    </div>
+    <button id="addFilterBtn" class="pillBtn">+ Add filter</button>
+    <button id="clearFiltersBtn" class="pillBtn" hidden>Clear all</button>
+  </div>
+  <div id="filterEditor" hidden class="editorRow">
+    <label class="lbl">Column</label><select id="fCol" class="inp"></select>
+    <label class="lbl">Operator</label><select id="fOp" class="inp"></select>
+    <input id="fVal" class="inp" placeholder="value" style="min-width:140px">
+    <span style="flex:1"></span>
+    <button id="fApply" class="pillBtn primary">Apply</button>
+    <button id="fCancel" class="pillBtn">Cancel</button>
+  </div>
+</div>
+
+<!-- ===== FILTER PRESETS PANEL ===== -->
+<div id="filterPresetsPanel" hidden class="panel">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+    <span class="setHead" style="margin:0">SAVE CURRENT FILTER VIEW AS</span>
+    <input id="filterPresetName" class="inp" placeholder="e.g. WT buy trend" style="flex:1;max-width:280px">
+    <button id="filterPresetSave" class="pillBtn primary">Save</button>
+  </div>
+  <div style="color:var(--muted);font-size:11px;margin-bottom:10px">Captures filters + full sort chain.</div>
+  <div style="border-top:1px solid var(--border);padding-top:10px">
+    <div class="setHead">SAVED FILTER PRESETS</div>
+    <div id="filterPresetList" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</div>
+
+<!-- ===== INPUT PRESETS PANEL ===== -->
+<div id="inputPresetsPanel" hidden class="panel">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+    <span class="setHead" style="margin:0">SAVE CURRENT INPUT SOURCE AS</span>
+    <input id="inputPresetName" class="inp" placeholder="e.g. Indian F&O · 1h" style="flex:1;max-width:280px">
+    <button id="inputPresetSave" class="pillBtn primary">Save</button>
+  </div>
+  <div style="color:var(--muted);font-size:11px;margin-bottom:10px">
+    Captures: Source, Book, Symbols tab, Manual symbols, Timeframe.
+  </div>
+  <div style="border-top:1px solid var(--border);padding-top:10px">
+    <div class="setHead">SAVED INPUT PRESETS</div>
+    <div id="inputPresetList" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</div>
+
+<!-- ===== COLUMNS PANEL ===== -->
+<div id="columnsPanel" hidden class="panel">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+    <span class="setHead" style="margin:0">SHOW / HIDE COLUMNS</span>
+    <span style="flex:1"></span>
+    <button id="colsShowAll" class="pillBtn">Show all</button>
+    <button id="colsHideAll" class="pillBtn">Hide all</button>
+    <button id="colsReset" class="pillBtn">Reset</button>
+  </div>
+  <div style="color:var(--muted);font-size:11px;margin-bottom:10px">
+    Unchecked columns are hidden from the table. Saved automatically.
+  </div>
+  <div id="colsGroups" style="display:flex;flex-direction:column;gap:14px"></div>
+</div>
+
+<!-- ===== RESULTS ===== -->
+<div id="results" class="emptyBox">No scan run yet. Click <b>▶ Run Scan</b>.</div>
+
+<style>
+  [hidden]{display:none !important}
+  .inp{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+       border-radius:6px;padding:5px 8px;font-size:12px}
+  .lbl{color:var(--muted);font-size:12px}
+  .ghost{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+         border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer}
+  .ghost:hover{color:var(--fg);border-color:var(--accent)}
+  .btnPrimary{background:var(--accent);border:none;color:#04121f;border-radius:6px;
+              padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px}
+  .btnDanger{background:#f85149;border:none;color:#fff;border-radius:6px;
+             padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px}
+  .pillBtn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+           border-radius:20px;padding:4px 12px;font-size:11.5px;cursor:pointer}
+  .pillBtn:hover{color:var(--fg);border-color:var(--accent)}
+  .pillBtn.primary{background:var(--accent);border-color:var(--accent);color:#04121f;font-weight:600}
+  .pillBtn.primary:hover{filter:brightness(1.1)}
+  .lil{background:transparent;border:1px solid var(--border);color:var(--muted);
+       border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer}
+  .lil:hover{color:var(--fg);border-color:var(--accent)}
+  .lil.del:hover{color:var(--bad);border-color:var(--bad)}
+
+  .runChk, .viewChk{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px}
+  .viewChk{background:var(--panel);border:1px solid var(--border);border-radius:20px;
+           padding:4px 12px;font-size:12px;user-select:none}
+  .viewChk input{margin:0}
+  .viewChk.off{opacity:.35;cursor:not-allowed}
+
+  .setHead{color:var(--muted);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+           font-weight:600;margin-bottom:8px}
+  .chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fg);
+       margin-bottom:6px;cursor:pointer}
+  .numRow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .numRow span{color:var(--muted);font-size:12px}
+  .numRow input{width:80px;background:var(--panel2);border:1px solid var(--border);
+                color:var(--fg);border-radius:5px;padding:4px 7px;font-size:12px;text-align:right}
+
+  .panel{background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+         padding:10px 14px;margin-bottom:8px;display:flex;flex-direction:column;gap:10px}
+  .editorRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+             padding:9px 11px;border:1px dashed var(--accent);border-radius:6px;
+             background:var(--panel)}
+
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--panel);
+        border:1px solid var(--accent);color:var(--fg);border-radius:20px;
+        padding:3px 10px;font-size:11.5px}
+  .chip b{color:var(--accent);font-weight:600}
+  .chip .x{cursor:pointer;color:var(--muted);font-weight:700;padding:0 2px}
+  .chip .x:hover{color:var(--bad)}
+
+  .sortPill{display:inline-flex;align-items:center;gap:6px;background:var(--panel);
+            border:1px solid #d2a8ff55;color:var(--fg);border-radius:20px;
+            padding:3px 10px;font-size:11.5px}
+  .sortPill .lvl{color:#d2a8ff;font-weight:700}
+  .sortPill .x{cursor:pointer;color:var(--muted);font-weight:700;padding:0 2px}
+  .sortPill .x:hover{color:var(--bad)}
+
+  .presetRow{display:flex;align-items:center;gap:10px;padding:6px 10px;
+             background:var(--panel2);border:1px solid var(--border);border-radius:6px;font-size:12px}
+  .presetRow .name{flex:1;color:var(--fg)}
+  .presetRow .cnt{color:var(--muted);font-size:11px}
+  .presetRow .lil{background:transparent;border:1px solid var(--border);color:var(--muted);
+                  border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer}
+  .presetRow .lil:hover{color:var(--fg);border-color:var(--accent)}
+  .presetRow .lil.del:hover{color:var(--bad);border-color:var(--bad)}
+
+  .emptyBox{background:var(--panel);border:1px dashed var(--border);border-radius:8px;
+            padding:40px;text-align:center;color:var(--muted)}
+
+  .tablebox{border:1px solid var(--border);border-radius:8px;overflow:hidden;
+            background:var(--panel);position:relative}
+  .tablebox .scroll{overflow:auto;max-height:600px}
+  .tblhead{padding:9px 14px;border-bottom:1px solid var(--border);
+           display:flex;justify-content:space-between;align-items:center;
+           background:var(--panel2);font-size:12px}
+
+  table.scan{table-layout:fixed;border-collapse:separate;border-spacing:0;
+             font-size:12px;font-variant-numeric:tabular-nums;width:auto;min-width:100%}
+  table.scan th, table.scan td{padding:7px 10px;border-bottom:1px solid var(--border);
+             text-align:right;white-space:nowrap;overflow:hidden;
+             text-overflow:ellipsis;background:var(--panel);position:relative}
+  table.scan thead tr.sumrow th{position:sticky;top:0;z-index:5;height:24px;box-sizing:border-box;
+             padding:4px 10px;line-height:16px;background:#101821;color:var(--accent);
+             font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;
+             border-bottom:1px solid var(--border)}
+  table.scan thead tr.hdrrow th{position:sticky;top:24px;z-index:4;background:var(--bg);
+             color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;
+             letter-spacing:.04em;cursor:pointer}
+  table.scan thead tr.hdrrow th[data-sortable]:hover{color:var(--fg);background:#141b24}
+
+  table.scan thead tr.hdrrow th.g-t3{ border-top:3px solid #58a6ff; background:rgba(88,166,255,.10); }
+  table.scan thead tr.hdrrow th.g-wt{ border-top:3px solid #f0883e; background:rgba(240,136,62,.10); }
+  table.scan thead tr.hdrrow th.g-ce{ border-top:3px solid #d2a8ff; background:rgba(210,168,255,.10); }
+  table.scan thead tr.hdrrow th.g-st{ border-top:3px solid #7ee787; background:rgba(126,231,135,.10); }
+  table.scan tbody td.g-t3-first{ border-left:3px solid #58a6ff; }
+  table.scan tbody td.g-wt-first{ border-left:3px solid #f0883e; }
+  table.scan tbody td.g-ce-first{ border-left:3px solid #d2a8ff; }
+  table.scan tbody td.g-st-first{ border-left:3px solid #7ee787; }
+
+  table.scan th .sortIcon{margin-left:3px;opacity:.35;font-size:9px}
+  table.scan th:hover .sortIcon{opacity:.7}
+  table.scan th.sort-asc .sortIcon, table.scan th.sort-desc .sortIcon{opacity:1;color:var(--accent)}
+  table.scan th .sortLevel{display:inline-block;margin-left:4px;font-size:9px;font-weight:700;
+    background:#d2a8ff22;color:#d2a8ff;border:1px solid #d2a8ff66;border-radius:8px;
+    padding:0 5px;line-height:13px;vertical-align:middle}
+
+  table.scan th:first-child, table.scan td:first-child{text-align:left}
+  table.scan th:nth-child(2), table.scan td:nth-child(2){text-align:left}
+
+  table.scan tbody td.c-symbol, table.scan tbody td.c-ltp{position:sticky;z-index:2;background:var(--panel)}
+  table.scan tbody td.c-symbol{left:0}
+  table.scan tbody td.c-ltp{left:90px;box-shadow:6px 0 6px -6px #000}
+  table.scan tr.newrow td.c-symbol, table.scan tr.newrow td.c-ltp{background:#121a25}
+
+  table.scan thead tr.hdrrow th.c-symbol, table.scan thead tr.hdrrow th.c-ltp{position:sticky;z-index:6;background:var(--bg)}
+  table.scan thead tr.hdrrow th.c-symbol{left:0}
+  table.scan thead tr.hdrrow th.c-ltp{left:90px;box-shadow:6px 0 6px -6px #000}
+
+  table.scan thead tr.sumrow th.c-symbol, table.scan thead tr.sumrow th.c-ltp{position:sticky;z-index:7;background:#101821}
+  table.scan thead tr.sumrow th.c-symbol{left:0}
+  table.scan thead tr.sumrow th.c-ltp{left:90px;box-shadow:6px 0 6px -6px #000}
+
+  th .rz{position:absolute;top:0;right:-3px;width:6px;height:100%;cursor:col-resize;z-index:9}
+  th .rz:hover{background:var(--accent);opacity:.45}
+
+  .buy{color:var(--good)} .sell{color:var(--bad)} .mut{color:var(--muted)}
+  .newrow{background:rgba(88,166,255,.06)} .bell{color:var(--accent)}
+  tr.wtFiltered{opacity:.35}
+  tr.wtFiltered:hover{opacity:.7}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+const btn = $('run'), statusEl = $('status'), settingsP = $('settingsPanel'), viewBar = $('viewBar');
+const KEYS = ['t3', 'wt', 'ce', 'st'];
+
+/* ===== page state persistence (survives navigation) ===== */
+const SCAN_STATE_KEY  = 'scanner_page_state_v1';
+const SCAN_RESULT_KEY = 'scanner_result_v1';
+
+function collectScannerState(){
+  const state = {};
+  document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
+    if (el.type === 'file') return;
+    if (el.type === 'checkbox' || el.type === 'radio') state[el.id] = el.checked;
+    else state[el.id] = el.value;
+  });
+  return state;
+}
+function saveScannerState(){
+  try { sessionStorage.setItem(SCAN_STATE_KEY, JSON.stringify(collectScannerState())); } catch(e){}
+}
+function applyScannerState(state){
+  if (!state) return;
+  for (const [id, val] of Object.entries(state)){
+    const el = document.getElementById(id);
+    if (!el || el.type === 'file') continue;
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!val;
+    else el.value = val;
+  }
+}
+function restoreScannerState(){
+  try {
+    const raw = sessionStorage.getItem(SCAN_STATE_KEY);
+    if (!raw) return;
+    applyScannerState(JSON.parse(raw));
+  } catch(e){}
+}
+function saveScannerResult(rows, meta){
+  try { sessionStorage.setItem(SCAN_RESULT_KEY, JSON.stringify({rows, meta, ts: Date.now()})); } catch(e){}
+}
+function tryRestoreScannerResult(){
+  try {
+    const raw = sessionStorage.getItem(SCAN_RESULT_KEY);
+    if (!raw) return false;
+    const {rows, meta, ts} = JSON.parse(raw);
+    if (!rows || !rows.length) return false;
+    if (Date.now() - ts > 30*60*1000) return false;
+    window._lastData = { rows, meta };
+    redraw();
+    const mins = Math.round((Date.now() - ts) / 60000);
+    setStatus(`${rows.length} rows (restored ${mins}m ago)`, 'ok');
+    return true;
+  } catch(e){ return false; }
+}
+/* auto-save on any input change */
+document.body.addEventListener('change', saveScannerState);
+document.body.addEventListener('input',  saveScannerState);
+/* also try server-side cache (bigger window) */
+async function tryFetchServerLastScan(){
+  try {
+    const r = await fetch('/api/scanner/last');
+    const d = await r.json();
+    if (!d.ok) return false;
+    window._lastData = { rows: d.rows, meta: d.meta };
+    redraw();
+    setStatus(`${d.rows.length} rows (from server cache · ${d.age}s old)`, 'ok');
+    return true;
+  } catch(e){ return false; }
+}
+
+/* ===== time formatter ===== */
+function fmtMs(ms){
+  if (ms == null) return '';
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60), r = s % 60;
+  return `${m}m ${String(r).padStart(2,'0')}s`;
+}
+
+/* ===== settings toggle ===== */
+$('toggleSettings').addEventListener('click', () => {
+  settingsP.hidden = !settingsP.hidden;
+  $('toggleSettings').textContent = settingsP.hidden ? '⚙ Settings ▾' : '⚙ Settings ▴';
+});
+
+/* ===== source-dependent inputs ===== */
+function syncSourceInputs(){
+  const s = $('source').value;
+  const isManual = s === 'manual';
+  const isSheet  = s === 'sheet' || s === 'both';
+  $('manualSymbols').style.display = isManual ? '' : 'none';
+  $('bookLbl').hidden = !isSheet;
+  $('cfg_sheet').hidden = !isSheet;
+  $('tabLbl').hidden = !isSheet;
+  $('cfg_input').hidden = !isSheet;
+  if (isManual) manualInpFallbackShow();
+}
+function manualInpFallbackShow(){ /* nothing */ }
+$('source').addEventListener('change', syncSourceInputs);
+
+/* Book → live tab list from the server (uses the service account) */
+async function syncTabOptions(){
+  const book = ($('cfg_sheet').value || '').trim();
+  const sel  = $('cfg_input');
+  const prev = sel.value;
+  if (!book){
+    sel.innerHTML = '<option value="">(enter a book name)</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">loading…</option>';
+  try {
+    const r = await fetch(`/api/sheets/tabs?book=${encodeURIComponent(book)}`);
+    const d = await r.json();
+    const tabs = (d.ok && d.tabs && d.tabs.length) ? d.tabs : [];
+    if (!tabs.length){
+      sel.innerHTML = '<option value="">(no tabs found — check sharing)</option>';
+      return;
+    }
+    sel.innerHTML = tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+    if (tabs.includes(prev)) sel.value = prev;
+  } catch (e){
+    console.error('tab fetch failed', e);
+    sel.innerHTML = '<option value="">(error)</option>';
+  }
+}
+$('cfg_sheet').addEventListener('change', syncTabOptions);
+$('cfg_sheet').addEventListener('blur',   syncTabOptions);
+$('cfg_input').addEventListener('change', () => { outputAuto = true; refreshOutputName(); });
+syncTabOptions();
+syncSourceInputs();
+
+/* ===== RUN ↔ VIEW ===== */
+function syncView(){
+  for (const k of KEYS){
+    const runOn = $('ind_' + k).checked, viewEl = $('view_' + k), wrap = viewEl.closest('.viewChk');
+    if (!runOn){ viewEl.checked = false; viewEl.disabled = true; wrap.classList.add('off'); }
+    else { viewEl.disabled = false; wrap.classList.remove('off');
+           if (!wrap.dataset.touched) viewEl.checked = true; }
+  }
+  /* settings sections */
+  $('secT3').style.display = $('ind_t3').checked ? '' : 'none';
+  $('secWT').style.display = $('ind_wt').checked ? '' : 'none';
+  $('secCE').style.display = $('ind_ce').checked ? '' : 'none';
+  $('secST').style.display = $('ind_st').checked ? '' : 'none';
+
+  refreshOutputName();
+}
+KEYS.forEach(k => {
+  $('ind_' + k).addEventListener('change', syncView);
+  $('view_' + k).addEventListener('change', e => {
+    e.target.closest('.viewChk').dataset.touched = '1';
+    redraw();
+  });
+});
+
+/* ===== auto output sheet name ===== */
+let outputAuto = true;
+function autoOutputName(){
+  const parts = [];
+  if ($('ind_t3').checked) parts.push('T3');
+  if ($('ind_wt').checked) parts.push('WT');
+  if ($('ind_ce').checked) parts.push('CE');
+  if ($('ind_st').checked) parts.push('ST');
+  const middle = parts.length ? parts.join('_') : 'scan';
+
+  // prefix = first token of the symbols tab name (before "_")
+  const tab = ($('cfg_input').value || '').trim();
+  let prefix = 'ind';
+  if (tab){
+    const first = tab.split('_')[0].replace(/[^A-Za-z0-9]/g, '');
+    if (first) prefix = first;
+  }
+  return `${prefix}_${middle}_${$('tf').value}`;
+}
+function refreshOutputName(){ if (outputAuto) $('cfg_output').value = autoOutputName(); }
+$('cfg_output').addEventListener('input', () => { outputAuto = false; });
+$('resetOutput').addEventListener('click', () => { outputAuto = true; refreshOutputName(); });
+$('tf').addEventListener('change', refreshOutputName);
+
+/* ===== getters ===== */
+function runSelected(){ return { t3:$('ind_t3').checked, wt:$('ind_wt').checked, ce:$('ind_ce').checked, st:$('ind_st').checked }; }
+function viewSelected(){ return { t3:$('view_t3').checked, wt:$('view_wt').checked, ce:$('view_ce').checked, st:$('view_st').checked }; }
+
+function setStatus(txt, kind){
+  statusEl.textContent = txt;
+  statusEl.style.color = kind === 'err' ? '#f85149' : kind === 'ok' ? '#3fb950' : '#8b949e';
+}
+
+/* WT extreme filter — persisted in localStorage */
+const WT_FILTER_KEY = 'scanner_wt_filter_v1';
+function loadWtFilterCfg(){
+  try {
+    const o = JSON.parse(localStorage.getItem(WT_FILTER_KEY) || '{}');
+    if (o.enabled != null) $('cfg_wt_filter').checked = o.enabled;
+    if (o.buy_max != null) $('cfg_wt_buy_max').value = o.buy_max;
+    if (o.sell_min != null) $('cfg_wt_sell_min').value = o.sell_min;
+  } catch {}
+}
+function saveWtFilterCfg(){
+  localStorage.setItem(WT_FILTER_KEY, JSON.stringify({
+    enabled:  $('cfg_wt_filter').checked,
+    buy_max:  parseFloat($('cfg_wt_buy_max').value),
+    sell_min: parseFloat($('cfg_wt_sell_min').value),
+  }));
+}
+function isWtFiltered(row){
+  if (!$('cfg_wt_filter').checked) return false;
+  if (!row.wt_trend) return false;
+  const v = parseFloat(row.wt_valid_wt_value);
+  if (isNaN(v)) return false;
+  const buyMax  = parseFloat($('cfg_wt_buy_max').value);
+  const sellMin = parseFloat($('cfg_wt_sell_min').value);
+  if (row.wt_trend === 'Buy Trend'  && v > buyMax)  return true;
+  if (row.wt_trend === 'Sell Trend' && v < sellMin) return true;
+  return false;
+}
+['cfg_wt_filter','cfg_wt_buy_max','cfg_wt_sell_min'].forEach(id => {
+  $(id).addEventListener('change', () => { saveWtFilterCfg(); redraw(); });
+  $(id).addEventListener('input',  () => { saveWtFilterCfg(); redraw(); });
+});
+
+function actionClass(t){
+  if (!t) return 'mut';
+  const l = t.toLowerCase();
+  if (l.includes('buy')) return 'buy';
+  if (l.includes('sell')) return 'sell';
+  return '';
+}
+
+/* ===== columns ===== */
+function buildColumns(run, view){
+  /* columns hidden by the picker never make it into the table */
+  const _hidden = (typeof hiddenCols !== 'undefined') ? hiddenCols : new Set();
+
+  const cols = [
+    { key:'symbol', label:'Symbol', align:'left', type:'text' },
+    { key:'ltp',    label:'LTP',    align:'left', type:'num'  },
+  ];
+  const push = (key, label, group, opts = {}) => {
+    if (_hidden.has(key)) return;
+    cols.push({ key, label, group, type: opts.type || 'text', sumType: opts.sumType });
+  };
+
+  if (run.t3 && view.t3){
+    push('t3_value','T3 Value','T3',{type:'num'});
+    push('t3_colour','T3 Colour','T3');
+    push('t3_valid_open','Valid Open','T3',{type:'num'});
+    push('t3_valid_high','Valid High','T3',{type:'num'});
+    push('t3_valid_low','Valid Low','T3',{type:'num'});
+    push('t3_valid_close','Valid Close','T3',{type:'num'});
+    push('t3_valid_dt','Valid DT','T3');
+    push('t3_valid_t3','Valid T3','T3',{type:'num'});
+    push('t3_trend','Trend','T3');
+    push('t3_trigger_status','Trig Status','T3');
+    push('t3_trigger_dt','Trig DT','T3');
+    push('t3_action','T3 Action','T3');
+    push('t3_trigger_candle_date','Trig Date','T3');
+    push('t3_trigger_candle_time','Trig Time','T3');
+    push('t3_ltp','LTP','T3',{type:'num'});
+    push('t3_diff','Diff','T3',{type:'num', sumType:'sum'});
+    push('t3_diff_pct','Diff %','T3',{type:'num', sumType:'avg'});
+    push('t3_profit','P/L ₹','T3',{type:'num', sumType:'sum'});
+    push('t3_booking_status','Booking','T3');
+    push('t3_max_profit_pct','Max %','T3',{type:'num', sumType:'avg'});
+    push('t3_max_profit_value','Max ₹','T3',{type:'num', sumType:'sum'});
+  }
+  if (run.wt && view.wt){
+    push('wt1','WT1','WT',{type:'num'});
+    push('wt2','WT2','WT',{type:'num'});
+    push('wt_diff','WT Diff','WT',{type:'num'});
+    push('wt_cross','WT Cross','WT');
+    push('wt_trend','WT Trend','WT');
+    push('wt_valid_open','Valid Open','WT',{type:'num'});
+    push('wt_valid_high','Valid High','WT',{type:'num'});
+    push('wt_valid_low','Valid Low','WT',{type:'num'});
+    push('wt_valid_close','Valid Close','WT',{type:'num'});
+    push('wt_valid_dt','Valid DT','WT');
+    push('wt_valid_diff','Valid Diff','WT',{type:'num'});
+    push('wt_valid_wt_value','Valid WT Val','WT',{type:'num'});
+    push('wt_rsi','RSI','WT',{type:'num'});
+    push('wt_rsi_dir','RSI Dir','WT');
+    push('wt_perfect','Perfect?','WT');
+    push('wt_trigger_status','Trig Status','WT');
+    push('wt_trigger_dt','Trig DT','WT');
+    push('wt_action','WT Action','WT');
+    push('wt_trigger_candle_date','Trig Date','WT');
+    push('wt_trigger_candle_time','Trig Time','WT');
+    push('wt_ltp','LTP','WT',{type:'num'});
+    push('wt_trigger_diff','Diff','WT',{type:'num', sumType:'sum'});
+    push('wt_diff_pct','Diff %','WT',{type:'num', sumType:'avg'});
+    push('wt_profit','P/L ₹','WT',{type:'num', sumType:'sum'});
+    push('wt_booking_status','Booking','WT');
+    push('wt_max_profit_pct','Max %','WT',{type:'num', sumType:'avg'});
+    push('wt_max_profit_value','Max ₹','WT',{type:'num', sumType:'sum'});
+  }
+  if (run.ce && view.ce){
+    push('ce_dir','CE Dir','CE');
+    push('ce_valid_open','Valid Open','CE',{type:'num'});
+    push('ce_valid_high','Valid High','CE',{type:'num'});
+    push('ce_valid_low','Valid Low','CE',{type:'num'});
+    push('ce_valid_close','Valid Close','CE',{type:'num'});
+    push('ce_valid_dt','Valid DT','CE');
+    push('ce_valid_stop','Valid Stop','CE',{type:'num'});
+    push('ce_perfect','Perfect?','CE');
+    push('ce_trigger_status','Trig Status','CE');
+    push('ce_trigger_dt','Trig DT','CE');
+    push('ce_action','CE Action','CE');
+    push('ce_trigger_candle_date','Trig Date','CE');
+    push('ce_trigger_candle_time','Trig Time','CE');
+    push('ce_ltp','LTP','CE',{type:'num'});
+    push('ce_trigger_diff','Diff','CE',{type:'num', sumType:'sum'});
+    push('ce_diff_pct','Diff %','CE',{type:'num', sumType:'avg'});
+    push('ce_profit','P/L ₹','CE',{type:'num', sumType:'sum'});
+    push('ce_booking_status','Booking','CE');
+    push('ce_max_profit_pct','Max %','CE',{type:'num', sumType:'avg'});
+    push('ce_max_profit_value','Max ₹','CE',{type:'num', sumType:'sum'});
+  }
+  if (run.st && view.st){
+    push('st_resistance','Resistance','ST',{type:'num'});
+    push('st_support','Support','ST',{type:'num'});
+    push('st_trend','ST Trend','ST');
+    push('st_valid_open','Valid Open','ST',{type:'num'});
+    push('st_valid_high','Valid High','ST',{type:'num'});
+    push('st_valid_low','Valid Low','ST',{type:'num'});
+    push('st_valid_close','Valid Close','ST',{type:'num'});
+    push('st_valid_dt','Valid DT','ST');
+    push('st_valid_resistance','Valid R/S','ST',{type:'num'});
+    push('st_prev_close','Prev Close','ST',{type:'num'});
+    push('st_r_change_dt','R Since','ST');
+    push('st_s_change_dt','S Since','ST');
+    push('st_dist_to_res_pct','To R %','ST',{type:'num', sumType:'avg'});
+    push('st_dist_to_sup_pct','To S %','ST',{type:'num', sumType:'avg'});
+    push('st_rsi','RSI','ST',{type:'num'});
+    push('st_rsi_dir','RSI Dir','ST');
+    push('st_perfect','Perfect?','ST');
+    push('st_trigger_status','Trig Status','ST');
+    push('st_trigger_dt','Trig DT','ST');
+    push('st_action','ST Action','ST');
+    push('st_trigger_candle_date','Trig Date','ST');
+    push('st_trigger_candle_time','Trig Time','ST');
+    push('st_ltp','LTP','ST',{type:'num'});
+    push('st_trigger_diff','Diff','ST',{type:'num', sumType:'sum'});
+    push('st_diff_pct','Diff %','ST',{type:'num', sumType:'avg'});
+    push('st_profit','P/L ₹','ST',{type:'num', sumType:'sum'});
+    push('st_booking_status','Booking','ST');
+    push('st_max_profit_pct','Max %','ST',{type:'num', sumType:'avg'});
+    push('st_max_profit_value','Max ₹','ST',{type:'num', sumType:'sum'});
+  }
+  push('is_new','New', null);
+  push('ms','Time', null, {type:'num'});
+  return cols;
+}
+
+/* ===== FILTERS ===== */
+let activeFilters = [];
+const OPS_TEXT = [
+  { v:'contains', l:'contains' }, { v:'eq', l:'=' }, { v:'neq', l:'≠' },
+  { v:'empty', l:'is empty' }, { v:'notempty', l:'is not empty' },
+];
+const OPS_NUM = [
+  { v:'eq', l:'=' }, { v:'neq', l:'≠' }, { v:'gt', l:'>' }, { v:'lt', l:'<' },
+  { v:'gte', l:'≥' }, { v:'lte', l:'≤' },
+  { v:'empty', l:'is empty' }, { v:'notempty', l:'is not empty' },
+];
+function filterOperatorsFor(k){
+  const c = buildColumns(runSelected(), viewSelected()).find(x => x.key === k);
+  return (c && c.type === 'num') ? OPS_NUM : OPS_TEXT;
+}
+function labelFor(k){
+  const c = buildColumns(runSelected(), viewSelected()).find(x => x.key === k);
+  return c ? c.label : k;
+}
+function opLabel(k, op){
+  const o = filterOperatorsFor(k).find(x => x.v === op);
+  return o ? o.l : op;
+}
+function matches(row, f){
+  let v = row[f.col]; if (v === '' || v == null) v = '';
+  const s = String(v).toLowerCase(), fv = String(f.val ?? '').toLowerCase();
+  switch (f.op){
+    case 'eq': return s === fv;
+    case 'neq': return s !== fv;
+    case 'contains': return s.includes(fv);
+    case 'empty': return v === '';
+    case 'notempty': return v !== '';
+    case 'gt':  return parseFloat(v) >  parseFloat(f.val);
+    case 'lt':  return parseFloat(v) <  parseFloat(f.val);
+    case 'gte': return parseFloat(v) >= parseFloat(f.val);
+    case 'lte': return parseFloat(v) <= parseFloat(f.val);
+  }
+  return true;
+}
+function applyFilters(rows){
+  if (!activeFilters.length) return rows.slice();
+  return rows.filter(r => activeFilters.every(f => matches(r, f)));
+}
+function renderFilterChips(){
+  const wrap = $('filterChips'), clear = $('clearFiltersBtn'), count = $('filterCount');
+  if (!activeFilters.length){
+    wrap.innerHTML = '<span style="color:var(--muted);font-size:11.5px">no filters applied</span>';
+    clear.hidden = true; count.textContent = ''; return;
+  }
+  clear.hidden = false; count.textContent = `(${activeFilters.length})`;
+  wrap.innerHTML = activeFilters.map((f,i) =>
+    `<span class="chip"><b>${labelFor(f.col)}</b> ${opLabel(f.col,f.op)}
+       ${(f.op==='empty'||f.op==='notempty') ? '' : `<span>${f.val}</span>`}
+       <span class="x" data-i="${i}">✕</span></span>`).join('');
+  wrap.querySelectorAll('.x').forEach(el => el.addEventListener('click', () => {
+    activeFilters.splice(parseInt(el.dataset.i,10),1); redraw();
+  }));
+}
+function populateFilterEditor(){
+  const cols = buildColumns(runSelected(), viewSelected());
+  $('fCol').innerHTML = cols.filter(c => c.key !== 'is_new')
+    .map(c => `<option value="${c.key}">${c.label}${c.group ? ' · '+c.group : ''}</option>`).join('');
+  refreshOpSelect();
+}
+function refreshOpSelect(){
+  $('fOp').innerHTML = filterOperatorsFor($('fCol').value)
+    .map(o => `<option value="${o.v}">${o.l}</option>`).join('');
+}
+$('fCol').addEventListener('change', refreshOpSelect);
+$('addFilterBtn').addEventListener('click', () => {
+  populateFilterEditor(); $('filterEditor').hidden = false; $('fVal').value=''; $('fVal').focus();
+});
+$('fCancel').addEventListener('click', () => { $('filterEditor').hidden = true; });
+$('fApply').addEventListener('click', () => {
+  const col=$('fCol').value, op=$('fOp').value, val=$('fVal').value.trim();
+  if (op !== 'empty' && op !== 'notempty' && !val){ $('fVal').focus(); return; }
+  activeFilters.push({col, op, val}); $('filterEditor').hidden = true; redraw();
+});
+$('clearFiltersBtn').addEventListener('click', () => { activeFilters = []; redraw(); });
+
+function closeAllPanels(){
+  $('filterPanel').hidden = true;
+  $('filterPresetsPanel').hidden = true;
+  $('inputPresetsPanel').hidden = true;
+  $('columnsPanel').hidden = true;
+  $('filterEditor').hidden = true;
+}
+$('toggleFilters').addEventListener('click', () => {
+  const was = $('filterPanel').hidden;
+  closeAllPanels();
+  if (was) $('filterPanel').hidden = false;
+});
+$('toggleFilterPresets').addEventListener('click', () => {
+  const was = $('filterPresetsPanel').hidden;
+  closeAllPanels();
+  if (was){ $('filterPresetsPanel').hidden = false; renderFilterPresetList(); }
+});
+$('toggleInputPresets').addEventListener('click', () => {
+  const was = $('inputPresetsPanel').hidden;
+  closeAllPanels();
+  if (was){ $('inputPresetsPanel').hidden = false; renderInputPresetList(); }
+});
+
+/* ===== COLUMN PICKER ===== */
+const HKEY = 'scanner_hidden_cols_v1';
+let hiddenCols = new Set();
+try {
+  const saved = JSON.parse(localStorage.getItem(HKEY) || '[]');
+  saved.forEach(k => hiddenCols.add(k));
+} catch {}
+function saveHiddenCols(){
+  localStorage.setItem(HKEY, JSON.stringify([...hiddenCols]));
+}
+
+/* all possible columns, grouped by indicator — pulled from buildColumns with everything on */
+function allColumnsGrouped(){
+  const everything = buildColumns({t3:true, wt:true, ce:true, st:true},
+                                  {t3:true, wt:true, ce:true, st:true});
+  const groups = { 'T3':[], 'WT':[], 'CE':[], 'ST':[], 'Other':[] };
+  for (const c of everything){
+    if (!c.group) continue;                 // skip Symbol/LTP/New/Time
+    if (groups[c.group]) groups[c.group].push(c);
+  }
+  return groups;
+}
+
+function renderColumnsPanel(){
+  const wrap = $('colsGroups');
+  const groups = allColumnsGrouped();
+  let html = '';
+  for (const [gname, cols] of Object.entries(groups)){
+    if (!cols.length) continue;
+    const color = gname === 'T3' ? '#58a6ff' : gname === 'WT' ? '#f0883e'
+                : gname === 'ST' ? '#7ee787' : '#d2a8ff';
+    html += `<div>
+      <div style="color:${color};font-weight:700;font-size:11px;
+                  letter-spacing:.06em;margin-bottom:6px">${gname}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 14px">`;
+    for (const c of cols){
+      const checked = hiddenCols.has(c.key) ? '' : 'checked';
+      html += `<label style="display:flex;align-items:center;gap:5px;
+                            font-size:12px;cursor:pointer;color:var(--fg)">
+        <input type="checkbox" data-colkey="${c.key}" ${checked}> ${c.label}
+      </label>`;
+    }
+    html += `</div></div>`;
+  }
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) hiddenCols.delete(cb.dataset.colkey);
+      else            hiddenCols.add(cb.dataset.colkey);
+      saveHiddenCols();
+      redraw();
+    });
+  });
+}
+
+$('toggleColumns').addEventListener('click', () => {
+  const was = $('columnsPanel').hidden;
+  closeAllPanels();
+  if (was){ $('columnsPanel').hidden = false; renderColumnsPanel(); }
+});
+$('colsShowAll').addEventListener('click', () => { hiddenCols.clear(); saveHiddenCols(); renderColumnsPanel(); redraw(); });
+$('colsHideAll').addEventListener('click', () => {
+  const everything = buildColumns({t3:true, wt:true, ce:true, st:true},
+                                  {t3:true, wt:true, ce:true, st:true});
+  hiddenCols = new Set(everything.filter(c => c.group).map(c => c.key));
+  saveHiddenCols(); renderColumnsPanel(); redraw();
+});
+$('colsReset').addEventListener('click', () => { hiddenCols.clear(); saveHiddenCols(); renderColumnsPanel(); redraw(); });
+
+/* ===== AUTO-REFRESH ===== */
+let autoTimerId = null;
+let autoTickId  = null;
+let nextRunAt   = 0;
+
+function beep(){
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1175].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = f; o.type = 'sine';
+      const t = ctx.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0.15, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      o.start(t); o.stop(t + 0.15);
+    });
+  } catch(e){}
+}
+
+function newTriggerSet(rows){
+  const s = new Set();
+  for (const r of rows) if (r.is_new) s.add(r.symbol);
+  return s;
+}
+
+async function runScanAndMaybeAlert(){
+  const before = window._lastData
+    ? newTriggerSet(window._lastData.rows) : new Set();
+
+  // Auto-refresh always bypasses the OHLC cache so a just-closed
+  // bar is picked up the moment it appears.
+  await runScan({force_refresh: true});
+
+  if (window._lastData){
+    const after = newTriggerSet(window._lastData.rows);
+    const fresh = [...after].filter(s => !before.has(s));
+    if (fresh.length){
+      const syms = fresh.slice(0, 3).join(', ') + (fresh.length > 3 ? '…' : '');
+      setStatus(`🔔 ${fresh.length} new: ${syms}`, 'ok');
+      if ($('autoSound').checked) beep();
+      const oldTitle = document.title;
+      document.title = `🔔 ${fresh.length} · Scanner`;
+      setTimeout(() => { document.title = oldTitle; }, 3000);
+    }
+  }
+}
+
+function startAutoRefresh(){
+  stopAutoRefresh();
+  const secs = parseInt($('autoInterval').value, 10) || 60;
+  const loop = async () => {
+    nextRunAt = Date.now() + secs * 1000;
+    await runScanAndMaybeAlert();
+    nextRunAt = Date.now() + secs * 1000;
+  };
+  loop();
+  autoTimerId = setInterval(loop, secs * 1000);
+
+  // countdown tick
+  autoTickId = setInterval(() => {
+    const left = Math.max(0, Math.round((nextRunAt - Date.now()) / 1000));
+    const m = Math.floor(left / 60), s = left % 60;
+    $('autoCountdown').textContent = 'next in ' +
+      (m ? `${m}m ${String(s).padStart(2,'0')}s` : `${s}s`);
+  }, 500);
+}
+
+function stopAutoRefresh(){
+  if (autoTimerId){ clearInterval(autoTimerId); autoTimerId = null; }
+  if (autoTickId){ clearInterval(autoTickId); autoTickId = null; }
+  $('autoCountdown').textContent = '';
+}
+
+$('autoRefresh').addEventListener('change', () => {
+  if ($('autoRefresh').checked) startAutoRefresh();
+  else stopAutoRefresh();
+});
+$('autoInterval').addEventListener('change', () => {
+  if ($('autoRefresh').checked) startAutoRefresh();
+});
+
+/* ===== MULTI-LEVEL SORT ===== */
+let sortState = [];
+function toggleSort(key){
+  const i = sortState.findIndex(s => s.key === key);
+  if (i === -1) sortState.unshift({ key, dir:'asc' });
+  else if (sortState[i].dir === 'asc')  sortState[i] = { key, dir:'desc' };
+  else                                  sortState.splice(i,1);
+}
+function clearAllSorts(){ sortState = []; }
+function sortRows(rows){
+  if (!sortState.length) return rows.slice();
+  return rows.slice().sort((a,b) => {
+    for (const {key, dir} of sortState){
+      const av=a[key], bv=b[key];
+      const aE=(av===''||av==null||av==='—'), bE=(bv===''||bv==null||bv==='—');
+      if (aE && bE) continue;
+      if (aE) return 1; if (bE) return -1;
+      const an=parseFloat(av), bn=parseFloat(bv);
+      const aNum=!isNaN(an)&&isFinite(an)&&String(av).match(/^-?\d/);
+      const bNum=!isNaN(bn)&&isFinite(bn)&&String(bv).match(/^-?\d/);
+      let cmp = (aNum && bNum) ? an-bn : String(av).localeCompare(String(bv));
+      if (cmp !== 0) return dir==='desc' ? -cmp : cmp;
+    }
+    return 0;
+  });
+}
+function renderSortPills(){
+  const wrap = $('sortPills'), clear = $('clearSortBtn');
+  if (!sortState.length){ wrap.innerHTML = ''; clear.hidden = true; return; }
+  clear.hidden = false;
+  wrap.innerHTML = sortState.map((s,i) =>
+    `<span class="sortPill"><span class="lvl">${i+1}</span> ${labelFor(s.key)}
+       <span>${s.dir==='asc'?'▲':'▼'}</span>
+       <span class="x" data-key="${s.key}">✕</span></span>`).join('');
+  wrap.querySelectorAll('.x').forEach(el => el.addEventListener('click', () => {
+    sortState = sortState.filter(s => s.key !== el.dataset.key); redraw();
+  }));
+}
+$('clearSortBtn').addEventListener('click', () => { clearAllSorts(); redraw(); });
+
+/* ===== FILTER PRESETS (v4) ===== */
+const FKEY = 'scanner_filter_presets_v4';
+function loadFPresets(){ try { return JSON.parse(localStorage.getItem(FKEY) || '{}'); } catch { return {}; } }
+function saveFPresets(o){ localStorage.setItem(FKEY, JSON.stringify(o)); }
+function normalizeFPreset(p){
+  if (Array.isArray(p)) return { filters:p, sort:[] };
+  const sort = Array.isArray(p.sort) ? p.sort : (p.sort && p.sort.key ? [p.sort] : []);
+  return { filters: p.filters || [], sort };
+}
+function describeSort(arr){
+  if (!arr.length) return 'no sort';
+  return 'sort: ' + arr.map(s => `${labelFor(s.key)} ${s.dir==='asc'?'▲':'▼'}`).join(', ');
+}
+function renderFilterPresetList(){
+  const list = $('filterPresetList');
+  const all = loadFPresets();
+  const names = Object.keys(all);
+  if (!names.length){ list.innerHTML = '<span style="color:var(--muted);font-size:11.5px">no presets yet</span>'; return; }
+  list.innerHTML = names.map(n => {
+    const p = normalizeFPreset(all[n]);
+    const fc = p.filters.length;
+    return `<div class="presetRow"><span class="name">${n}</span>
+      <span class="cnt">${fc ? fc+' filter'+(fc>1?'s':'') : 'no filters'} · ${describeSort(p.sort)}</span>
+      <button class="lil" data-load="${n}">Load</button>
+      <button class="lil del" data-del="${n}">Delete</button></div>`;
+  }).join('');
+  list.querySelectorAll('[data-load]').forEach(el => el.addEventListener('click', () => {
+    const raw = loadFPresets()[el.dataset.load];
+    const p = normalizeFPreset(raw);
+    activeFilters = JSON.parse(JSON.stringify(p.filters));
+    sortState     = JSON.parse(JSON.stringify(p.sort));
+    if (Array.isArray(raw.hiddenCols)){
+      hiddenCols = new Set(raw.hiddenCols);
+      saveHiddenCols();
+    }
+    redraw();
+    if (!$('columnsPanel').hidden) renderColumnsPanel();
+  }));
+  list.querySelectorAll('[data-del]').forEach(el => el.addEventListener('click', () => {
+    const all = loadFPresets(); delete all[el.dataset.del]; saveFPresets(all); renderFilterPresetList();
+  }));
+}
+$('filterPresetSave').addEventListener('click', () => {
+  const n = $('filterPresetName').value.trim();
+  if (!n){ $('filterPresetName').focus(); return; }
+  const all = loadFPresets();
+  all[n] = { filters: JSON.parse(JSON.stringify(activeFilters)),
+             sort:    JSON.parse(JSON.stringify(sortState)),
+             hiddenCols: [...hiddenCols],
+             savedAt: new Date().toISOString() };
+  saveFPresets(all); $('filterPresetName').value = ''; renderFilterPresetList();
+});
+
+/* ===== INPUT PRESETS (v1) ===== */
+const IKEY = 'scanner_input_presets_v1';
+function loadIPresets(){ try { return JSON.parse(localStorage.getItem(IKEY) || '{}'); } catch { return {}; } }
+function saveIPresets(o){ localStorage.setItem(IKEY, JSON.stringify(o)); }
+function currentInputSnapshot(){
+  return {
+    source:         $('source').value,
+    book:           $('cfg_sheet').value,
+    tab:            $('cfg_input').value,
+    manual_symbols: $('manualSymbols').value,
+    tf:             $('tf').value,
+  };
+}
+function applyInputSnapshot(s){
+  $('source').value = s.source || 'manual';
+  syncSourceInputs();
+  if (s.book) $('cfg_sheet').value = s.book;
+  syncTabOptions();
+  if (s.tab){
+    const opt = [...$('cfg_input').options].find(o => o.value === s.tab);
+    if (opt) $('cfg_input').value = s.tab;
+  }
+  if (s.manual_symbols != null) $('manualSymbols').value = s.manual_symbols;
+  if (s.tf) $('tf').value = s.tf;
+  refreshOutputName();
+}
+function renderInputPresetList(){
+  const list = $('inputPresetList');
+  const all = loadIPresets();
+  const names = Object.keys(all);
+  if (!names.length){ list.innerHTML = '<span style="color:var(--muted);font-size:11.5px">no presets yet</span>'; return; }
+  list.innerHTML = names.map(n => {
+    const s = all[n];
+    const desc = s.source === 'manual'
+      ? `manual · ${(s.manual_symbols||'').split(',').length} sym · ${s.tf}`
+      : `${s.source} · ${s.book}::${s.tab} · ${s.tf}`;
+    return `<div class="presetRow"><span class="name">${n}</span>
+      <span class="cnt">${desc}</span>
+      <button class="lil" data-load="${n}">Load</button>
+      <button class="lil del" data-del="${n}">Delete</button></div>`;
+  }).join('');
+  list.querySelectorAll('[data-load]').forEach(el => el.addEventListener('click', () => {
+    applyInputSnapshot(loadIPresets()[el.dataset.load]);
+  }));
+  list.querySelectorAll('[data-del]').forEach(el => el.addEventListener('click', () => {
+    const all = loadIPresets(); delete all[el.dataset.del]; saveIPresets(all); renderInputPresetList();
+  }));
+}
+$('inputPresetSave').addEventListener('click', () => {
+  const n = $('inputPresetName').value.trim();
+  if (!n){ $('inputPresetName').focus(); return; }
+  const all = loadIPresets();
+  all[n] = currentInputSnapshot();
+  saveIPresets(all); $('inputPresetName').value = ''; renderInputPresetList();
+});
+
+/* ===== SUMS ===== */
+function computeSums(rows, cols){
+  const sums = {};
+  for (const c of cols){
+    if (!c.sumType) continue;
+    const nums = [];
+    for (const r of rows){
+      const v = r[c.key]; if (v === '' || v == null) continue;
+      const n = parseFloat(v); if (!isNaN(n) && isFinite(n)) nums.push(n);
+    }
+    if (!nums.length){ sums[c.key] = ''; continue; }
+    const total = nums.reduce((a,b) => a+b, 0);
+    sums[c.key] = c.sumType === 'avg' ? (total/nums.length).toFixed(2) : total.toFixed(2);
+  }
+  return sums;
+}
+
+/* ===== widths + resize ===== */
+const WKEY = 'scanner_col_widths_v1';
+function loadWidths(){ try { return JSON.parse(localStorage.getItem(WKEY) || '{}'); } catch { return {}; } }
+function saveWidth(k,w){ const a=loadWidths(); a[k]=w; localStorage.setItem(WKEY, JSON.stringify(a)); }
+function defaultWidth(k){ if (k==='symbol') return 90; if (k==='ltp') return 90; if (k==='ms') return 70; return 110; }
+function makeResizable(table){
+  const cols = table.querySelectorAll('colgroup col');
+  table.querySelectorAll('thead tr.hdrrow th').forEach((th, idx) => {
+    const key = th.dataset.colKey;
+    if (key === 'symbol' || key === 'ltp') return;
+    if (th.querySelector('.rz')) return;
+    const grip = document.createElement('div'); grip.className = 'rz'; th.appendChild(grip);
+    let sx, sw;
+    const mm = e => { cols[idx].style.width = Math.max(60, sw + e.clientX - sx) + 'px'; };
+    const mu = () => { document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu); saveWidth(key, cols[idx].style.width); };
+    grip.addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation(); sx=e.clientX; sw=th.offsetWidth;
+      document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu);
+    });
+  });
+}
+function attachSortHandlers(table){
+  table.querySelectorAll('thead tr.hdrrow th[data-sortable]').forEach(th => {
+    th.addEventListener('click', e => {
+      if (e.target.classList.contains('rz')) return;
+      const key = th.dataset.colKey; if (!key) return;
+      toggleSort(key); redraw();
+    });
+  });
+}
+
+/* ===== redraw ===== */
+function redraw(){
+  if (!window._lastData) return;
+  const filtered = applyFilters(window._lastData.rows);
+  renderRows(filtered, window._lastData.meta, window._lastData.rows.length);
+  renderFilterChips();
+  renderSortPills();
+}
+
+/* ===== render ===== */
+function renderRows(rows, meta, totalCount){
+  const el = $('results'); if (!el) return;
+  totalCount = totalCount ?? rows.length;
+
+  const oldScroll = el.querySelector('.scroll');
+  const sv = oldScroll ? { left: oldScroll.scrollLeft, top: oldScroll.scrollTop } : { left:0, top:0 };
+
+  const run = runSelected(), view = viewSelected();
+  const cols = buildColumns(run, view);
+  viewBar.style.display = 'flex';
+
+  if (!rows.length){
+    el.className = 'emptyBox';
+    el.innerHTML = totalCount
+      ? `No rows match the filters. <b>${totalCount}</b> rows hidden.`
+      : 'No rows.';
+    return;
+  }
+
+  const sorted = sortRows(rows);
+  const sums   = computeSums(sorted, cols);
+  const widths = loadWidths();
+  const sortIdx = {}; sortState.forEach((s,i) => { sortIdx[s.key] = i; });
+
+  const colgroup = cols.map(c =>
+    `<col data-col-key="${c.key}" style="width:${(widths[c.key]||defaultWidth(c.key))}px">`).join('');
+  const firstOfGroup = {};
+  for (const c of cols) if (c.group && !firstOfGroup[c.group]) firstOfGroup[c.group] = c.key;
+
+  const sumCells = cols.map((c,i) => {
+    const cls = ['c-'+c.key];
+    if (i===0) cls.push('c-symbol'); if (i===1) cls.push('c-ltp');
+    if (c.group) cls.push('g-'+c.group.toLowerCase());
+    if (i===0) return `<th class="${cls.join(' ')}">TOTAL (${sorted.length})</th>`;
+    if (i===1) return `<th class="${cls.join(' ')}"></th>`;
+    const v = sums[c.key];
+    return `<th class="${cls.join(' ')}">${v==null?'':v}</th>`;
+  }).join('');
+
+  const headerCells = cols.map((c,i) => {
+    const cls = ['c-'+c.key];
+    if (i===0) cls.push('c-symbol'); if (i===1) cls.push('c-ltp');
+    if (c.group) cls.push('g-'+c.group.toLowerCase());
+    const s = sortState.find(x => x.key === c.key);
+    if (s && s.dir === 'asc')  cls.push('sort-asc');
+    if (s && s.dir === 'desc') cls.push('sort-desc');
+    let icon = ' ↕'; if (s && s.dir === 'asc') icon = ' ▲'; if (s && s.dir === 'desc') icon = ' ▼';
+    let badge = s ? `<span class="sortLevel">${sortIdx[c.key]+1}</span>` : '';
+    const prefix = (c.group && firstOfGroup[c.group] === c.key) ? c.group+' · ' : '';
+    return `<th class="${cls.join(' ')}" data-col-key="${c.key}" data-sortable>${prefix}${c.label}<span class="sortIcon">${icon}</span>${badge}</th>`;
+  }).join('');
+
+  const tbody = sorted.map(r => {
+    const tds = cols.map((c,i) => {
+      let v = r[c.key];
+      const cls = ['c-'+c.key];
+      if (i===0) cls.push('c-symbol'); if (i===1) cls.push('c-ltp');
+      if (c.group && firstOfGroup[c.group] === c.key) cls.push('g-'+c.group.toLowerCase()+'-first');
+      if (c.key === 'symbol')      return `<td class="${cls.join(' ')}"><b>${v}</b></td>`;
+      if (c.key === 'ltp')         return `<td class="${cls.join(' ')}">${v}</td>`;
+      if (c.key === 'is_new')      return `<td class="${cls.join(' ')}">${v ? '<span class="bell">🔔</span>' : ''}</td>`;
+      if (c.key === 'ms')          return `<td class="${cls.join(' ')} mut">${v} ms</td>`;
+      if (c.key === 't3_trend' || c.key === 'wt_trend' || c.key === 'st_trend')
+                                   cls.push(v === 'Buy Trend' ? 'buy' : v === 'Sell Trend' ? 'sell' : 'mut');
+      if (c.key === 't3_colour')   cls.push(v === 'green' ? 'buy' : v === 'red' ? 'sell' : 'mut');
+      if (c.key === 'wt_cross')    cls.push(v === 'Bull Cross' ? 'buy' : v === 'Bear Cross' ? 'sell' : 'mut');
+      if (c.key === 'wt_perfect' || c.key === 'ce_perfect' || c.key === 'st_perfect')
+                                   cls.push(v === 'Perfect' ? 'buy' : 'mut');
+      if (c.key === 'wt_rsi_dir' || c.key === 'st_rsi_dir')
+                                   cls.push(v === 'rising' ? 'buy' : v === 'falling' ? 'sell' : 'mut');
+      if (c.key === 'ce_dir')      cls.push(v === 'Long' ? 'buy' : v === 'Short' ? 'sell' : 'mut');
+      if (c.key.endsWith('_action')) cls.push(actionClass(v));
+      if (c.key.endsWith('_trigger_status') && v) cls.push('buy');
+      if (v === '' || v == null) v = '—';
+      return `<td class="${cls.join(' ')}">${v}</td>`;
+    }).join('');
+    const _cls = [];
+    if (r.is_new)         _cls.push('newrow');
+    if (isWtFiltered(r))  _cls.push('wtFiltered');
+    return `<tr class="${_cls.join(' ')}">${tds}</tr>`;
+  }).join('');
+
+  const shown = Object.entries(view).filter(([k,v]) => run[k] && v).map(([k]) => k.toUpperCase());
+  const shownLabel = shown.length ? shown.join(' + ') : '(no columns)';
+  const hiddenNote = (totalCount !== sorted.length)
+    ? ` · <span style="color:var(--accent)">${sorted.length} of ${totalCount} shown</span>` : '';
+
+  el.className = '';
+  el.innerHTML = `
+    <div class="tablebox">
+      <div class="tblhead">
+        <span><b>${sorted.length}</b> symbols · viewing: <b>${shownLabel}</b> · tf: <b>${meta.tf}</b>${hiddenNote}</span>
+        <span class="mut">total ${fmtMs(meta.total_ms)}</span>
+      </div>
+      <div class="scroll">
+        <table class="scan">
+          <colgroup>${colgroup}</colgroup>
+          <thead>
+            <tr class="sumrow">${sumCells}</tr>
+            <tr class="hdrrow">${headerCells}</tr>
+          </thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  const table = el.querySelector('table.scan');
+  makeResizable(table); attachSortHandlers(table);
+
+  const ns = el.querySelector('.scroll');
+  if (ns){ ns.scrollLeft = sv.left; ns.scrollTop = sv.top; }
+}
+
+/* ===== payload ===== */
+function readSettings(){
+  return {
+    source:         $('source').value,
+    manual_symbols: $('manualSymbols').value,
+    sheet_name:     $('cfg_sheet').value,
+    input_sheet:    $('cfg_input').value,
+    tf:             $('tf').value,
+    indicators:     runSelected(),
+    heikin_ashi:    $('cfg_ha').checked,
+    fno_filter:     $('cfg_fno').checked,
+    ltp:            $('cfg_ltp').checked,
+    market_order:   $('cfg_market').checked,
+    invest:         parseFloat($('cfg_invest').value),
+    target_pct:     parseFloat($('cfg_target').value),
+    t3_len:         parseFloat($('cfg_t3_len').value),
+    t3_vfactor:     parseFloat($('cfg_t3_vfactor').value),
+    wt_n1:          parseFloat($('cfg_wt_n1').value),
+    wt_n2:          parseFloat($('cfg_wt_n2').value),
+    ce_len:         parseFloat($('cfg_ce_len').value),
+    ce_mult:        parseFloat($('cfg_ce_mult').value),
+    ce_close:       $('cfg_ce_close').checked,
+    st_left:        parseFloat($('cfg_st_left').value),
+    st_right:       parseFloat($('cfg_st_right').value),
+    st_mode:        document.querySelector('input[name="st_mode"]:checked').value,
+    zerodha:        $('cfg_zerodha').checked,
+    allow_buy:      $('cfg_buy').checked,
+    allow_sell:     $('cfg_sell').checked,
+    output_sheet:   $('cfg_output').value,
+    write_to_sheet: $('cfg_write_sheet').checked,
+  };
+}
+
+/* ===== run / stop ===== */
+const stopBtn = $('stop');
+let currentJob = null;
+
+async function runScan(opts = {}){
+  const cfg = readSettings();
+  if (opts.force_refresh) cfg.force_refresh = true;
+  const run = cfg.indicators;
+  if (!run.t3 && !run.wt && !run.ce && !run.st){ setStatus('select at least one indicator', 'err'); return; }
+  if (cfg.source === 'manual' && !cfg.manual_symbols.trim()){ setStatus('type at least one symbol', 'err'); return; }
+
+  const job_id = 'job_' + Math.random().toString(36).slice(2,10);
+  currentJob = job_id; cfg.job_id = job_id;
+  btn.disabled = true; stopBtn.hidden = false; setStatus('scanning…');
+
+  try {
+    const res = await fetch('/api/scanner/run', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(cfg)
+    });
+    const data = await res.json();
+    if (!data.ok){
+      setStatus(data.error || 'scan failed', 'err');
+      if ($('autoRefresh').checked && (data.error || '').includes('no symbols')){
+        $('autoRefresh').checked = false; stopAutoRefresh();
+      }
+      return;
+    }
+
+    const meta = { tf: cfg.tf, total_ms: data.total_ms };
+    window._lastData = { rows: data.rows, meta };
+    redraw();
+    saveScannerResult(data.rows, meta);
+
+    const sheetNote = data.sheet_written ? ` · ✅ wrote ${data.output_sheet}` : '';
+    setStatus(
+      data.stopped_early
+        ? `stopped · ${data.count} rows · ${fmtMs(data.total_ms)}${sheetNote}`
+        : `${data.count} rows · ${fmtMs(data.total_ms)}${sheetNote}`,
+      data.stopped_early ? 'err' : 'ok'
+    );
+  } catch (e){
+    setStatus('request failed', 'err'); console.error(e);
+  } finally {
+    btn.disabled = false; stopBtn.hidden = true; currentJob = null;
+  }
+}
+btn.addEventListener('click', runScan);
+
+async function stopScan(){
+  if (!currentJob) return;
+  stopBtn.disabled = true; setStatus('stopping…');
+  try {
+    await fetch('/api/scanner/stop', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ job_id: currentJob })
+    });
+  } catch(e){ console.error(e); }
+  finally { stopBtn.disabled = false; }
+}
+stopBtn.addEventListener('click', stopScan);
+
+/* ===== LOAD SAVED RESULTS ===== */
+async function syncLoadTabs(){
+  const book = $('loadBook').value;
+  const sel  = $('loadTab');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">loading…</option>';
+  try {
+    const r = await fetch(`/api/sheets/tabs?book=${encodeURIComponent(book)}`);
+    const d = await r.json();
+    const tabs = (d.ok && d.tabs && d.tabs.length) ? d.tabs : [];
+    if (!tabs.length){
+      sel.innerHTML = '<option value="">(no tabs found)</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">(pick a tab)</option>' +
+      tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+    if (tabs.includes(prev)) sel.value = prev;
+  } catch(e){
+    console.error('load-tab fetch failed', e);
+    sel.innerHTML = '<option value="">(error)</option>';
+  }
+}
+
+async function loadSavedResults(){
+  const book = $('loadBook').value;
+  const tab  = $('loadTab').value;
+  const st   = $('loadStatus');
+  if (!tab){ st.textContent = 'pick a tab first'; st.style.color = 'var(--bad)'; return; }
+
+  st.style.color = 'var(--muted)';
+  st.textContent = 'loading…';
+
+  try {
+    const r = await fetch(`/api/scanner/load_saved?book=${encodeURIComponent(book)}&tab=${encodeURIComponent(tab)}`);
+    const d = await r.json();
+    if (!d.ok){
+      st.textContent = '⚠️ ' + (d.error || 'load failed');
+      st.style.color = 'var(--bad)';
+      return;
+    }
+
+    /* auto-tick the indicator checkboxes based on the column keys present */
+    const sample = d.rows[0] || {};
+    const keys   = Object.keys(sample);
+    const hasT3  = keys.some(k => k.startsWith('t3_'));
+    const hasWT  = keys.some(k => k === 'wt1' || k.startsWith('wt_'));
+    const hasCE  = keys.some(k => k.startsWith('ce_'));
+    const hasST  = keys.some(k => k.startsWith('st_'));
+    $('ind_t3').checked = hasT3;
+    $('ind_wt').checked = hasWT;
+    $('ind_ce').checked = hasCE;
+    $('ind_st').checked = hasST;
+    syncView();
+
+    /* infer timeframe from the tab name suffix (e.g. ind_T3_WT_CE_1h → 1h) */
+    const tabParts = tab.split('_');
+    const last     = tabParts[tabParts.length - 1];
+    const knownTFs = ['5m','15m','30m','1h','1d'];
+    const tf       = knownTFs.includes(last) ? last : '1h';
+    $('tf').value  = tf;
+    refreshOutputName();
+
+    /* feed the rows into the existing render path */
+    window._lastData = { rows: d.rows, meta: { tf, total_ms: 0 } };
+    redraw();
+
+    st.textContent = `loaded ${d.count} rows from ${book}::${tab}`;
+    st.style.color = 'var(--good)';
+    setStatus(`loaded ${d.count} rows`, 'ok');
+  } catch(e){
+    st.textContent = 'request failed';
+    st.style.color = 'var(--bad)';
+    console.error(e);
+  }
+}
+
+$('loadBook').addEventListener('change', syncLoadTabs);
+$('loadSavedBtn').addEventListener('click', loadSavedResults);
+syncLoadTabs();
+
+/* ===== boot ===== */
+/* restore prior inputs BEFORE anything else so syncView sees correct values */
+restoreScannerState();
+/* force write-to-sheet ON every page load — user can turn it off manually */
+$('cfg_write_sheet').checked = true;
+syncSourceInputs();
+syncView();
+refreshOutputName();
+renderColumnsPanel();
+loadWtFilterCfg();
+
+/* try to restore last result — localStorage first, then server cache */
+(async () => {
+  const local = tryRestoreScannerResult();
+  if (!local) await tryFetchServerLastScan();
+})();
+</script>
+{% endblock %}

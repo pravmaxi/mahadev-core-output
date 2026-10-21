@@ -1,0 +1,201 @@
+{
+    "run_start": "2026-08-26 23:10:41 IST",
+    "duration": "18.0s",
+    "triggered_info": {
+        "CHOLAFIN.NS_1d": {
+            "colour": "red",
+            "datetime": "2026-07-14 05:30",
+            "t3_value": 1820.94
+        },
+        "wt_CHOLAFIN.NS_1d": {
+            "datetime": "2026-07-09 05:30",
+            "direction": "sell",
+            "level": 1755.3
+        },
+        "ce_CHOLAFIN.NS_1d": {
+            "datetime": "2026-06-16 05:30",
+            "direction": "buy",
+            "level": 1685.7
+        },
+        "RECLTD.NS_1d": {
+            "colour": "red",
+            "datetime": "2026-08-11 05:30",
+            "t3_value": 335.21
+        },
+        "wt_RECLTD.NS_1d": {
+            "datetime": "2026-08-05 05:30",
+            "direction": "sell",
+            "level": 363.6
+        },
+        "ce_RECLTD.NS_1d": {
+            "datetime": "2026-08-11 05:30",
+            "direction": "sell",
+            "level": 341.15
+        },
+        "SOUTHBANK.NS_1d": {
+            "colour": "red",
+            "datetime": "2026-06-26 05:30",
+            "t3_value": 45.57
+        },
+        "wt_SOUTHBANK.NS_1d": {
+            "datetime": "2026-07-08 05:30",
+            "direction": "sell",
+            "level": 43.01
+        },
+        "ce_SOUTHBANK.NS_1d": {
+            "datetime": "2026-04-21 05:30",
+            "direction": "buy",
+            "level": 39.79
+        },
+        "PHARMABEES.NS_1d": {
+            "colour": "red",
+            "datetime": "",
+            "t3_value": 26.62
+        },
+        "wt_PHARMABEES.NS_1d": {
+            "datetime": "2026-08-10 05:30",
+            "direction": "sell",
+            "level": 27.18
+        },
+        "ICICIBANK.NS_1d": {
+            "colour": "red",
+            "datetime": "2026-08-10 05:30",
+            "t3_value": 1412.62
+        },
+        "wt_ICICIBANK.NS_1d": {
+            "datetime": "2026-08-07 05:30",
+            "direction": "sell",
+            "level": 1418.2
+        },
+        "ce_ICICIBANK.NS_1d": {
+            "datetime": "2026-06-12 05:30",
+            "direction": "buy",
+            "level": 1344.3
+        },
+        "ALKEM.NS_1d": {
+            "colour": "green",
+            "datetime": "2026-06-23 05:30",
+            "t3_value": 5657.99
+        },
+        "wt_ALKEM.NS_1d": {
+            "datetime": "2026-07-17 05:30",
+            "direction": "sell",
+            "level": 5539.0
+        },
+        "ce_ALKEM.NS_1d": {
+            "datetime": "2026-04-21 05:30",
+            "direction": "buy",
+            "level": 5718.5
+        },
+        "APOLLOHOSP.NS_1d": {
+            "colour": "red",
+            "datetime": "2026-07-24 05:30",
+            "t3_value": 8901.64
+        },
+        "wt_APOLLOHOSP.NS_1d": {
+            "datetime": "2026-08-10 05:30",
+            "direction": "sell",
+            "level": 8865.5
+        },
+        "ce_APOLLOHOSP.NS_1d": {
+            "datetime": "2026-04-24 05:30",
+            "direction": "buy",
+            "level": 7845.0
+        },
+        "DIVISLAB.NS_1d": {
+            "colour": "green",
+            "datetime": "2026-07-07 05:30",
+            "t3_value": 6957.66
+        },
+        "wt_DIVISLAB.NS_1d": {
+            "datetime": "2026-08-07 05:30",
+            "direction": "sell",
+            "level": 8233.5
+        },
+        "ce_DIVISLAB.NS_1d": {
+            "datetime": "2026-04-23 05:30",
+            "direction": "buy",
+            "level": 6469.5
+        },
+        "JUNIORBEES.NS_1d": {
+            "colour": "red",
+            "datetime": "2026-08-21 05:30",
+            "t3_value": 809.12
+        },
+        "wt_JUNIORBEES.NS_1d": {
+            "datetime": "2026-08-19 05:30",
+            "direction": "sell",
+            "level": 799.1
+        },
+        "ce_JUNIORBEES.NS_1d": {
+            "datetime": "2026-04-10 05:30",
+            "direction": "buy",
+            "level": 730.89
+        },
+        "SUNPHARMA.NS_1d": {
+            "colour": "red",
+            "datetime": "2026-08-14 05:30",
+            "t3_value": 1905.99
+        },
+        "wt_SUNPHARMA.NS_1d": {
+            "datetime": "2026-08-03 05:30",
+            "direction": "sell",
+            "level": 1935.2
+        },
+        "ce_SUNPHARMA.NS_1d": {
+            "datetime": "2026-08-18 05:30",
+            "direction": "sell",
+            "level": 1868.3
+        },
+        "TVSMOTOR.NS_1d": {
+            "colour": "red",
+            "datetime": "",
+            "t3_value": 4423.91
+        },
+        "wt_TVSMOTOR.NS_1d": {
+            "datetime": "2026-08-07 05:30",
+            "direction": "sell",
+            "level": 4378.0
+        },
+        "ce_TVSMOTOR.NS_1d": {
+            "datetime": "2026-07-03 05:30",
+            "direction": "buy",
+            "level": 3674.9
+        },
+        "IDFCFIRSTB.NS_1d": {
+            "colour": "green",
+            "datetime": "2026-07-21 05:30",
+            "t3_value": 81.76
+        },
+        "wt_IDFCFIRSTB.NS_1d": {
+            "datetime": "2026-08-25 05:30",
+            "direction": "sell",
+            "level": 85.0
+        },
+        "ce_IDFCFIRSTB.NS_1d": {
+            "datetime": "2026-04-16 05:30",
+            "direction": "buy",
+            "level": 68.44
+        },
+        "HAL.NS_1d": {
+            "colour": "green",
+            "datetime": "2026-07-13 05:30",
+            "t3_value": 4536.45
+        },
+        "wt_HAL.NS_1d": {
+            "datetime": "2026-08-19 05:30",
+            "direction": "sell",
+            "level": 5005.0
+        },
+        "ce_HAL.NS_1d": {
+            "datetime": "2026-07-21 05:30",
+            "direction": "buy",
+            "level": 4594.0
+        },
+        "ce_PHARMABEES.NS_1d": {
+            "datetime": "2026-03-10 05:30",
+            "direction": "buy",
+            "level": 24.11
+        }
+    }
+}
