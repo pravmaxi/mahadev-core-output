@@ -1,0 +1,1072 @@
+{% extends "base.html" %}
+{% block title %}Broker · Trading App{% endblock %}
+
+{% block content %}
+<h1>Broker</h1>
+<p class="sub">Live account view. Zerodha now; Dhan and INDmoney later.</p>
+
+<!-- Negative cash warning banner -->
+<div id="negCashBanner" hidden
+     style="background:#5c1e1e;border:2px solid #f85149;border-radius:8px;
+            padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;
+            animation:pulseWarn 1.6s infinite">
+  <span style="font-size:24px">⚠️</span>
+  <div style="flex:1">
+    <div style="color:#f85149;font-weight:700;font-size:15px">
+      Available cash is NEGATIVE
+    </div>
+    <div style="color:#e6edf3;font-size:12px;margin-top:3px">
+      Zerodha charges <b>₹40 per day penalty</b> on negative balance.
+      Add funds or close positions to bring it positive.
+    </div>
+  </div>
+  <div id="negCashAmt" style="color:#f85149;font-size:20px;font-weight:700;
+       font-variant-numeric:tabular-nums">₹0</div>
+</div>
+
+<style>
+@keyframes pulseWarn{
+  0%   { box-shadow: 0 0 0 0 rgba(248,81,73,0.55); }
+  70%  { box-shadow: 0 0 0 12px rgba(248,81,73,0); }
+  100% { box-shadow: 0 0 0 0 rgba(248,81,73,0); }
+}
+</style>
+
+<!-- Top bar -->
+<div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            padding:14px;margin-bottom:12px;display:flex;gap:12px;flex-wrap:wrap;
+            align-items:center">
+  <label class="lbl">Broker</label>
+  <select id="brokerSel" class="inp">
+    <option value="zerodha" selected>Zerodha (Kite Connect)</option>
+    <option value="dhan" disabled>Dhan — coming soon</option>
+    <option value="indmoney" disabled>INDmoney — coming soon</option>
+  </select>
+
+  <span id="connStatus" style="color:var(--muted);font-size:12px">checking…</span>
+
+  <span style="flex:1"></span>
+
+  <label class="runChk" id="autoWrap" style="gap:5px;display:none">
+    <input type="checkbox" id="autoRefresh"> 🔁 Auto
+  </label>
+  <select id="autoInterval" class="inp" style="width:90px;display:none">
+    <option value="15">15s</option>
+    <option value="30" selected>30s</option>
+    <option value="60">1 min</option>
+    <option value="300">5 min</option>
+  </select>
+  <span id="autoCountdown" style="color:var(--muted);font-size:11.5px;
+        font-variant-numeric:tabular-nums;min-width:80px"></span>
+
+  <button id="loginBtn" class="btnPrimary">Login to Zerodha</button>
+  <button id="resetLoginBtn" class="ghost" hidden>↺ Reset login</button>
+  <button id="topRefreshBtn" class="ghost" hidden>↻ Refresh</button>
+</div>
+
+<!-- Login URL bar (only during login) -->
+<div id="loginUrlBar" hidden
+     style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+            padding:10px 14px;margin-bottom:12px;font-size:12px">
+  <div style="color:var(--muted);font-size:11px;margin-bottom:4px">
+    Browser didn't open the Zerodha page? Click this link manually:
+  </div>
+  <a id="loginUrlLink" href="#" target="_blank" rel="noopener"
+     style="color:var(--accent);word-break:break-all;font-weight:600"></a>
+</div>
+
+<!-- Account card (collapsed) -->
+<div id="profileCard" hidden
+     style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            margin-bottom:12px;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
+    <button type="button" id="profileToggle"
+            style="flex:1;background:transparent;border:none;color:var(--muted);
+                   font-size:11px;cursor:pointer;text-align:left;padding:0;
+                   font-weight:700;letter-spacing:.06em">▸ ACCOUNT</button>
+    <button id="logoutBtn"  class="ghost" style="font-size:11px;padding:3px 10px">Logout</button>
+    <button id="refreshBtn" class="ghost" style="font-size:11px;padding:3px 10px">↻ Refresh</button>
+  </div>
+  <div id="profileBody"
+       style="display:none;padding:0 16px 16px 16px;
+              grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+              gap:12px;font-size:13px"></div>
+</div>
+
+<!-- Summary cards -->
+<div id="summaryCards" hidden
+     style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+            gap:10px;margin-bottom:12px"></div>
+
+<!-- Tabs -->
+<div id="tabBar" hidden
+     style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+            padding:6px 12px;margin-bottom:12px;display:flex;gap:4px;align-items:center">
+  <button class="bTab active" data-tab="positions">Positions</button>
+  <button class="bTab" data-tab="holdings">Holdings</button>
+  <button class="bTab" data-tab="orders">Orders</button>
+  <button class="bTab" data-tab="tradebook">Trades</button>
+  <button class="bTab" data-tab="gtts">GTT</button>
+  <button class="bTab" data-tab="margins">Margins</button>
+  <span style="flex:1"></span>
+  <span id="lastUpdate" style="color:var(--muted);font-size:11px"></span>
+</div>
+
+<!-- Tab content -->
+<div id="tabContent" hidden
+     style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            padding:14px"></div>
+
+<!-- ═══════════ GTT EDITOR MODAL ═══════════ -->
+<div id="gttModal"
+     style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;
+            display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:10px;
+              width:min(560px,100%);max-height:90vh;overflow:auto">
+    <!-- Header -->
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);
+                display:flex;align-items:center;gap:10px">
+      <span id="gttTitle" style="font-weight:700;font-size:14px">Create GTT order</span>
+      <span id="gttLivePill" class="tag" style="font-size:10px">…</span>
+      <span style="flex:1"></span>
+      <button type="button" id="gttClose" class="ghost"
+              style="padding:2px 8px;font-size:12px">✕</button>
+    </div>
+
+    <!-- Form -->
+    <div id="gttBody" style="padding:16px 18px;display:grid;gap:10px">
+      <label class="lbl">Symbol</label>
+      <input id="gttSym" class="inp" placeholder="e.g. RELIANCE" value="">
+
+      <label class="lbl">Exchange</label>
+      <select id="gttExch" class="inp">
+        <option>NSE</option><option>BSE</option>
+        <option>NFO</option><option>BFO</option>
+        <option>MCX</option><option>CDS</option>
+      </select>
+
+      <label class="lbl">Trigger type</label>
+      <select id="gttType" class="inp">
+        <option value="single">Single trigger</option>
+        <option value="two-leg">Two-leg (OCO)</option>
+      </select>
+
+      <label class="lbl">Trigger price 1</label>
+      <input id="gttT1" type="number" step="0.05" class="inp" placeholder="e.g. 2450">
+
+      <label class="lbl" id="gttT2Lbl" hidden>Trigger price 2 (two-leg)</label>
+      <input id="gttT2" type="number" step="0.05" class="inp" hidden>
+
+      <label class="lbl">Side</label>
+      <select id="gttSide" class="inp">
+        <option value="SELL">SELL (exit long / stop-loss)</option>
+        <option value="BUY">BUY (exit short / stop-loss)</option>
+      </select>
+
+      <label class="lbl">Quantity</label>
+      <input id="gttQty" type="number" step="1" class="inp" placeholder="e.g. 10">
+
+      <label class="lbl">Order type</label>
+      <select id="gttOrdType" class="inp">
+        <option value="LIMIT">LIMIT</option>
+        <option value="MARKET">MARKET</option>
+        <option value="SL">SL</option>
+        <option value="SL-M">SL-M</option>
+      </select>
+
+      <label class="lbl" id="gttPriceLbl">Price (for LIMIT / SL)</label>
+      <input id="gttPrice" type="number" step="0.05" class="inp">
+
+      <label class="lbl">Product</label>
+      <select id="gttProduct" class="inp">
+        <option value="CNC">CNC (delivery)</option>
+        <option value="MIS">MIS (intraday)</option>
+        <option value="NRML">NRML (F&O carry)</option>
+      </select>
+
+      <div id="gttPreview"
+           style="background:var(--panel2);border:1px solid var(--border);
+                  border-radius:6px;padding:10px 12px;font-size:11px;
+                  font-family:ui-monospace,monospace;color:var(--muted);
+                  white-space:pre-wrap;word-break:break-all;margin-top:6px"></div>
+
+      <div id="gttErr" hidden
+           style="background:#2a1414;border:1px solid #f85149;border-radius:6px;
+                  padding:10px 12px;color:#f85149;font-size:12px"></div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:12px 18px;border-top:1px solid var(--border);
+                display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" id="gttCancel" class="ghost">Cancel</button>
+      <button type="button" id="gttSave" class="btnPrimary">Confirm &amp; send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ CONFIRM MODAL ═══════════ -->
+<div id="confirmModal"
+     style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;
+            display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--panel);border:2px solid #f85149;border-radius:10px;
+              width:min(480px,100%);padding:20px">
+    <div style="font-size:22px;margin-bottom:6px">⚠️</div>
+    <div id="confirmTitle" style="font-weight:700;font-size:15px;margin-bottom:10px">
+      Confirm LIVE action
+    </div>
+    <div id="confirmBody" style="font-size:12.5px;color:var(--muted);
+         font-family:ui-monospace,monospace;white-space:pre-wrap;
+         background:var(--panel2);padding:12px;border-radius:6px;
+         word-break:break-all;margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" id="confirmNo"  class="ghost">Cancel</button>
+      <button type="button" id="confirmYes"
+              style="background:#f85149;border:none;color:#fff;border-radius:6px;
+                     padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px">
+        Yes, send to Zerodha
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Placeholder -->
+<div id="placeholder"
+     style="background:var(--panel);border:1px dashed var(--border);border-radius:8px;
+            padding:40px;text-align:center;color:var(--muted)">
+  Click <b>Login to Zerodha</b> above to connect. Your browser will open the Zerodha login page.
+</div>
+
+<style>
+  [hidden]{display:none !important}
+  .inp{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+       border-radius:6px;padding:5px 8px;font-size:12px}
+  .lbl{color:var(--muted);font-size:12px}
+  .btnPrimary{background:var(--accent);border:none;color:#04121f;border-radius:6px;
+              padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px}
+  .btnPrimary:disabled{opacity:.5;cursor:wait}
+  .ghost{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+         border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer}
+  .ghost:hover{color:var(--fg);border-color:var(--accent)}
+  .kv{display:flex;flex-direction:column;gap:3px}
+  .kv .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;
+         letter-spacing:.05em}
+  .kv .v{color:var(--fg);font-weight:600;font-size:13px}
+
+  .bTab{background:transparent;border:1px solid transparent;color:var(--muted);
+        border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer}
+  .bTab:hover{color:var(--fg)}
+  .bTab.active{background:var(--panel);color:var(--accent);border-color:var(--border)}
+
+  .card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+        padding:10px 12px}
+  .card .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;
+           letter-spacing:.05em}
+  .card .v{font-size:16px;font-weight:600;margin-top:4px;
+           font-variant-numeric:tabular-nums}
+  .card .sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+  table.bt{width:100%;border-collapse:collapse;font-size:12px;
+           font-variant-numeric:tabular-nums}
+  table.bt th, table.bt td{padding:8px 10px;border-bottom:1px solid var(--border);
+           text-align:right;white-space:nowrap}
+  table.bt th{color:var(--muted);font-weight:600;font-size:10.5px;
+           text-transform:uppercase;letter-spacing:.05em;
+           position:sticky;top:0;background:var(--bg);z-index:1}
+  table.bt th:first-child, table.bt td:first-child{text-align:left}
+  table.bt tbody tr:hover{background:#141c28}
+  .buy{color:var(--good)} .sell{color:var(--bad)} .mut{color:var(--muted)}
+  .tag{display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;
+       font-weight:700;letter-spacing:.04em}
+  .tag.buy{background:#1e4620;color:#7ee787}
+  .tag.sell{background:#5c1e1e;color:#f85149}
+  .tag.ok{background:#1e4620;color:#7ee787}
+  .tag.open{background:#1c3d5c;color:#79c0ff}
+  .tag.wait{background:#3d3d1e;color:#e3b341}
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:12px}
+  .tblwrap{border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:600px}
+
+  .gttBtn{background:transparent;border:1px solid var(--border);
+          color:var(--muted);border-radius:5px;padding:2px 8px;
+          font-size:11px;cursor:pointer;margin-left:4px}
+  .gttBtn:hover{color:var(--fg);border-color:var(--accent)}
+  .gttBtn.del:hover{color:var(--bad);border-color:var(--bad)}
+  .liveOn {background:#5c1e1e;color:#f85149}
+  .liveOff{background:#3d3d1e;color:#e3b341}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+
+let isConnected = false;
+let activeTab   = 'positions';
+let lastAccount = null;
+let pollTimer   = null;
+let autoTimer   = null;
+let nextTickAt  = 0;
+
+/* Indian number format: 12,34,567.89 */
+function fmtINR(v, dec=2){
+  if (v == null || v === '' || isNaN(v)) return '—';
+  const n = Number(v);
+  const sign = n < 0 ? '-' : '';
+  const a = Math.abs(n);
+  const parts = a.toFixed(dec).split('.');
+  let intPart = parts[0];
+  const decPart = parts[1] || '';
+  let lastThree = intPart.slice(-3);
+  const rest = intPart.slice(0, -3);
+  if (rest) lastThree = ',' + lastThree;
+  const formatted = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree;
+  return sign + formatted + (decPart ? '.' + decPart : '');
+}
+function cls(v){ return v > 0 ? 'buy' : v < 0 ? 'sell' : 'mut'; }
+function sign(v){ return v > 0 ? '+' : ''; }
+
+/* beep on first-time negative cash */
+let prevNegCash = null;
+function alertBeep(){
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [1046, 1318, 1046].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = f; o.type = 'sine';
+      const t = ctx.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      o.start(t); o.stop(t + 0.18);
+    });
+  } catch(e){}
+}
+function updateNegCashWarning(t){
+  const neg = !!t.available_negative;
+  const amt = t.available_abs || 0;
+  const banner = $('negCashBanner');
+  if (neg){
+    banner.hidden = false;
+    $('negCashAmt').textContent = '₹' + fmtINR(amt);
+    // Beep only when this is a fresh negative state
+    if (prevNegCash !== true) alertBeep();
+    prevNegCash = true;
+  } else {
+    banner.hidden = true;
+    $('negCashAmt').textContent = '₹0';
+    prevNegCash = false;
+  }
+}
+
+function setStatus(txt, kind){
+  const el = $('connStatus');
+  el.textContent = txt;
+  el.style.color = kind === 'err' ? '#f85149'
+                 : kind === 'ok'  ? '#3fb950' : '#8b949e';
+}
+
+/* ---- profile card ---- */
+let profileOpen = false;
+function setProfileOpen(open){
+  profileOpen = open;
+  $('profileBody').style.display = open ? 'grid' : 'none';
+  const uid = (window._lastProfile && window._lastProfile.user_id) || '';
+  $('profileToggle').textContent = (open ? '▾ ACCOUNT' : '▸ ACCOUNT') + (uid ? ' · ' + uid : '');
+}
+function renderProfile(profile){
+  if (!profile){ $('profileCard').hidden = true; return; }
+  window._lastProfile = profile;
+  $('profileCard').hidden = false;
+  const kv = (k, v) => `<div class="kv"><div class="k">${k}</div><div class="v">${v ?? '—'}</div></div>`;
+  $('profileBody').innerHTML =
+    kv('User ID',     profile.user_id) +
+    kv('User name',   profile.user_name) +
+    kv('Email',       profile.email) +
+    kv('Broker',      profile.broker) +
+    kv('Exchanges',   (profile.exchanges || []).join(', ')) +
+    kv('Products',    (profile.products || []).join(', ')) +
+    kv('Order types', (profile.order_types || []).join(', '));
+  setProfileOpen(profileOpen);
+}
+$('profileToggle').addEventListener('click', () => setProfileOpen(!profileOpen));
+
+/* ---- status check ---- */
+async function fetchStatus(){
+  try {
+    const r = await fetch('/api/broker/zerodha/status');
+    const d = await r.json();
+    if (!d.ok){ setStatus(d.error || 'unavailable', 'err'); return; }
+
+    if (d.logged_in){
+      isConnected = true;
+      setStatus(`connected · ${d.profile?.user_id || ''}`, 'ok');
+      renderProfile(d.profile);
+      $('loginBtn').hidden = true;
+      $('resetLoginBtn').hidden = true;
+      $('loginUrlBar').hidden = true;
+      $('placeholder').hidden = true;
+      $('topRefreshBtn').hidden = false;
+      $('autoWrap').style.display = '';
+      $('autoInterval').style.display = '';
+      stopPoll();
+      await fetchAccount();
+    } else {
+      isConnected = false;
+      setStatus('not connected', '');
+      renderProfile(null);
+      $('loginBtn').hidden = false;
+      $('loginBtn').disabled = false;
+      $('resetLoginBtn').hidden = true;
+      $('topRefreshBtn').hidden = true;
+      $('autoWrap').style.display = 'none';
+      $('autoInterval').style.display = 'none';
+      $('summaryCards').hidden = true;
+      $('tabBar').hidden = true;
+      $('tabContent').hidden = true;
+      $('placeholder').hidden = false;
+      if (d.login_in_progress){
+        $('resetLoginBtn').hidden = false;
+        $('loginBtn').disabled = true;
+        setStatus('waiting for login… (browser opened)', '');
+        if (d.login_url){
+          $('loginUrlBar').hidden = false;
+          $('loginUrlLink').textContent = d.login_url;
+          $('loginUrlLink').href = d.login_url;
+        }
+      }
+    }
+  } catch (e){
+    setStatus('request failed', 'err');
+    console.error(e);
+  }
+}
+
+/* ---- account data ---- */
+async function fetchAccount(){
+  if (!isConnected) return;
+  try {
+    const r = await fetch('/api/broker/zerodha/account');
+    const d = await r.json();
+    if (!d.ok){ return; }
+    lastAccount = d;
+    renderSummary(d.totals, d.margins);
+    renderTab();
+    $('summaryCards').hidden = false;
+    $('tabBar').hidden = false;
+    $('tabContent').hidden = false;
+    $('lastUpdate').textContent = 'updated ' + new Date().toLocaleTimeString();
+  } catch (e){
+    console.error('account fetch', e);
+  }
+}
+
+/* ---- summary ---- */
+function renderSummary(t, m){
+  const cards = [
+    ['Holdings value', fmtINR(t.holdings_value), ''],
+    ['Holdings P&L',   sign(t.holdings_pnl) + fmtINR(t.holdings_pnl), cls(t.holdings_pnl)],
+    ['Holdings day',   sign(t.holdings_day) + fmtINR(t.holdings_day), cls(t.holdings_day)],
+    ['Positions P&L',  sign(t.positions_pnl) + fmtINR(t.positions_pnl), cls(t.positions_pnl)],
+    ['Positions day',  sign(t.positions_day) + fmtINR(t.positions_day), cls(t.positions_day)],
+    ['Available ₹',    fmtINR(m.available || 0),
+       (m.available || 0) < 0 ? 'sell' : ''],
+    ['Used margin ₹',  fmtINR(m.used_total || 0), ''],
+    ['Total margin ₹', fmtINR(m.net || 0), ''],
+  ];
+  $('summaryCards').innerHTML = cards.map(([k, v, c]) => {
+    // Highlight Available ₹ card with red border when negative
+    const isAvailableNeg = (k === 'Available ₹' && (m.available || 0) < 0);
+    const borderStyle = isAvailableNeg
+      ? 'border:2px solid #f85149; background:#2a1414;'
+      : '';
+    return `<div class="card" style="${borderStyle}">
+      <div class="k">${isAvailableNeg ? '⚠️ ' : ''}${k}</div>
+      <div class="v ${c}">${v}</div>
+    </div>`;
+  }).join('');
+  updateNegCashWarning(t);
+}
+
+/* ---- tabs ---- */
+document.querySelectorAll('.bTab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bTab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab = btn.dataset.tab;
+    // refresh live-trading status before drawing GTT tab
+    if (activeTab === 'gtts' && typeof fetchLiveStatus === 'function'){
+      fetchLiveStatus().then(() => renderTab());
+    } else {
+      renderTab();
+    }
+  });
+});
+
+let renderTab = function(){
+  if (!lastAccount) return;
+  const el = $('tabContent');
+  if (activeTab === 'positions') el.innerHTML = htmlPositions(lastAccount.positions);
+  else if (activeTab === 'holdings') el.innerHTML = htmlHoldings(lastAccount.holdings);
+  else if (activeTab === 'orders')   el.innerHTML = htmlOrders(lastAccount.orders);
+  else if (activeTab === 'tradebook')el.innerHTML = htmlTradebook(lastAccount.tradebook);
+  else if (activeTab === 'gtts')     el.innerHTML = htmlGtts(lastAccount.gtts);
+  else if (activeTab === 'margins')  el.innerHTML = htmlMargins(lastAccount.margins);
+};
+
+function htmlPositions(p){
+  if (!p || !p.ok) return `<div class="empty">⚠️ ${p ? p.error : 'not available'}</div>`;
+  const net = p.net || [];
+  if (!net.length) return `<div class="empty">No open positions.</div>`;
+  const rows = net.map(x => {
+    const qty  = x.quantity || 0;
+    const pnl  = x.pnl || 0;
+    const m2m  = x.m2m || 0;
+    const ltp  = x.last_price || 0;
+    const avg  = x.average_price || 0;
+    const val  = qty * ltp;
+    const pct  = (qty && avg) ? (pnl / Math.abs(qty * avg) * 100) : 0;
+    return `<tr>
+      <td><b>${x.tradingsymbol}</b><div style="color:var(--muted);font-size:10px">${x.exchange}</div></td>
+      <td>${x.product}</td>
+      <td class="${qty >= 0 ? 'buy' : 'sell'}">${qty}</td>
+      <td>${fmtINR(avg)}</td>
+      <td>${fmtINR(ltp)}</td>
+      <td class="${cls(pnl)}">${sign(pnl)}${fmtINR(pnl)}</td>
+      <td class="${cls(pct)}">${sign(pct)}${pct.toFixed(2)}%</td>
+      <td class="${cls(m2m)}">${sign(m2m)}${fmtINR(m2m)}</td>
+      <td>${fmtINR(val)}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="tblwrap"><table class="bt">
+    <thead><tr>
+      <th>Symbol</th><th>Product</th><th>Qty</th>
+      <th>Avg</th><th>LTP</th>
+      <th>P&amp;L ₹</th><th>P&amp;L %</th><th>Day ₹</th><th>Value ₹</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function htmlHoldings(h){
+  if (!h || !h.ok) return `<div class="empty">⚠️ ${h ? h.error : 'not available'}</div>`;
+  const list = h.holdings || [];
+  if (!list.length) return `<div class="empty">No holdings.</div>`;
+  const rows = list.map(x => {
+    const qty  = x.quantity || 0;
+    const avg  = x.average_price || 0;
+    const ltp  = x.last_price || 0;
+    const pnl  = x.pnl || 0;
+    const val  = qty * ltp;
+    const pct  = (avg && qty) ? (pnl / Math.abs(qty * avg) * 100) : 0;
+    const day  = (x.day_change || 0) * qty;
+    return `<tr>
+      <td><b>${x.tradingsymbol}</b><div style="color:var(--muted);font-size:10px">${x.exchange}</div></td>
+      <td>${qty}</td>
+      <td>${fmtINR(avg)}</td>
+      <td>${fmtINR(ltp)}</td>
+      <td class="${cls(pnl)}">${sign(pnl)}${fmtINR(pnl)}</td>
+      <td class="${cls(pct)}">${sign(pct)}${pct.toFixed(2)}%</td>
+      <td class="${cls(day)}">${sign(day)}${fmtINR(day)}</td>
+      <td>${fmtINR(val)}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="tblwrap"><table class="bt">
+    <thead><tr>
+      <th>Symbol</th><th>Qty</th>
+      <th>Avg</th><th>LTP</th>
+      <th>P&amp;L ₹</th><th>P&amp;L %</th><th>Day ₹</th><th>Value ₹</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function orderStatusTag(s){
+  const m = {
+    'COMPLETE': 'ok', 'REJECTED': 'sell', 'CANCELLED': 'sell',
+    'OPEN': 'open', 'PENDING': 'wait', 'TRIGGER PENDING': 'wait',
+    'OPEN PENDING': 'open', 'VALIDATION PENDING': 'wait',
+    'PUT ORDER REQ RECEIVED': 'wait', 'MODIFY PENDING': 'wait',
+    'CANCEL PENDING': 'wait', 'AMO REQ RECEIVED': 'wait',
+  };
+  return `<span class="tag ${m[s] || ''}">${s}</span>`;
+}
+
+function htmlOrders(o){
+  if (!o || !o.ok) return `<div class="empty">⚠️ ${o ? o.error : 'not available'}</div>`;
+  const list = (o.orders || []).slice().reverse();
+  if (!list.length) return `<div class="empty">No orders today.</div>`;
+  const rows = list.map(x => {
+    const ts = (x.order_timestamp || '').toString().slice(0, 19).replace('T', ' ');
+    const side = x.transaction_type === 'BUY' ? 'buy' : 'sell';
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px">${ts}</td>
+      <td><b>${x.tradingsymbol}</b><div style="color:var(--muted);font-size:10px">${x.exchange}</div></td>
+      <td><span class="tag ${side}">${x.transaction_type}</span></td>
+      <td>${x.order_type}</td>
+      <td>${x.quantity}</td>
+      <td>${x.filled_quantity}/${x.quantity}</td>
+      <td>${x.price ? fmtINR(x.price) : 'MKT'}</td>
+      <td>${x.average_price ? fmtINR(x.average_price) : '—'}</td>
+      <td>${x.product}</td>
+      <td>${orderStatusTag(x.status)}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="tblwrap"><table class="bt">
+    <thead><tr>
+      <th>Time</th><th>Symbol</th><th>Side</th><th>Type</th>
+      <th>Qty</th><th>Filled</th><th>Price</th><th>Avg</th>
+      <th>Product</th><th>Status</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function htmlTradebook(tb){
+  if (!tb || !tb.ok) return `<div class="empty">⚠️ ${tb ? tb.error : 'not available'}</div>`;
+  const list = (tb.trades || []).slice().reverse();
+  if (!list.length) return `<div class="empty">No trades filled today.</div>`;
+  const rows = list.map(x => {
+    const ts = (x.fill_timestamp || x.order_timestamp || '').toString()
+      .slice(0, 19).replace('T', ' ');
+    const side = x.transaction_type === 'BUY' ? 'buy' : 'sell';
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px">${ts}</td>
+      <td><b>${x.tradingsymbol}</b><div style="color:var(--muted);font-size:10px">${x.exchange}</div></td>
+      <td><span class="tag ${side}">${x.transaction_type}</span></td>
+      <td>${x.quantity}</td>
+      <td>${fmtINR(x.average_price)}</td>
+      <td>${x.product}</td>
+      <td>${x.order_id}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="tblwrap"><table class="bt">
+    <thead><tr>
+      <th>Time</th><th>Symbol</th><th>Side</th>
+      <th>Qty</th><th>Avg fill price</th><th>Product</th><th>Order ID</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function htmlGtts(g){
+  if (!g || !g.ok) return `<div class="empty">⚠️ ${g ? g.error : 'not available'}</div>`;
+  const list = (g.gtts || []);
+  if (!list.length) return `<div class="empty">No GTT orders.</div>`;
+  const rows = list.map(x => {
+    const t = x.condition || {};
+    const o = x.orders && x.orders[0] ? x.orders[0] : {};
+    const status = (x.status || '').toLowerCase();
+    const statusTag = status === 'active' ? 'ok'
+                    : status === 'triggered' ? 'open'
+                    : status === 'cancelled' || status === 'rejected' ? 'sell'
+                    : 'wait';
+    return `<tr>
+      <td>${x.id}</td>
+      <td><b>${x.condition?.tradingsymbol || o.tradingsymbol || '—'}</b>
+          <div style="color:var(--muted);font-size:10px">${x.type}</div></td>
+      <td>${t.exchange || o.exchange || '—'}</td>
+      <td>${t.trigger_values ? fmtINR(t.trigger_values[0]) : '—'}</td>
+      <td>${o.transaction_type || '—'}</td>
+      <td>${o.quantity || '—'}</td>
+      <td>${o.price ? fmtINR(o.price) : (o.order_type || '—')}</td>
+      <td><span class="tag ${statusTag}">${x.status}</span></td>
+      <td style="color:var(--muted);font-size:11px">${(x.created_at||'').toString().slice(0,19).replace('T',' ')}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="tblwrap"><table class="bt">
+    <thead><tr>
+      <th>ID</th><th>Symbol</th><th>Exch</th><th>Trigger ₹</th>
+      <th>Side</th><th>Qty</th><th>Price / Type</th>
+      <th>Status</th><th>Created</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function htmlMargins(m){
+  if (!m || !m.ok) return `<div class="empty">⚠️ ${m ? m.error : 'not available'}</div>`;
+  const cards = [
+    ['Available cash',  m.available],
+    ['Used: debits',    m.used_debits],
+    ['Used: span',      m.used_span],
+    ['Used: option prem', m.used_option],
+    ['Used total',      m.used_total],
+    ['Net',             m.net],
+  ];
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+    ${cards.map(([k, v]) => `<div class="card"><div class="k">${k}</div>
+      <div class="v">${fmtINR(v || 0)}</div></div>`).join('')}
+  </div>`;
+}
+
+/* ---- auto refresh ---- */
+function startAuto(){
+  stopAuto();
+  const secs = parseInt($('autoInterval').value, 10) || 30;
+  const loop = async () => {
+    nextTickAt = Date.now() + secs * 1000;
+    await fetchAccount();
+    nextTickAt = Date.now() + secs * 1000;
+  };
+  loop();
+  autoTimer = setInterval(loop, secs * 1000);
+  if (!pollTimer){
+    pollTimer = setInterval(() => {
+      const left = Math.max(0, Math.round((nextTickAt - Date.now()) / 1000));
+      $('autoCountdown').textContent = left > 0 ? `next ${left}s` : '';
+    }, 500);
+  }
+}
+function stopAuto(){
+  if (autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+  if (pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+  $('autoCountdown').textContent = '';
+}
+$('autoRefresh').addEventListener('change', () => {
+  if ($('autoRefresh').checked) startAuto();
+  else stopAuto();
+});
+$('autoInterval').addEventListener('change', () => {
+  if ($('autoRefresh').checked) startAuto();
+});
+
+/* ---- login / logout ---- */
+$('loginBtn').addEventListener('click', async () => {
+  setStatus('starting login…');
+  try {
+    const r = await fetch('/api/broker/zerodha/login', { method: 'POST' });
+    const d = await r.json();
+    if (!d.ok){ setStatus(d.error || 'login failed', 'err'); return; }
+    setStatus('waiting for login… (browser opened)', '');
+    if (d.login_url){
+      $('loginUrlBar').hidden = false;
+      $('loginUrlLink').textContent = d.login_url;
+      $('loginUrlLink').href = d.login_url;
+    }
+    startPoll();
+  } catch (e){ setStatus('login request failed', 'err'); console.error(e); }
+});
+$('resetLoginBtn').addEventListener('click', async () => {
+  try {
+    await fetch('/api/broker/zerodha/reset', { method: 'POST' });
+    $('loginUrlBar').hidden = true;
+    await fetchStatus();
+  } catch (e){ console.error(e); }
+});
+$('logoutBtn').addEventListener('click', async () => {
+  try {
+    await fetch('/api/broker/zerodha/logout', { method: 'POST' });
+    stopAuto();
+    await fetchStatus();
+  } catch (e){ console.error(e); }
+});
+$('refreshBtn').addEventListener('click', () => fetchAccount());
+$('topRefreshBtn').addEventListener('click', () => fetchAccount());
+
+function startPoll(){
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(fetchStatus, 2000);
+}
+function stopPoll(){
+  if (pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+}
+
+/* ===== LIVE-TRADING STATE ===== */
+let liveTradingEnabled = false;
+
+async function fetchLiveStatus(){
+  try {
+    const r = await fetch('/api/broker/zerodha/live_trading');
+    const d = await r.json();
+    liveTradingEnabled = !!d.enabled;
+  } catch { liveTradingEnabled = false; }
+  const pill = $('gttLivePill');
+  if (pill){
+    pill.textContent = liveTradingEnabled ? 'LIVE' : 'BLOCKED';
+    pill.className = 'tag ' + (liveTradingEnabled ? 'liveOn' : 'liveOff');
+  }
+}
+
+/* ===== GTT MODAL ===== */
+let gttMode = 'create';   // 'create' | 'modify'
+let gttEditId = null;
+
+function openGttModal(mode, existing){
+  gttMode = mode;
+  gttEditId = existing ? existing.id : null;
+  $('gttTitle').textContent = mode === 'create' ? 'Create GTT order' : `Modify GTT #${gttEditId}`;
+  $('gttErr').hidden = true;
+  $('gttModal').style.display = 'flex';
+  fetchLiveStatus();
+
+  if (mode === 'modify' && existing){
+    const t = existing.condition || {};
+    const o = (existing.orders && existing.orders[0]) || {};
+    $('gttSym').value   = t.tradingsymbol || o.tradingsymbol || '';
+    $('gttExch').value  = t.exchange || o.exchange || 'NSE';
+    $('gttType').value  = existing.type || 'single';
+    $('gttT1').value    = (t.trigger_values && t.trigger_values[0]) || '';
+    $('gttT2').value    = (t.trigger_values && t.trigger_values[1]) || '';
+    $('gttSide').value  = o.transaction_type || 'SELL';
+    $('gttQty').value   = o.quantity || '';
+    $('gttOrdType').value = o.order_type || 'LIMIT';
+    $('gttPrice').value = o.price || '';
+    $('gttProduct').value = o.product || 'CNC';
+  } else {
+    ['gttSym','gttT1','gttT2','gttQty','gttPrice'].forEach(id => $(id).value = '');
+    $('gttExch').value = 'NSE';
+    $('gttType').value = 'single';
+    $('gttSide').value = 'SELL';
+    $('gttOrdType').value = 'LIMIT';
+    $('gttProduct').value = 'CNC';
+  }
+  toggleGttT2();
+  updateGttPreview();
+}
+
+function closeGttModal(){ $('gttModal').style.display = 'none'; }
+
+function toggleGttT2(){
+  const twoLeg = $('gttType').value === 'two-leg';
+  $('gttT2Lbl').hidden = !twoLeg;
+  $('gttT2').hidden    = !twoLeg;
+}
+
+function gttPayload(){
+  const type = $('gttType').value;
+  const tvals = type === 'two-leg'
+    ? [parseFloat($('gttT1').value), parseFloat($('gttT2').value)].filter(v => !isNaN(v))
+    : [parseFloat($('gttT1').value)].filter(v => !isNaN(v));
+
+  const order = {
+    transaction_type: $('gttSide').value,
+    quantity:         parseInt($('gttQty').value, 10),
+    order_type:       $('gttOrdType').value,
+    product:          $('gttProduct').value,
+  };
+  const ot = $('gttOrdType').value;
+  if (ot === 'LIMIT' || ot === 'SL'){
+    const p = parseFloat($('gttPrice').value);
+    if (!isNaN(p)) order.price = p;
+  }
+
+  return {
+    type:           type,
+    tradingsymbol:  $('gttSym').value.trim().toUpperCase(),
+    exchange:       $('gttExch').value,
+    trigger_values: tvals,
+    last_price:     0,     // server fills this via LTP
+    orders:         [order],
+  };
+}
+
+function updateGttPreview(){
+  const p = gttPayload();
+  $('gttPreview').textContent = JSON.stringify(p, null, 2);
+}
+
+['gttSym','gttExch','gttType','gttT1','gttT2','gttSide','gttQty',
+ 'gttOrdType','gttPrice','gttProduct'].forEach(id => {
+  const el = $(id);
+  if (el){
+    el.addEventListener('input',  () => { if (id==='gttType') toggleGttT2(); updateGttPreview(); });
+    el.addEventListener('change', () => { if (id==='gttType') toggleGttT2(); updateGttPreview(); });
+  }
+});
+
+$('gttClose')?.addEventListener('click', closeGttModal);
+$('gttCancel')?.addEventListener('click', closeGttModal);
+
+/* ===== CONFIRM MODAL ===== */
+let confirmResolve = null;
+function showConfirm(){ $('confirmModal').style.display = 'flex'; }
+function hideConfirm(){ $('confirmModal').style.display = 'none'; }
+function askConfirm(title, payload){
+  return new Promise(resolve => {
+    confirmResolve = resolve;
+    $('confirmTitle').textContent = title;
+    try {
+      const txt = JSON.stringify(payload, null, 2);
+      $('confirmBody').textContent = (txt && txt !== '{}' && txt !== 'null') ? txt : '(empty payload)';
+    } catch(e){
+      $('confirmBody').textContent = String(payload);
+    }
+    showConfirm();
+  });
+}
+
+/* Close confirm with ESC or click-outside */
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if ($('confirmModal').style.display === 'flex'){
+    hideConfirm();
+    if (confirmResolve) confirmResolve(false);
+    confirmResolve = null;
+  }
+  if ($('gttModal').style.display === 'flex'){ closeGttModal(); }
+});
+$('confirmModal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'confirmModal'){
+    hideConfirm();
+    if (confirmResolve) confirmResolve(false);
+    confirmResolve = null;
+  }
+});
+$('gttModal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'gttModal') closeGttModal();
+});
+$('confirmNo')?.addEventListener('click', () => {
+  hideConfirm();
+  if (confirmResolve) confirmResolve(false);
+  confirmResolve = null;
+});
+$('confirmYes')?.addEventListener('click', () => {
+  hideConfirm();
+  if (confirmResolve) confirmResolve(true);
+  confirmResolve = null;
+});
+
+/* ===== SEND ===== */
+$('gttSave')?.addEventListener('click', async () => {
+  $('gttErr').hidden = true;
+  const payload = gttPayload();
+  if (!payload.tradingsymbol){ return showGttErr('Enter a symbol'); }
+  if (!payload.orders[0].quantity){ return showGttErr('Enter quantity'); }
+  if (payload.trigger_values.some(v => isNaN(v))) return showGttErr('Enter valid trigger prices');
+
+  // refresh live-trading flag from server before deciding
+  await fetchLiveStatus();
+  if (!liveTradingEnabled){
+    return showGttErr('LIVE TRADING is OFF. Set ZERODHA_LIVE_TRADING=1 in web/.env, then restart the server. This blocks all create/modify/delete GTT actions.');
+  }
+
+  // fetch LTP first (Zerodha requires it)
+  const ltpRes = await fetch(`/api/broker/zerodha/ltp?exchange=${payload.exchange}&symbol=${payload.tradingsymbol}`);
+  const ltpData = await ltpRes.json();
+  if (!ltpData.ok) return showGttErr('Could not fetch LTP: ' + ltpData.error);
+  payload.last_price = ltpData.last_price;
+
+  const ok = await askConfirm(
+    gttMode === 'create' ? 'Create GTT (LIVE)' : `Modify GTT #${gttEditId} (LIVE)`,
+    payload
+  );
+  if (!ok) return;
+
+  const url = gttMode === 'create'
+    ? '/api/broker/zerodha/gtt/create'
+    : '/api/broker/zerodha/gtt/modify';
+  const body = gttMode === 'create' ? payload : { ...payload, gtt_id: gttEditId };
+
+  try {
+    const r = await fetch(url, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!d.ok) return showGttErr(d.error);
+    closeGttModal();
+    await fetchAccount();
+  } catch (e){ showGttErr('request failed: ' + e.message); }
+});
+
+function showGttErr(msg){
+  $('gttErr').hidden = false;
+  $('gttErr').textContent = '⚠️ ' + msg;
+}
+
+/* ===== DELETE ===== */
+async function deleteGtt(gttId, symbol){
+  const ok = await askConfirm(`Delete GTT #${gttId} (LIVE)`, { delete: symbol, gtt_id: gttId });
+  if (!ok) return;
+  try {
+    const r = await fetch('/api/broker/zerodha/gtt/delete', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ gtt_id: gttId })
+    });
+    const d = await r.json();
+    if (!d.ok){ alert('Delete failed: ' + d.error); return; }
+    await fetchAccount();
+  } catch (e){ alert('request failed: ' + e.message); }
+}
+
+/* replace htmlGtts with a version that has buttons */
+function htmlGttsWithActions(g){
+  if (!g || !g.ok) return `<div class="empty">⚠️ ${g ? g.error : 'not available'}</div>`;
+  const list = (g.gtts || []);
+  const livePill = liveTradingEnabled
+    ? `<span class="tag liveOn" style="font-size:11px;padding:3px 10px">● LIVE — actions will hit Zerodha</span>`
+    : `<span class="tag liveOff" style="font-size:11px;padding:3px 10px">● BLOCKED — set ZERODHA_LIVE_TRADING=1 in .env to enable</span>`;
+
+  const header = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <span style="color:var(--muted);font-size:12px">${list.length} GTT order(s)</span>
+    ${livePill}
+    <span style="flex:1"></span>
+    <button id="newGttBtn" class="btnPrimary" style="padding:6px 14px;font-size:12px">
+      + Create GTT
+    </button>
+  </div>`;
+  if (!list.length) return header + `<div class="empty">No GTT orders. Click <b>+ Create GTT</b> to add one.</div>`;
+
+  const rows = list.map(x => {
+    const t = x.condition || {};
+    const o = x.orders && x.orders[0] ? x.orders[0] : {};
+    const status = (x.status || '').toLowerCase();
+    const statusTag = status === 'active' ? 'ok'
+                    : status === 'triggered' ? 'open'
+                    : status === 'cancelled' || status === 'rejected' ? 'sell'
+                    : 'wait';
+    return `<tr>
+      <td>${x.id}</td>
+      <td><b>${t.tradingsymbol || o.tradingsymbol || '—'}</b>
+          <div style="color:var(--muted);font-size:10px">${x.type}</div></td>
+      <td>${t.exchange || o.exchange || '—'}</td>
+      <td>${t.trigger_values ? fmtINR(t.trigger_values[0]) : '—'}</td>
+      <td>${o.transaction_type || '—'}</td>
+      <td>${o.quantity || '—'}</td>
+      <td>${o.price ? fmtINR(o.price) : (o.order_type || '—')}</td>
+      <td><span class="tag ${statusTag}">${x.status}</span></td>
+      <td style="color:var(--muted);font-size:11px">${(x.created_at||'').toString().slice(0,19).replace('T',' ')}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="gttBtn" onclick="window._editGtt(${x.id})">Edit</button>
+        <button class="gttBtn del" onclick="window._deleteGtt(${x.id}, '${(t.tradingsymbol||'').replace(/'/g,'')}')">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  return header + `<div class="tblwrap"><table class="bt">
+    <thead><tr>
+      <th>ID</th><th>Symbol</th><th>Exch</th><th>Trigger ₹</th>
+      <th>Side</th><th>Qty</th><th>Price / Type</th>
+      <th>Status</th><th>Created</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+/* wire global handlers so inline onclick works */
+window._editGtt = function(gttId){
+  if (!lastAccount || !lastAccount.gtts || !lastAccount.gtts.ok) return;
+  const item = (lastAccount.gtts.gtts || []).find(g => g.id === gttId);
+  if (!item) return;
+  openGttModal('modify', item);
+};
+window._deleteGtt = function(gttId, symbol){ deleteGtt(gttId, symbol); };
+
+/* override renderTab for gtts to use the richer version */
+const _origRenderTab = renderTab;
+renderTab = function(){
+  if (!lastAccount) return;
+  const el = $('tabContent');
+  if (activeTab === 'gtts'){
+    el.innerHTML = htmlGttsWithActions(lastAccount.gtts);
+    const newBtn = $('newGttBtn');
+    if (newBtn) newBtn.addEventListener('click', () => openGttModal('create'));
+    return;
+  }
+  _origRenderTab();
+};
+
+/* boot */
+fetchLiveStatus();
+fetchStatus();
+</script>
+{% endblock %}

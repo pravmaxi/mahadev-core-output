@@ -1,0 +1,1791 @@
+{
+    "run_start": "2026-09-03 15:24:37 IST",
+    "duration": "179.9s",
+    "triggered_info": {
+        "^NSEI_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 23888.77
+        },
+        "wt_^NSEI_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 23910.45
+        },
+        "ce_^NSEI_1h": {
+            "datetime": "2026-08-27 14:15",
+            "direction": "sell",
+            "level": 24128.6
+        },
+        "AARTIIND.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 10:15",
+            "t3_value": 506.94
+        },
+        "wt_AARTIIND.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 511.85
+        },
+        "ce_AARTIIND.NS_1h": {
+            "datetime": "2026-08-31 15:15",
+            "direction": "sell",
+            "level": 522.5
+        },
+        "AARTIPHARM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-28 13:15",
+            "t3_value": 871.55
+        },
+        "wt_AARTIPHARM.NS_1h": {
+            "datetime": "2026-09-03 12:15",
+            "direction": "buy",
+            "level": 885.6
+        },
+        "ce_AARTIPHARM.NS_1h": {
+            "datetime": "2026-08-31 12:15",
+            "direction": "buy",
+            "level": 863.55
+        },
+        "ACC.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 1267.19
+        },
+        "wt_ACC.NS_1h": {
+            "datetime": "2026-09-02 12:15",
+            "direction": "buy",
+            "level": 1271.8
+        },
+        "ce_ACC.NS_1h": {
+            "datetime": "2026-08-28 14:15",
+            "direction": "sell",
+            "level": 1303.0
+        },
+        "ALKEM.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-01 10:15",
+            "t3_value": 5204.97
+        },
+        "wt_ALKEM.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "buy",
+            "level": 5198.0
+        },
+        "ce_ALKEM.NS_1h": {
+            "datetime": "2026-08-21 10:15",
+            "direction": "sell",
+            "level": 5340.0
+        },
+        "AMBUJACEM.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 400.71
+        },
+        "wt_AMBUJACEM.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 401.95
+        },
+        "ce_AMBUJACEM.NS_1h": {
+            "datetime": "2026-08-31 09:15",
+            "direction": "sell",
+            "level": 406.0
+        },
+        "APOLLOHOSP.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 8691.63
+        },
+        "wt_APOLLOHOSP.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "sell",
+            "level": 8690.0
+        },
+        "ce_APOLLOHOSP.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "sell",
+            "level": 8684.0
+        },
+        "APOLLOTYRE.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 10:15",
+            "t3_value": 435.19
+        },
+        "wt_APOLLOTYRE.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "sell",
+            "level": 434.1
+        },
+        "ce_APOLLOTYRE.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "sell",
+            "level": 435.85
+        },
+        "APTECHT.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 91.09
+        },
+        "wt_APTECHT.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "sell",
+            "level": 90.7
+        },
+        "ce_APTECHT.NS_1h": {
+            "datetime": "2026-08-11 09:15",
+            "direction": "sell",
+            "level": 93.11
+        },
+        "ASHOKLEY.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-28 10:15",
+            "t3_value": 166.15
+        },
+        "wt_ASHOKLEY.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 167.9
+        },
+        "ce_ASHOKLEY.NS_1h": {
+            "datetime": "2026-08-31 09:15",
+            "direction": "sell",
+            "level": 173.89
+        },
+        "AURUM.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 224.64
+        },
+        "wt_AURUM.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "sell",
+            "level": 224.01
+        },
+        "ce_AURUM.NS_1h": {
+            "datetime": "2026-08-27 14:15",
+            "direction": "sell",
+            "level": 226.25
+        },
+        "AXISBANK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 1260.88
+        },
+        "wt_AXISBANK.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 1278.9
+        },
+        "ce_AXISBANK.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "sell",
+            "level": 1251.4
+        },
+        "BANKBEES.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 593.7
+        },
+        "wt_BANKBEES.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 593.69
+        },
+        "ce_BANKBEES.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "sell",
+            "level": 593.31
+        },
+        "BEL.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 405.98
+        },
+        "wt_BEL.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "buy",
+            "level": 409.6
+        },
+        "ce_BEL.NS_1h": {
+            "datetime": "2026-08-24 13:15",
+            "direction": "sell",
+            "level": 405.55
+        },
+        "BERGEPAINT.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 487.01
+        },
+        "wt_BERGEPAINT.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 489.65
+        },
+        "ce_BERGEPAINT.NS_1h": {
+            "datetime": "2026-08-18 15:15",
+            "direction": "sell",
+            "level": 537.3
+        },
+        "BHARTIARTL.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 1863.57
+        },
+        "wt_BHARTIARTL.NS_1h": {
+            "datetime": "2026-09-01 11:15",
+            "direction": "buy",
+            "level": 1869.7
+        },
+        "ce_BHARTIARTL.NS_1h": {
+            "datetime": "2026-08-18 09:15",
+            "direction": "sell",
+            "level": 1934.9
+        },
+        "BPCL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 15:15",
+            "t3_value": 317.64
+        },
+        "wt_BPCL.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 318.3
+        },
+        "ce_BPCL.NS_1h": {
+            "datetime": "2026-08-31 09:15",
+            "direction": "sell",
+            "level": 310.8
+        },
+        "BUTTERFLY.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-31 11:15",
+            "t3_value": 614.7
+        },
+        "wt_BUTTERFLY.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "buy",
+            "level": 617.0
+        },
+        "ce_BUTTERFLY.NS_1h": {
+            "datetime": "2026-09-01 10:15",
+            "direction": "sell",
+            "level": 622.0
+        },
+        "CDSL.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 1367.68
+        },
+        "wt_CDSL.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 1383.9
+        },
+        "ce_CDSL.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "sell",
+            "level": 1383.0
+        },
+        "CHOLAFIN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 1814.79
+        },
+        "wt_CHOLAFIN.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 1821.7
+        },
+        "ce_CHOLAFIN.NS_1h": {
+            "datetime": "2026-08-28 13:15",
+            "direction": "sell",
+            "level": 1847.4
+        },
+        "CIPLA.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-31 15:15",
+            "t3_value": 1407.89
+        },
+        "wt_CIPLA.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "sell",
+            "level": 1405.9
+        },
+        "ce_CIPLA.NS_1h": {
+            "datetime": "2026-08-14 13:15",
+            "direction": "sell",
+            "level": 1451.4
+        },
+        "COALINDIA.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 09:15",
+            "t3_value": 419.34
+        },
+        "wt_COALINDIA.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "sell",
+            "level": 418.15
+        },
+        "ce_COALINDIA.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "buy",
+            "level": 419.55
+        },
+        "COCHINSHIP.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 1462.45
+        },
+        "wt_COCHINSHIP.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 1479.9
+        },
+        "ce_COCHINSHIP.NS_1h": {
+            "datetime": "2026-08-31 09:15",
+            "direction": "sell",
+            "level": 1501.0
+        },
+        "CYIENT.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 09:15",
+            "t3_value": 1124.26
+        },
+        "wt_CYIENT.NS_1h": {
+            "datetime": "2026-09-01 10:15",
+            "direction": "sell",
+            "level": 1154.8
+        },
+        "ce_CYIENT.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "sell",
+            "level": 1101.2
+        },
+        "DABUR.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 10:15",
+            "t3_value": 379.48
+        },
+        "wt_DABUR.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "buy",
+            "level": 379.4
+        },
+        "ce_DABUR.NS_1h": {
+            "datetime": "2026-07-30 09:15",
+            "direction": "sell",
+            "level": 415.7
+        },
+        "DIAMONDYD.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 11:15",
+            "t3_value": 1152.85
+        },
+        "wt_DIAMONDYD.NS_1h": {
+            "datetime": "2026-09-02 10:15",
+            "direction": "buy",
+            "level": 1160.0
+        },
+        "ce_DIAMONDYD.NS_1h": {
+            "datetime": "2026-08-14 11:15",
+            "direction": "sell",
+            "level": 1170.1
+        },
+        "DIVISLAB.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 14:15",
+            "t3_value": 9211.33
+        },
+        "wt_DIVISLAB.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "sell",
+            "level": 9198.0
+        },
+        "ce_DIVISLAB.NS_1h": {
+            "datetime": "2026-07-27 12:15",
+            "direction": "buy",
+            "level": 7450.0
+        },
+        "DOLLAR.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-01 14:15",
+            "t3_value": 263.27
+        },
+        "wt_DOLLAR.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "buy",
+            "level": 265.55
+        },
+        "ce_DOLLAR.NS_1h": {
+            "datetime": "2026-08-12 11:15",
+            "direction": "sell",
+            "level": 276.8
+        },
+        "EQUITASBNK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 73.69
+        },
+        "wt_EQUITASBNK.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "sell",
+            "level": 73.01
+        },
+        "ce_EQUITASBNK.NS_1h": {
+            "datetime": "2026-08-24 12:15",
+            "direction": "sell",
+            "level": 75.5
+        },
+        "EXIDEIND.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-31 10:15",
+            "t3_value": 425.84
+        },
+        "wt_EXIDEIND.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 430.0
+        },
+        "ce_EXIDEIND.NS_1h": {
+            "datetime": "2026-09-01 13:15",
+            "direction": "sell",
+            "level": 434.4
+        },
+        "FEDERALBNK.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 350.07
+        },
+        "wt_FEDERALBNK.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "sell",
+            "level": 345.7
+        },
+        "ce_FEDERALBNK.NS_1h": {
+            "datetime": "2026-08-31 15:15",
+            "direction": "buy",
+            "level": 356.7
+        },
+        "GABRIEL.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 10:15",
+            "t3_value": 1386.33
+        },
+        "wt_GABRIEL.NS_1h": {
+            "datetime": "2026-09-01 13:15",
+            "direction": "sell",
+            "level": 1405.6
+        },
+        "ce_GABRIEL.NS_1h": {
+            "datetime": "2026-09-03 11:15",
+            "direction": "sell",
+            "level": 1367.4
+        },
+        "GAIL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 172.72
+        },
+        "wt_GAIL.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 173.0
+        },
+        "ce_GAIL.NS_1h": {
+            "datetime": "2026-09-02 11:15",
+            "direction": "sell",
+            "level": 171.35
+        },
+        "GIPCL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 10:15",
+            "t3_value": 206.09
+        },
+        "wt_GIPCL.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "buy",
+            "level": 207.7
+        },
+        "ce_GIPCL.NS_1h": {
+            "datetime": "2026-08-24 09:15",
+            "direction": "buy",
+            "level": 176.2
+        },
+        "GODREJCP.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 889.93
+        },
+        "wt_GODREJCP.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "sell",
+            "level": 860.55
+        },
+        "ce_GODREJCP.NS_1h": {
+            "datetime": "2026-08-24 11:15",
+            "direction": "sell",
+            "level": 920.9
+        },
+        "GOLDBEES.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 124.26
+        },
+        "wt_GOLDBEES.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 124.15
+        },
+        "ce_GOLDBEES.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 126.67
+        },
+        "GRASIM.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 3279.26
+        },
+        "wt_GRASIM.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 3316.2
+        },
+        "ce_GRASIM.NS_1h": {
+            "datetime": "2026-09-02 10:15",
+            "direction": "sell",
+            "level": 3245.0
+        },
+        "GSFC.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-01 10:15",
+            "t3_value": 160.54
+        },
+        "wt_GSFC.NS_1h": {
+            "datetime": "2026-08-31 13:15",
+            "direction": "buy",
+            "level": 157.87
+        },
+        "ce_GSFC.NS_1h": {
+            "datetime": "2026-09-01 10:15",
+            "direction": "buy",
+            "level": 159.89
+        },
+        "HAL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 4753.16
+        },
+        "wt_HAL.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 4793.1
+        },
+        "ce_HAL.NS_1h": {
+            "datetime": "2026-08-20 14:15",
+            "direction": "sell",
+            "level": 4975.1
+        },
+        "HAVELLS.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 11:15",
+            "t3_value": 1195.66
+        },
+        "wt_HAVELLS.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "buy",
+            "level": 1196.8
+        },
+        "ce_HAVELLS.NS_1h": {
+            "datetime": "2026-08-19 11:15",
+            "direction": "sell",
+            "level": 1275.8
+        },
+        "HCLTECH.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 1330.42
+        },
+        "wt_HCLTECH.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "sell",
+            "level": 1318.1
+        },
+        "ce_HCLTECH.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "sell",
+            "level": 1312.7
+        },
+        "HDFCBANK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 703.56
+        },
+        "wt_HDFCBANK.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 711.5
+        },
+        "ce_HDFCBANK.NS_1h": {
+            "datetime": "2026-08-31 13:15",
+            "direction": "sell",
+            "level": 710.5
+        },
+        "HINDUNILVR.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 10:15",
+            "t3_value": 1968.15
+        },
+        "wt_HINDUNILVR.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 1976.0
+        },
+        "ce_HINDUNILVR.NS_1h": {
+            "datetime": "2026-08-18 09:15",
+            "direction": "sell",
+            "level": 2040.0
+        },
+        "ICICIBANK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 1431.71
+        },
+        "wt_ICICIBANK.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 1452.0
+        },
+        "ce_ICICIBANK.NS_1h": {
+            "datetime": "2026-08-31 13:15",
+            "direction": "buy",
+            "level": 1444.6
+        },
+        "ICICIGI.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 11:15",
+            "t3_value": 1531.4
+        },
+        "wt_ICICIGI.NS_1h": {
+            "datetime": "2026-09-02 10:15",
+            "direction": "sell",
+            "level": 1528.6
+        },
+        "ce_ICICIGI.NS_1h": {
+            "datetime": "2026-08-25 13:15",
+            "direction": "sell",
+            "level": 1603.4
+        },
+        "ICICIPRULI.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 14:15",
+            "t3_value": 497.61
+        },
+        "wt_ICICIPRULI.NS_1h": {
+            "datetime": "2026-09-03 12:15",
+            "direction": "sell",
+            "level": 496.0
+        },
+        "ce_ICICIPRULI.NS_1h": {
+            "datetime": "2026-08-28 09:15",
+            "direction": "sell",
+            "level": 506.7
+        },
+        "IDFCFIRSTB.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-08-31 14:15",
+            "t3_value": 85.39
+        },
+        "wt_IDFCFIRSTB.NS_1h": {
+            "datetime": "2026-08-31 11:15",
+            "direction": "buy",
+            "level": 83.6
+        },
+        "ce_IDFCFIRSTB.NS_1h": {
+            "datetime": "2026-08-31 15:15",
+            "direction": "buy",
+            "level": 85.97
+        },
+        "INDIGO.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 13:15",
+            "t3_value": 4953.78
+        },
+        "wt_INDIGO.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 5020.0
+        },
+        "ce_INDIGO.NS_1h": {
+            "datetime": "2026-08-31 09:15",
+            "direction": "sell",
+            "level": 5062.5
+        },
+        "INDUSINDBK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 981.41
+        },
+        "wt_INDUSINDBK.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 1001.6
+        },
+        "ce_INDUSINDBK.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "buy",
+            "level": 999.6
+        },
+        "INDUSTOWER.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 13:15",
+            "t3_value": 376.96
+        },
+        "wt_INDUSTOWER.NS_1h": {
+            "datetime": "2026-09-03 11:15",
+            "direction": "sell",
+            "level": 374.65
+        },
+        "ce_INDUSTOWER.NS_1h": {
+            "datetime": "2026-09-01 14:15",
+            "direction": "sell",
+            "level": 373.5
+        },
+        "INFY.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 13:15",
+            "t3_value": 1135.5
+        },
+        "wt_INFY.NS_1h": {
+            "datetime": "2026-09-02 10:15",
+            "direction": "sell",
+            "level": 1137.1
+        },
+        "ce_INFY.NS_1h": {
+            "datetime": "2026-08-28 09:15",
+            "direction": "buy",
+            "level": 1144.9
+        },
+        "IOC.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 15:15",
+            "t3_value": 136.48
+        },
+        "wt_IOC.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 136.6
+        },
+        "ce_IOC.NS_1h": {
+            "datetime": "2026-08-27 11:15",
+            "direction": "sell",
+            "level": 137.25
+        },
+        "IRCTC.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 473.99
+        },
+        "wt_IRCTC.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 477.75
+        },
+        "ce_IRCTC.NS_1h": {
+            "datetime": "2026-08-31 09:15",
+            "direction": "sell",
+            "level": 481.15
+        },
+        "IRFC.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 82.42
+        },
+        "wt_IRFC.NS_1h": {
+            "datetime": "2026-09-02 12:15",
+            "direction": "buy",
+            "level": 82.5
+        },
+        "ce_IRFC.NS_1h": {
+            "datetime": "2026-08-25 11:15",
+            "direction": "sell",
+            "level": 85.43
+        },
+        "ITBEES.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 11:15",
+            "t3_value": 34.42
+        },
+        "wt_ITBEES.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "sell",
+            "level": 34.12
+        },
+        "ce_ITBEES.NS_1h": {
+            "datetime": "2026-08-28 09:15",
+            "direction": "buy",
+            "level": 34.62
+        },
+        "ITC.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 266.84
+        },
+        "wt_ITC.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "sell",
+            "level": 265.0
+        },
+        "ce_ITC.NS_1h": {
+            "datetime": "2026-09-02 11:15",
+            "direction": "buy",
+            "level": 268.25
+        },
+        "ITCHOTELS.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 158.8
+        },
+        "wt_ITCHOTELS.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 159.0
+        },
+        "ce_ITCHOTELS.NS_1h": {
+            "datetime": "2026-08-27 15:15",
+            "direction": "sell",
+            "level": 163.95
+        },
+        "JAMNAAUTO.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 120.37
+        },
+        "wt_JAMNAAUTO.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 121.79
+        },
+        "ce_JAMNAAUTO.NS_1h": {
+            "datetime": "2026-08-26 10:15",
+            "direction": "buy",
+            "level": 122.75
+        },
+        "JIOFIN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 236.41
+        },
+        "wt_JIOFIN.NS_1h": {
+            "datetime": "2026-09-02 12:15",
+            "direction": "buy",
+            "level": 236.7
+        },
+        "ce_JIOFIN.NS_1h": {
+            "datetime": "2026-08-14 10:15",
+            "direction": "sell",
+            "level": 250.5
+        },
+        "JKTYRE.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 369.29
+        },
+        "wt_JKTYRE.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 370.75
+        },
+        "ce_JKTYRE.NS_1h": {
+            "datetime": "2026-08-31 09:15",
+            "direction": "sell",
+            "level": 372.5
+        },
+        "JUNIORBEES.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 786.73
+        },
+        "wt_JUNIORBEES.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 787.6
+        },
+        "ce_JUNIORBEES.NS_1h": {
+            "datetime": "2026-08-28 12:15",
+            "direction": "sell",
+            "level": 800.5
+        },
+        "KIRLOSBROS.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 13:15",
+            "t3_value": 1858.51
+        },
+        "wt_KIRLOSBROS.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 1872.2
+        },
+        "ce_KIRLOSBROS.NS_1h": {
+            "datetime": "2026-08-12 15:15",
+            "direction": "sell",
+            "level": 1895.6
+        },
+        "KPITTECH.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-31 12:15",
+            "t3_value": 585.39
+        },
+        "wt_KPITTECH.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "sell",
+            "level": 587.0
+        },
+        "ce_KPITTECH.NS_1h": {
+            "datetime": "2026-08-31 11:15",
+            "direction": "sell",
+            "level": 588.45
+        },
+        "KPRMILL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 1170.24
+        },
+        "wt_KPRMILL.NS_1h": {
+            "datetime": "2026-09-03 12:15",
+            "direction": "sell",
+            "level": 1157.3
+        },
+        "ce_KPRMILL.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "buy",
+            "level": 1154.7
+        },
+        "LAURUSLABS.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 1842.2
+        },
+        "wt_LAURUSLABS.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 1858.9
+        },
+        "ce_LAURUSLABS.NS_1h": {
+            "datetime": "2026-08-31 14:15",
+            "direction": "sell",
+            "level": 1848.2
+        },
+        "LICI.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 410.6
+        },
+        "wt_LICI.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 416.35
+        },
+        "ce_LICI.NS_1h": {
+            "datetime": "2026-08-26 15:15",
+            "direction": "sell",
+            "level": 415.3
+        },
+        "LINCOLN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 10:15",
+            "t3_value": 619.52
+        },
+        "wt_LINCOLN.NS_1h": {
+            "datetime": "2026-09-01 12:15",
+            "direction": "buy",
+            "level": 613.85
+        },
+        "ce_LINCOLN.NS_1h": {
+            "datetime": "2026-08-13 09:15",
+            "direction": "buy",
+            "level": 638.0
+        },
+        "LT.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 3987.14
+        },
+        "wt_LT.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 3994.2
+        },
+        "ce_LT.NS_1h": {
+            "datetime": "2026-08-26 12:15",
+            "direction": "sell",
+            "level": 4045.0
+        },
+        "LTF.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 15:15",
+            "t3_value": 309.55
+        },
+        "wt_LTF.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 310.6
+        },
+        "ce_LTF.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "buy",
+            "level": 317.5
+        },
+        "MAHABANK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 83.66
+        },
+        "wt_MAHABANK.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 86.54
+        },
+        "ce_MAHABANK.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 86.54
+        },
+        "MANAPPURAM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 337.25
+        },
+        "wt_MANAPPURAM.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 338.55
+        },
+        "ce_MANAPPURAM.NS_1h": {
+            "datetime": "2026-08-27 10:15",
+            "direction": "sell",
+            "level": 348.5
+        },
+        "MARICO.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 15:15",
+            "t3_value": 828.07
+        },
+        "wt_MARICO.NS_1h": {
+            "datetime": "2026-09-02 10:15",
+            "direction": "sell",
+            "level": 828.4
+        },
+        "ce_MARICO.NS_1h": {
+            "datetime": "2026-08-18 10:15",
+            "direction": "sell",
+            "level": 847.1
+        },
+        "MON100.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-01 12:15",
+            "t3_value": 327.02
+        },
+        "wt_MON100.NS_1h": {
+            "datetime": "2026-09-01 10:15",
+            "direction": "sell",
+            "level": 329.32
+        },
+        "ce_MON100.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "sell",
+            "level": 328.41
+        },
+        "MOTILALOFS.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 12:15",
+            "t3_value": 1010.17
+        },
+        "wt_MOTILALOFS.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 1025.0
+        },
+        "ce_MOTILALOFS.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "sell",
+            "level": 993.2
+        },
+        "MSUMI.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 09:15",
+            "t3_value": 36.59
+        },
+        "wt_MSUMI.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 36.78
+        },
+        "ce_MSUMI.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "sell",
+            "level": 37.04
+        },
+        "MUKANDLTD.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-01 12:15",
+            "t3_value": 134.27
+        },
+        "wt_MUKANDLTD.NS_1h": {
+            "datetime": "2026-09-01 10:15",
+            "direction": "sell",
+            "level": 136.5
+        },
+        "ce_MUKANDLTD.NS_1h": {
+            "datetime": "2026-09-02 11:15",
+            "direction": "sell",
+            "level": 133.8
+        },
+        "NATCOPHARM.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 11:15",
+            "t3_value": 840.57
+        },
+        "wt_NATCOPHARM.NS_1h": {
+            "datetime": "2026-09-03 11:15",
+            "direction": "sell",
+            "level": 836.6
+        },
+        "ce_NATCOPHARM.NS_1h": {
+            "datetime": "2026-08-14 14:15",
+            "direction": "sell",
+            "level": 886.7
+        },
+        "NEWGEN.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-31 12:15",
+            "t3_value": 518.84
+        },
+        "wt_NEWGEN.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "sell",
+            "level": 529.6
+        },
+        "ce_NEWGEN.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "sell",
+            "level": 529.6
+        },
+        "NIFTYBEES.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 272.65
+        },
+        "wt_NIFTYBEES.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 273.0
+        },
+        "ce_NIFTYBEES.NS_1h": {
+            "datetime": "2026-08-27 11:15",
+            "direction": "sell",
+            "level": 275.52
+        },
+        "NUCLEUS.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 739.06
+        },
+        "wt_NUCLEUS.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 741.15
+        },
+        "ce_NUCLEUS.NS_1h": {
+            "datetime": "2026-08-13 11:15",
+            "direction": "buy",
+            "level": 744.95
+        },
+        "NV20IETF.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 13.58
+        },
+        "wt_NV20IETF.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "sell",
+            "level": 13.55
+        },
+        "ce_NV20IETF.NS_1h": {
+            "datetime": "2026-08-12 11:15",
+            "direction": "sell",
+            "level": 13.75
+        },
+        "ONGC.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 12:15",
+            "t3_value": 237.21
+        },
+        "wt_ONGC.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "sell",
+            "level": 235.64
+        },
+        "ce_ONGC.NS_1h": {
+            "datetime": "2026-09-01 13:15",
+            "direction": "buy",
+            "level": 235.95
+        },
+        "PETRONET.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 290.4
+        },
+        "wt_PETRONET.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "buy",
+            "level": 293.0
+        },
+        "ce_PETRONET.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "sell",
+            "level": 288.85
+        },
+        "PFC.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 14:15",
+            "t3_value": 345.79
+        },
+        "wt_PFC.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "sell",
+            "level": 343.3
+        },
+        "ce_PFC.NS_1h": {
+            "datetime": "2026-08-03 13:15",
+            "direction": "sell",
+            "level": 417.55
+        },
+        "PHARMABEES.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 12:15",
+            "t3_value": 27.49
+        },
+        "wt_PHARMABEES.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "sell",
+            "level": 27.45
+        },
+        "ce_PHARMABEES.NS_1h": {
+            "datetime": "2026-09-02 10:15",
+            "direction": "sell",
+            "level": 27.34
+        },
+        "POWERGRID.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 10:15",
+            "t3_value": 267.61
+        },
+        "wt_POWERGRID.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "sell",
+            "level": 266.35
+        },
+        "ce_POWERGRID.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 267.9
+        },
+        "PTC.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 15:15",
+            "t3_value": 155.47
+        },
+        "wt_PTC.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "sell",
+            "level": 155.1
+        },
+        "ce_PTC.NS_1h": {
+            "datetime": "2026-09-01 09:15",
+            "direction": "buy",
+            "level": 158.92
+        },
+        "RAIN.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-01 10:15",
+            "t3_value": 207.83
+        },
+        "wt_RAIN.NS_1h": {
+            "datetime": "2026-09-01 09:15",
+            "direction": "buy",
+            "level": 205.98
+        },
+        "ce_RAIN.NS_1h": {
+            "datetime": "2026-09-01 10:15",
+            "direction": "buy",
+            "level": 205.92
+        },
+        "RECLTD.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 14:15",
+            "t3_value": 316.31
+        },
+        "wt_RECLTD.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "sell",
+            "level": 314.0
+        },
+        "ce_RECLTD.NS_1h": {
+            "datetime": "2026-08-05 11:15",
+            "direction": "sell",
+            "level": 365.45
+        },
+        "RELIANCE.NS_1h": {
+            "colour": "red",
+            "datetime": "",
+            "t3_value": 1312.05
+        },
+        "wt_RELIANCE.NS_1h": {
+            "datetime": "2026-09-03 11:15",
+            "direction": "sell",
+            "level": 1305.0
+        },
+        "ce_RELIANCE.NS_1h": {
+            "datetime": "2026-09-01 10:15",
+            "direction": "buy",
+            "level": 1306.0
+        },
+        "RVNL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 206.2
+        },
+        "wt_RVNL.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 206.48
+        },
+        "ce_RVNL.NS_1h": {
+            "datetime": "2026-08-24 10:15",
+            "direction": "sell",
+            "level": 222.64
+        },
+        "SAGCEM.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-31 14:15",
+            "t3_value": 155.82
+        },
+        "wt_SAGCEM.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "sell",
+            "level": 154.44
+        },
+        "ce_SAGCEM.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "sell",
+            "level": 161.8
+        },
+        "SBILIFE.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-28 09:15",
+            "t3_value": 1725.19
+        },
+        "wt_SBILIFE.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "sell",
+            "level": 1717.3
+        },
+        "ce_SBILIFE.NS_1h": {
+            "datetime": "2026-08-28 12:15",
+            "direction": "sell",
+            "level": 1751.7
+        },
+        "SBIN.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 1024.41
+        },
+        "wt_SBIN.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 1033.5
+        },
+        "ce_SBIN.NS_1h": {
+            "datetime": "2026-08-31 09:15",
+            "direction": "sell",
+            "level": 1035.3
+        },
+        "SENSEXETF.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 79.01
+        },
+        "wt_SENSEXETF.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 79.13
+        },
+        "ce_SENSEXETF.NS_1h": {
+            "datetime": "2026-08-28 11:15",
+            "direction": "sell",
+            "level": 79.52
+        },
+        "SHRIRAMFIN.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 1038.72
+        },
+        "wt_SHRIRAMFIN.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 1040.9
+        },
+        "ce_SHRIRAMFIN.NS_1h": {
+            "datetime": "2026-08-27 09:15",
+            "direction": "sell",
+            "level": 1094.2
+        },
+        "SILVERBEES.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 216.73
+        },
+        "wt_SILVERBEES.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "buy",
+            "level": 216.3
+        },
+        "ce_SILVERBEES.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 221.32
+        },
+        "SOUTHBANK.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 46.26
+        },
+        "wt_SOUTHBANK.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 45.94
+        },
+        "ce_SOUTHBANK.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 47.69
+        },
+        "SUNPHARMA.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 1926.43
+        },
+        "wt_SUNPHARMA.NS_1h": {
+            "datetime": "2026-09-01 12:15",
+            "direction": "sell",
+            "level": 1928.1
+        },
+        "ce_SUNPHARMA.NS_1h": {
+            "datetime": "2026-09-03 13:15",
+            "direction": "sell",
+            "level": 1915.1
+        },
+        "SUNTV.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 459.83
+        },
+        "wt_SUNTV.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 461.45
+        },
+        "ce_SUNTV.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "sell",
+            "level": 459.0
+        },
+        "TATACHEM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 12:15",
+            "t3_value": 632.23
+        },
+        "wt_TATACHEM.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 638.9
+        },
+        "ce_TATACHEM.NS_1h": {
+            "datetime": "2026-08-31 10:15",
+            "direction": "sell",
+            "level": 643.3
+        },
+        "TATACONSUM.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 1014.29
+        },
+        "wt_TATACONSUM.NS_1h": {
+            "datetime": "2026-09-03 10:15",
+            "direction": "buy",
+            "level": 1020.5
+        },
+        "ce_TATACONSUM.NS_1h": {
+            "datetime": "2026-08-17 10:15",
+            "direction": "sell",
+            "level": 1073.9
+        },
+        "TATAGOLD.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 14.61
+        },
+        "wt_TATAGOLD.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 14.61
+        },
+        "ce_TATAGOLD.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 14.88
+        },
+        "TATAINVEST.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 11:15",
+            "t3_value": 629.1
+        },
+        "wt_TATAINVEST.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 632.45
+        },
+        "ce_TATAINVEST.NS_1h": {
+            "datetime": "2026-08-13 09:15",
+            "direction": "sell",
+            "level": 671.4
+        },
+        "TATAPOWER.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-01 11:15",
+            "t3_value": 363.31
+        },
+        "wt_TATAPOWER.NS_1h": {
+            "datetime": "2026-08-27 14:15",
+            "direction": "buy",
+            "level": 352.5
+        },
+        "ce_TATAPOWER.NS_1h": {
+            "datetime": "2026-09-02 10:15",
+            "direction": "buy",
+            "level": 361.0
+        },
+        "TATASTEEL.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-03 12:15",
+            "t3_value": 183.44
+        },
+        "wt_TATASTEEL.NS_1h": {
+            "datetime": "2026-09-03 11:15",
+            "direction": "sell",
+            "level": 182.22
+        },
+        "ce_TATASTEEL.NS_1h": {
+            "datetime": "2026-08-31 09:15",
+            "direction": "sell",
+            "level": 181.55
+        },
+        "TCS.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 11:15",
+            "t3_value": 2342.79
+        },
+        "wt_TCS.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "sell",
+            "level": 2304.0
+        },
+        "ce_TCS.NS_1h": {
+            "datetime": "2026-08-28 09:15",
+            "direction": "buy",
+            "level": 2335.0
+        },
+        "TECHM.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 10:15",
+            "t3_value": 1614.95
+        },
+        "wt_TECHM.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "sell",
+            "level": 1604.5
+        },
+        "ce_TECHM.NS_1h": {
+            "datetime": "2026-08-28 09:15",
+            "direction": "buy",
+            "level": 1637.9
+        },
+        "TIINDIA.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-26 15:15",
+            "t3_value": 2696.06
+        },
+        "wt_TIINDIA.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 2711.9
+        },
+        "ce_TIINDIA.NS_1h": {
+            "datetime": "2026-08-25 09:15",
+            "direction": "sell",
+            "level": 2846.2
+        },
+        "TIRUMALCHM.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 158.85
+        },
+        "wt_TIRUMALCHM.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "sell",
+            "level": 157.56
+        },
+        "ce_TIRUMALCHM.NS_1h": {
+            "datetime": "2026-08-20 14:15",
+            "direction": "buy",
+            "level": 157.0
+        },
+        "TMB.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 916.48
+        },
+        "wt_TMB.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 939.75
+        },
+        "ce_TMB.NS_1h": {
+            "datetime": "2026-08-20 10:15",
+            "direction": "buy",
+            "level": 867.5
+        },
+        "TMCV.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 14:15",
+            "t3_value": 448.56
+        },
+        "wt_TMCV.NS_1h": {
+            "datetime": "2026-09-03 09:15",
+            "direction": "buy",
+            "level": 454.0
+        },
+        "ce_TMCV.NS_1h": {
+            "datetime": "2026-08-28 10:15",
+            "direction": "sell",
+            "level": 462.65
+        },
+        "TMPV.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 09:15",
+            "t3_value": 310.84
+        },
+        "wt_TMPV.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "sell",
+            "level": 310.0
+        },
+        "ce_TMPV.NS_1h": {
+            "datetime": "2026-08-31 15:15",
+            "direction": "sell",
+            "level": 308.85
+        },
+        "TVSMOTOR.NS_1h": {
+            "colour": "green",
+            "datetime": "",
+            "t3_value": 4137.7
+        },
+        "wt_TVSMOTOR.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 4200.0
+        },
+        "ce_TVSMOTOR.NS_1h": {
+            "datetime": "2026-09-01 12:15",
+            "direction": "sell",
+            "level": 4280.5
+        },
+        "UBL.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-08-27 10:15",
+            "t3_value": 1290.12
+        },
+        "wt_UBL.NS_1h": {
+            "datetime": "2026-09-03 14:15",
+            "direction": "sell",
+            "level": 1280.0
+        },
+        "ce_UBL.NS_1h": {
+            "datetime": "2026-08-28 10:15",
+            "direction": "sell",
+            "level": 1333.4
+        },
+        "UJJIVANSFB.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-01 14:15",
+            "t3_value": 63.11
+        },
+        "wt_UJJIVANSFB.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 64.28
+        },
+        "ce_UJJIVANSFB.NS_1h": {
+            "datetime": "2026-08-24 11:15",
+            "direction": "sell",
+            "level": 70.81
+        },
+        "UPL.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-02 12:15",
+            "t3_value": 574.19
+        },
+        "wt_UPL.NS_1h": {
+            "datetime": "2026-09-02 12:15",
+            "direction": "buy",
+            "level": 569.85
+        },
+        "ce_UPL.NS_1h": {
+            "datetime": "2026-09-02 15:15",
+            "direction": "buy",
+            "level": 579.0
+        },
+        "VSTIND.NS_1h": {
+            "colour": "green",
+            "datetime": "2026-09-03 10:15",
+            "t3_value": 207.49
+        },
+        "wt_VSTIND.NS_1h": {
+            "datetime": "2026-09-02 13:15",
+            "direction": "buy",
+            "level": 207.49
+        },
+        "ce_VSTIND.NS_1h": {
+            "datetime": "2026-07-29 09:15",
+            "direction": "sell",
+            "level": 216.1
+        },
+        "WIPRO.NS_1h": {
+            "colour": "red",
+            "datetime": "2026-09-02 10:15",
+            "t3_value": 177.57
+        },
+        "wt_WIPRO.NS_1h": {
+            "datetime": "2026-09-02 09:15",
+            "direction": "sell",
+            "level": 177.26
+        },
+        "ce_WIPRO.NS_1h": {
+            "datetime": "2026-09-02 14:15",
+            "direction": "sell",
+            "level": 176.82
+        }
+    }
+}

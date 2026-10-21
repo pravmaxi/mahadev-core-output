@@ -1,0 +1,2030 @@
+{% extends "base.html" %}
+{% block title %}Backtest · Trading App{% endblock %}
+
+{% block content %}
+<h1>Backtest</h1>
+<p class="sub">Valid-candle → trigger-breakout backtest. Same logic as the scanner.</p>
+
+<div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            padding:14px;margin-bottom:14px">
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+    <label class="lbl">Symbol</label>
+    <input type="text" id="symbol" class="inp" style="width:110px" value="HAL">
+    <select id="exchange" class="inp">
+      <option value=".NS" selected>NSE</option>
+      <option value=".BO">BSE</option>
+      <option value="">US (AAPL, NVDA…)</option>
+      <option value="_FX">Forex/Commodity (EURUSD, XAUUSD…)</option>
+    </select>
+
+    <label class="lbl">TF</label>
+    <select id="tf" class="inp">
+      <option value="1m">1m</option><option value="2m">2m</option>
+      <option value="5m">5m</option><option value="15m">15m</option>
+      <option value="30m">30m</option><option value="60m">60m</option>
+      <option value="90m">90m</option><option value="1h" selected>1h</option>
+      <option value="4h">4h</option><option value="1d">1d</option>
+      <option value="5d">5d</option><option value="1wk">1wk</option>
+      <option value="1mo">1mo</option><option value="3mo">3mo</option>
+    </select>
+
+    <label class="lbl">Period</label>
+    <select id="period" class="inp">
+      <option>1mo</option><option>3mo</option>
+      <option selected>6mo</option><option>1y</option><option>2y</option>
+    </select>
+
+    <span style="color:var(--muted);font-size:11px;font-weight:700;
+                 letter-spacing:.06em;margin-left:8px">USE</span>
+    <label class="runChk"><input type="checkbox" id="src_wt" checked> WaveTrend</label>
+    <label class="runChk"><input type="checkbox" id="src_ce"> Chandelier</label>
+    <label class="runChk"><input type="checkbox" id="src_st"> ST (S/R)</label>
+
+    <span style="width:14px"></span>
+    <label class="runChk"><input type="checkbox" id="batchMode"> Batch (sheet)</label>
+
+    <span style="flex:1"></span>
+    <button id="runSRDiag" class="pillBtn" style="margin-right:6px">📐 S/R diagnostic</button>
+    <button id="run" class="btnPrimary">▶ Run Backtest</button>
+    <button id="runBatch" class="btnPrimary" hidden>▶ Run Batch</button>
+    <button id="stopBatch" hidden
+            style="background:#f85149;border:none;color:#fff;border-radius:6px;
+                   padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px">■ Stop</button>
+    <span id="status" style="color:var(--muted);font-size:11.5px">idle</span>
+  </div>
+
+  <!-- Batch source row (only shows in batch mode) -->
+  <div id="batchSourceRow" hidden
+       style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+              padding-top:12px;margin-top:12px;border-top:1px solid var(--border)">
+    <label class="lbl">Source</label>
+    <select id="bSource" class="inp">
+      <option value="sheet" selected>Google Sheet</option>
+      <option value="manual">Manual symbols</option>
+    </select>
+    <label class="lbl" id="bBookLbl">Book</label>
+    <select id="bBook" class="inp" style="width:200px">
+      <option value="Backtest scanner" selected>Backtest scanner</option>
+      <option value="Stock Price Scraper">Stock Price Scraper</option>
+      <option value="scanner output">scanner output</option>
+    </select>
+    <label class="lbl" id="bTabLbl">Symbols tab</label>
+    <select id="bTab" class="inp" style="width:170px">
+      <option value="zero_input">zero_input</option>
+    </select>
+    <input type="text" id="bManual" class="inp" style="flex:1;min-width:240px;display:none"
+           placeholder="HAL, TCS, RELIANCE…" value="HAL, TCS, RELIANCE, INFY, SBIN">
+    <span id="batchProgress" style="color:var(--muted);font-size:11.5px"></span>
+  </div>
+
+  <!-- Output sheet name (batch mode only) -->
+  <div id="batchOutputRow" hidden
+       style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+              padding-top:10px">
+    <label class="lbl">Output tab</label>
+    <input type="text" id="bOutputTab" class="inp" style="width:220px"
+           placeholder="auto (e.g. zero_WT_1h)">
+    <button type="button" id="bResetOutput" class="pillBtn"
+            style="flex:none">↻ auto</button>
+    <span style="color:var(--muted);font-size:11px">
+      Leave blank for auto-name, or type a custom name.
+    </span>
+  </div>
+
+  <!-- Load previously-saved results (batch mode only) -->
+  <div id="batchLoadRow" hidden
+       style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+              padding-top:10px;margin-top:10px;
+              border-top:1px solid var(--border)">
+    <label class="lbl">Load saved tab</label>
+    <select id="bLoadTab" class="inp" style="width:220px">
+      <option value="">(pick a tab)</option>
+    </select>
+    <button type="button" id="bLoadBtn" class="pillBtn primary"
+            style="flex:none">📂 Load results</button>
+    <span id="bLoadStatus" style="color:var(--muted);font-size:11px"></span>
+  </div>
+</div>
+
+<div id="batchResultsWrap" hidden
+     style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            padding:12px;margin-bottom:14px">
+  <button type="button" id="batchToggle"
+          style="background:transparent;border:none;color:var(--muted);
+                 font-size:11px;cursor:pointer;margin-bottom:8px;
+                 text-transform:uppercase;letter-spacing:.06em;font-weight:600">
+    ▾ BATCH RESULTS
+  </button>
+  <div id="batchPanelBody" style="width:100%;min-width:0">
+    <div class="chartCap">Batch results — click a row to open that symbol's full backtest</div>
+    <div id="batchSummary" style="display:grid;
+         grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+         gap:8px;margin-bottom:12px"></div>
+    <div class="tblwrap">
+      <table class="tlog" id="batchTable">
+        <thead>
+          <tr id="batchSumRow">
+            <th>#</th><th>SUM</th><th></th><th></th>
+            <th></th><th></th><th></th><th></th>
+            <th class="buy" id="batchSumNet"></th>
+            <th class="buy" id="batchSumWin"></th>
+            <th class="sell" id="batchSumLoss"></th>
+            <th></th><th></th>
+          </tr>
+          <tr>
+            <th data-bsort="i">#</th>
+            <th data-bsort="symbol">Symbol</th>
+            <th data-bsort="return_pct">Return %</th>
+            <th data-bsort="buy_hold_pct">B&amp;H %</th>
+            <th data-bsort="trades">Trades</th>
+            <th data-bsort="win_rate">Win %</th>
+            <th data-bsort="profit_factor">PF</th>
+            <th data-bsort="max_dd_pct">Max DD %</th>
+            <th data-bsort="net_pnl">Net ₹</th>
+            <th data-bsort="max_win">Max win ₹</th>
+            <th data-bsort="max_loss">Max loss ₹</th>
+            <th data-bsort="sharpe">Sharpe</th>
+            <th data-bsort="ms">Time</th>
+          </tr>
+        </thead>
+        <tbody id="batchBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start">
+
+  <aside style="background:var(--panel);border:1px solid var(--border);
+                border-radius:8px;padding:14px">
+    <div class="setHead">Backtest preset</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input type="text" id="btPresetName" class="inp" placeholder="e.g. HAL WT 1h long"
+             style="flex:1;min-width:0">
+      <button id="btPresetSave" class="pillBtn primary" style="flex:none">Save</button>
+    </div>
+    <button type="button" id="btPresetToggle"
+            style="background:transparent;border:none;color:var(--muted);
+                   font-size:10.5px;cursor:pointer;padding:0;margin-bottom:6px;
+                   text-transform:uppercase;letter-spacing:.06em;font-weight:600">
+      ▸ SAVED PRESETS (<span id="btPresetCount">0</span>)
+    </button>
+    <div id="btPresetList" hidden
+         style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px"></div>
+
+    <div class="setHead">Strategy mode</div>
+    <label class="chk"><input type="radio" name="strat_mode" value="simple" checked> Simple (single position)</label>
+    <label class="chk"><input type="radio" name="strat_mode" value="same_side"> Same-side averaging</label>
+    <label class="chk"><input type="radio" name="strat_mode" value="alternate"> Alternate (flip sides)</label>
+
+    <div id="multBlock" hidden>
+      <div class="setHead" style="margin-top:14px">Multiplier</div>
+      <label class="chk"><input type="radio" name="mult_type" value="martingale" checked> Martingale (1, 2, 4, 8, 16…)</label>
+      <label class="chk"><input type="radio" name="mult_type" value="incremental"> Incremental (1, 2, 3, 4, 5…)</label>
+      <label class="chk"><input type="radio" name="mult_type" value="constant"> Constant (1, 1, 1, 1…)</label>
+      <div class="numRow"><span>Max levels</span><input type="number" id="cfg_max_levels" value="5" step="1"></div>
+      <div style="color:var(--muted);font-size:10.5px;margin-bottom:6px">
+        Base qty = <b>Quantity</b> from Position sizing below.
+      </div>
+    </div>
+
+    <div id="recoveryBlock">
+      <div class="setHead" style="margin-top:14px">Recovery cycle (overlay)</div>
+      <div class="numRow">
+        <span>Mode</span>
+        <select id="cfg_rec_mode" class="inp" style="width:150px">
+          <option value="off" selected>Off</option>
+          <option value="last">Last trade only</option>
+          <option value="cumulative">Cumulative</option>
+        </select>
+      </div>
+      <div id="recoveryInputs" style="display:none">
+        <div class="numRow"><span>Buffer ₹ after loss</span>
+          <input type="number" id="cfg_rec_buffer" value="20" step="1"></div>
+        <label class="chk" style="margin-top:6px">
+          <input type="checkbox" id="cfg_rec_trail"> Trail after target + premium
+        </label>
+        <div class="numRow"><span>Trail premium ₹</span>
+          <input type="number" id="cfg_rec_premium" value="40" step="5"></div>
+        <div class="numRow"><span>Trail step ₹</span>
+          <input type="number" id="cfg_rec_step" value="5" step="1"></div>
+      </div>
+      <div style="color:var(--muted);font-size:10.5px;margin-top:6px">
+        Next trade's target becomes the pending loss + buffer (in ₹),
+        ignoring the normal profit target. Cleared once the cycle recovers.
+        <b>Last</b> = only the most recent loss. <b>Cumulative</b> = all
+        losses since the last recovery win.
+      </div>
+    </div>
+
+    <div class="setHead" style="margin-top:14px">Order side</div>
+    <label class="chk"><input type="radio" name="side" value="both" checked> Both buy &amp; sell</label>
+    <label class="chk"><input type="radio" name="side" value="long"> Buy only</label>
+    <label class="chk"><input type="radio" name="side" value="short"> Sell only</label>
+
+    <div class="setHead" style="margin-top:14px">Trigger</div>
+    <div class="numRow"><span>Buffer (points)</span><input type="number" id="cfg_buffer" value="1" step="0.01"></div>
+    <div class="numRow"><span>Wait max (bars)</span><input type="number" id="cfg_wait" value="20" step="1"></div>
+
+    <div class="setHead" style="margin-top:14px">Exits</div>
+    <div class="numRow">
+      <span>Profit target</span>
+      <select id="cfg_target_mode" class="inp" style="width:60px">
+        <option value="pct" selected>%</option>
+        <option value="amount">₹</option>
+      </select>
+      <input type="number" id="cfg_target" value="1" step="0.5" style="width:70px">
+    </div>
+    <div class="numRow"><span>Stop loss %</span><input type="number" id="cfg_stop" value="3" step="0.5"></div>
+    <label class="chk" style="margin-top:6px"><input type="checkbox" id="cfg_opp" checked> Exit on opposite signal</label>
+
+    <div class="setHead" style="margin-top:14px">Trailing stop loss</div>
+    <label class="chk"><input type="checkbox" id="cfg_trail_on"> Enable trailing SL</label>
+    <div class="numRow"><span>Start at profit %</span><input type="number" id="cfg_trail_start" value="3" step="0.5"></div>
+    <div class="numRow"><span>Step %</span><input type="number" id="cfg_trail_step" value="2" step="0.5"></div>
+    <label class="chk" style="margin-top:6px"><input type="checkbox" id="cfg_trail_tighten"> Tighten near target</label>
+    <div class="numRow"><span>Tighten at profit %</span><input type="number" id="cfg_trail_tighten_at" value="9" step="0.5"></div>
+    <div class="numRow"><span>Tighter step %</span><input type="number" id="cfg_trail_tighten_step" value="1" step="0.5"></div>
+
+    <div class="setHead" style="margin-top:14px">Capital &amp; costs</div>
+    <div class="numRow"><span>Initial ₹</span><input type="number" id="cfg_capital" value="100000" step="10000"></div>
+    <div class="numRow"><span>Commission %</span><input type="number" id="cfg_comm" value="0.05" step="0.01"></div>
+    <div class="numRow"><span>Slippage %</span><input type="number" id="cfg_slip" value="0.02" step="0.01"></div>
+
+    <div class="setHead" style="margin-top:14px">Position sizing</div>
+    <label class="chk"><input type="radio" name="pos_mode" value="fixed" checked> Fixed ₹ per trade</label>
+    <label class="chk"><input type="radio" name="pos_mode" value="qty"> Fixed quantity</label>
+    <label class="chk"><input type="radio" name="pos_mode" value="pct"> % of capital</label>
+    <div class="numRow"><span>Fixed ₹ amount</span><input type="number" id="cfg_amount" value="5000" step="500"></div>
+    <div class="numRow"><span>Quantity</span><input type="number" id="cfg_qty" value="1" step="1"></div>
+    <div class="numRow"><span>Position %</span><input type="number" id="cfg_position" value="100" step="5"></div>
+
+    <div class="setHead" style="margin-top:14px">Candle source</div>
+    <label class="chk"><input type="radio" name="candle_src" value="ha" checked> Heikin Ashi</label>
+    <label class="chk"><input type="radio" name="candle_src" value="real"> Real candles</label>
+    <label class="chk" style="margin-top:6px"><input type="checkbox" id="cfg_fno" checked> F&amp;O 15:15 filter</label>
+
+    <div id="secWTParams">
+      <div class="setHead" style="margin-top:14px">WT params</div>
+      <div class="numRow"><span>n1</span><input type="number" id="cfg_wt_n1" value="15" step="1"></div>
+      <div class="numRow"><span>n2</span><input type="number" id="cfg_wt_n2" value="27" step="1"></div>
+
+      <div class="setHead" style="margin-top:14px">Pending candle rule</div>
+      <label class="chk"><input type="checkbox" id="cfg_wt_newest_only"> Newest valid candle only</label>
+      <div style="color:var(--muted);font-size:10.5px;margin-bottom:6px">
+        Off: every WT cross stays alive for <b>Wait max (bars)</b>. Older crosses can still fire later.
+        On: only the newest cross of each direction is live. A newer buy cross kills the older buy cross.
+      </div>
+
+      <div class="setHead" style="margin-top:14px">Confirmation filters</div>
+
+      <label class="chk"><input type="checkbox" id="cfg_wt_filter"> WT extreme</label>
+      <div class="numRow"><span>Buy max WT val</span><input type="number" id="cfg_wt_buy_max" value="-40" step="5"></div>
+      <div class="numRow"><span>Sell min WT val</span><input type="number" id="cfg_wt_sell_min" value="40" step="5"></div>
+
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="cfg_htf_filter"> HTF trend (auto)</label>
+      <div style="color:var(--muted);font-size:10.5px;margin-bottom:6px">
+        Buy allowed only if HTF EMA50 &gt; EMA200, sell only if reverse.
+      </div>
+
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="cfg_rsi_filter"> RSI rising (buy) / falling (sell)</label>
+      <div class="numRow"><span>RSI period</span><input type="number" id="cfg_rsi_period" value="14" step="1"></div>
+
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="cfg_vol_filter"> Volume spike</label>
+      <div class="numRow"><span>× average</span><input type="number" id="cfg_vol_mult" value="1.5" step="0.1"></div>
+      <div class="numRow"><span>Lookback bars</span><input type="number" id="cfg_vol_lookback" value="20" step="1"></div>
+    </div>
+
+    <div id="secCEParams">
+      <div class="setHead" style="margin-top:14px">CE params</div>
+      <div class="numRow"><span>Length</span><input type="number" id="cfg_ce_len" value="22" step="1"></div>
+      <div class="numRow"><span>Multiplier</span><input type="number" id="cfg_ce_mult" value="3.0" step="0.1"></div>
+    </div>
+
+    <div id="secSTParams">
+      <div class="setHead" style="margin-top:14px">ST params</div>
+      <div class="numRow"><span>Left bars</span><input type="number" id="cfg_st_left" value="15" step="1"></div>
+      <div class="numRow"><span>Right bars</span><input type="number" id="cfg_st_right" value="15" step="1"></div>
+      <div class="numRow">
+        <span>Entry mode</span>
+        <select id="cfg_st_entry_mode" class="inp" style="width:100px">
+          <option value="strict" selected>Strict</option>
+          <option value="loose">Loose</option>
+        </select>
+      </div>
+      <div class="numRow">
+        <span>Exit mode</span>
+        <select id="cfg_st_exit_mode" class="inp" style="width:100px">
+          <option value="strict" selected>Strict</option>
+          <option value="loose">Loose</option>
+        </select>
+      </div>
+      <div class="numRow">
+        <span>Re-entry mode</span>
+        <select id="cfg_st_reentry_mode" class="inp" style="width:150px">
+          <option value="standard" selected>Standard</option>
+          <option value="one_per_opposite">One per opposite</option>
+          <option value="fresh_r">Wait fresh R</option>
+        </select>
+        <button type="button" id="stReentryInfo" class="infoBtn">i</button>
+      </div>
+      <div style="color:var(--muted);font-size:10.5px;margin-top:6px">
+        <b>Standard</b>: after a close, take the next valid signal.<br>
+        <b>One per opposite</b>: after a buy close, wait for a sell signal
+        before the next buy (and vice versa).<br>
+        For <b>same-side add-on</b>, use Same-side strategy mode with ST only.
+      </div>
+      <div style="color:var(--muted);font-size:10.5px;margin-top:6px">
+        <b>Strict</b>: valid candle needs H &amp; C beyond R/S, then a later bar must break it.<br>
+        <b>Loose</b>: any cross = valid + trigger on the same bar.<br>
+        Entry opens positions, exit closes them. Independently configured.
+      </div>
+    </div>
+  </aside>
+
+  <div>
+    <div id="cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+                          gap:8px;margin-bottom:16px"></div>
+
+    <div id="latestSig" style="background:var(--panel);border:1px solid var(--border);
+                border-radius:8px;padding:12px;margin-bottom:12px;display:none">
+      <div class="chartCap">Latest signal in backtest (compare with Scanner page)</div>
+      <div id="latestSigBody" style="display:grid;
+                    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+                    gap:10px;font-size:12px"></div>
+    </div>
+
+    <!-- Trades + Events moved ABOVE charts -->
+    <div id="tradesWrap"></div>
+    <div id="eventsWrap" style="margin-top:20px"></div>
+
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+                padding:12px;margin-top:20px">
+      <button type="button" id="togglePrice"
+              style="background:transparent;border:none;color:var(--muted);
+                     font-size:11px;cursor:pointer;margin-bottom:8px;padding:0;
+                     text-transform:uppercase;letter-spacing:.06em;font-weight:600">
+        ▸ PRICE + TRADES
+      </button>
+      <div id="priceWrap" hidden>
+        <canvas id="priceChart" style="display:block;width:100%;height:300px"></canvas>
+      </div>
+    </div>
+
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+                padding:12px;margin-top:12px">
+      <button type="button" id="toggleEquity"
+              style="background:transparent;border:none;color:var(--muted);
+                     font-size:11px;cursor:pointer;margin-bottom:8px;padding:0;
+                     text-transform:uppercase;letter-spacing:.06em;font-weight:600">
+        ▸ EQUITY CURVE
+      </button>
+      <div id="equityWrap" hidden>
+        <canvas id="equityChart" style="display:block;width:100%;height:200px"></canvas>
+      </div>
+    </div>
+
+    <!-- S/R diagnostic panel -->
+    <div id="srDiagWrap" hidden
+         style="background:var(--panel);border:1px solid var(--border);
+                border-radius:8px;padding:12px;margin-top:20px">
+      <div class="chartCap">
+        S/R segments — each row is a period where R (or S) held the same value.
+        Verify against TradingView.
+      </div>
+      <canvas id="srDiagChart"
+              style="display:block;width:100%;height:340px;margin-bottom:12px"></canvas>
+      <div id="srDiagSummary"
+           style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+                  gap:8px;margin-bottom:12px"></div>
+      <div class="tblwrap" style="max-height:320px">
+        <table class="tlog">
+          <thead>
+            <tr>
+              <th>#</th><th>Type</th><th>Level</th>
+              <th>Start</th><th>End</th><th>Bars</th>
+              <th>Usable from</th>
+            </tr>
+          </thead>
+          <tbody id="srDiagBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Info modal (used by info buttons) -->
+<div id="infoModal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+            z-index:999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--panel);border:1px solid var(--border);
+              border-radius:10px;width:min(600px,100%);max-height:80vh;
+              overflow:auto">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);
+                display:flex;align-items:center;gap:10px">
+      <span id="infoTitle" style="font-weight:700;font-size:14px;flex:1">
+        Setting info
+      </span>
+      <button type="button" id="infoClose" class="ghost"
+              style="padding:2px 8px;font-size:12px">✕</button>
+    </div>
+    <div id="infoBody"
+         style="padding:16px 18px;font-size:13px;line-height:1.75;
+                color:var(--fg);white-space:pre-wrap"></div>
+  </div>
+</div>
+
+<style>
+  [hidden]{display:none !important}
+  .infoBtn{background:transparent;border:1px solid var(--border);
+           color:var(--muted);border-radius:50%;width:18px;height:18px;
+           font-size:11px;cursor:pointer;padding:0;line-height:1;
+           font-weight:700;font-style:italic}
+  .infoBtn:hover{color:var(--fg);border-color:var(--accent)}
+  .inp{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+       border-radius:6px;padding:5px 8px;font-size:12px}
+  .lbl{color:var(--muted);font-size:12px}
+  .btnPrimary{background:var(--accent);border:none;color:#04121f;border-radius:6px;
+              padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px}
+  .btnPrimary:disabled{opacity:.5;cursor:wait}
+  .pillBtn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+           border-radius:20px;padding:4px 12px;font-size:11.5px;cursor:pointer}
+  .pillBtn:hover{color:var(--fg);border-color:var(--accent)}
+  .pillBtn.primary{background:var(--accent);border-color:var(--accent);color:#04121f;font-weight:600}
+  .runChk{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px}
+  .setHead{color:var(--muted);font-size:10.5px;letter-spacing:.06em;
+           text-transform:uppercase;font-weight:600;margin-bottom:8px}
+  .chk{display:flex;align-items:center;gap:6px;font-size:12px;
+       color:var(--fg);margin-bottom:6px;cursor:pointer}
+  .numRow{display:flex;align-items:center;justify-content:space-between;
+          gap:8px;margin-bottom:6px}
+  .numRow span{color:var(--muted);font-size:12px}
+  .numRow input{width:90px;background:var(--panel2);border:1px solid var(--border);
+                color:var(--fg);border-radius:5px;padding:4px 7px;font-size:12px;text-align:right}
+  .chartCap{color:var(--muted);font-size:11px;margin-bottom:8px;
+            text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+        padding:9px 11px}
+  .card .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;
+           letter-spacing:.05em}
+  .card .v{font-size:16px;font-weight:600;margin-top:3px;
+           font-variant-numeric:tabular-nums}
+  .buy{color:var(--good)} .sell{color:var(--bad)} .mut{color:var(--muted)}
+
+  .tblwrap{border:1px solid var(--border);border-radius:8px;
+           overflow-x:auto;overflow-y:auto;max-height:420px;
+           background:var(--panel)}
+  table.tlog{width:max-content;min-width:100%;border-collapse:collapse;
+             font-size:11.5px;font-variant-numeric:tabular-nums}
+  table.tlog th, table.tlog td{padding:6px 9px;border-bottom:1px solid var(--border);
+             text-align:right;white-space:nowrap}
+  table.tlog th{color:var(--muted);font-weight:600;font-size:10.5px;
+             text-transform:uppercase;letter-spacing:.05em;
+             position:sticky;top:0;background:var(--bg);z-index:1}
+  table.tlog th:first-child, table.tlog td:first-child{text-align:left}
+
+  /* sortable headers */
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{color:var(--fg)}
+  th.sortable .sortMark{color:var(--accent);font-size:10px;margin-left:2px}
+  th.sortable .sortMark sup{font-size:8px;font-weight:700}
+
+  tr.tradeRow.hasDetail{cursor:pointer}
+  tr.tradeRow.hasDetail:hover{background:#141c28}
+  .expander{display:inline-block;width:12px;color:var(--accent);font-weight:700}
+  .detLine{padding:2px 0;line-height:1.5}
+  .detTag{display:inline-block;min-width:30px;color:var(--accent);
+          font-weight:700;font-size:10px;letter-spacing:.04em}
+
+  .presetRow{display:flex;align-items:center;gap:10px;
+             background:var(--panel2);border:1px solid var(--border);
+             border-radius:6px;font-size:12px}
+  .presetRow .name{flex:1;color:var(--fg)}
+  .presetRow .lil{background:transparent;border:1px solid var(--border);color:var(--muted);
+                  border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer}
+  .presetRow .lil:hover{color:var(--fg);border-color:var(--accent)}
+  .presetRow .lil.del:hover{color:var(--bad);border-color:var(--bad)}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+
+/* ===== page state persistence ===== */
+const BT_STATE_KEY  = 'backtest_page_state_v1';
+const BT_RESULT_KEY = 'backtest_result_v1';
+
+function collectBtState(){
+  const state = {};
+  document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
+    if (el.type === 'file') return;
+    if (el.type === 'checkbox' || el.type === 'radio') state[el.id] = el.checked;
+    else state[el.id] = el.value;
+    if (el.type === 'radio' && el.checked) state['__radio_' + el.name] = el.value;
+  });
+  return state;
+}
+function saveBtState(){
+  try { sessionStorage.setItem(BT_STATE_KEY, JSON.stringify(collectBtState())); } catch(e){}
+}
+function applyBtState(state){
+  if (!state) return;
+  for (const [id, val] of Object.entries(state)){
+    if (id.startsWith('__radio_')){
+      const name = id.slice(8);
+      document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+        if (r.value === val) r.checked = true;
+      });
+      continue;
+    }
+    const el = document.getElementById(id);
+    if (!el || el.type === 'file') continue;
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!val;
+    else el.value = val;
+  }
+}
+function restoreBtState(){
+  try {
+    const raw = sessionStorage.getItem(BT_STATE_KEY);
+    if (!raw) return;
+    applyBtState(JSON.parse(raw));
+  } catch(e){}
+}
+function saveBtResult(data){
+  try { sessionStorage.setItem(BT_RESULT_KEY, JSON.stringify({data, ts: Date.now()})); } catch(e){}
+}
+function tryRestoreBtResult(){
+  try {
+    const raw = sessionStorage.getItem(BT_RESULT_KEY);
+    if (!raw) return false;
+    const {data, ts} = JSON.parse(raw);
+    if (!data || !data.ok) return false;
+    if (Date.now() - ts > 30*60*1000) return false;
+    renderBacktest(data);
+    const mins = Math.round((Date.now() - ts) / 60000);
+    setStatus(`restored (${mins}m ago) · ${data.bars} bars · ${data.trades.length} trades`, 'ok');
+    return true;
+  } catch(e){ return false; }
+}
+async function tryFetchServerLastBacktest(){
+  try {
+    const r = await fetch('/api/backtest/last');
+    const d = await r.json();
+    if (!d.ok) return false;
+    renderBacktest(d);
+    setStatus(`server cache · ${d.bars} bars · ${d.trades.length} trades`, 'ok');
+    return true;
+  } catch(e){ return false; }
+}
+document.body.addEventListener('change', saveBtState);
+document.body.addEventListener('input',  saveBtState);
+
+/* extract the render logic so restore can reuse it */
+function renderBacktest(data){
+  renderCards(data.metrics, data.trades);
+  renderLatestSignal(data.events);
+  renderTrades(data.trades, data.strategy_mode || 'simple');
+  renderEvents(data.events);
+  if (priceChartOpen)  drawPriceChart(data.candles, data.events, data.trades);
+  if (equityChartOpen) drawEquityChart(data.equity, data.metrics.capital);
+  window._lastBT = {
+    candles: data.candles, events: data.events, trades: data.trades,
+    equity: data.equity, metrics: data.metrics,
+  };
+}
+
+function setStatus(txt, kind){
+  $('status').textContent = txt;
+  $('status').style.color = kind === 'err' ? '#f85149'
+                          : kind === 'ok'  ? '#3fb950' : '#8b949e';
+}
+
+/* Indian-format short amounts: 1k / 1.5L / 1Cr */
+function fmtAmt(v){
+  if (v == null || v === '' || v === '—') return '—';
+  const n = Number(v);
+  if (isNaN(n) || !isFinite(n)) return '—';
+  const a = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (a >= 1e7){ const x = a/1e7; return sign + x.toFixed(x >= 10 ? 1 : 2).replace(/\.?0+$/,'') + 'Cr'; }
+  if (a >= 1e5){ const x = a/1e5; return sign + x.toFixed(x >= 10 ? 1 : 2).replace(/\.?0+$/,'') + 'L';  }
+  if (a >= 1e3){ const x = a/1e3; return sign + x.toFixed(x >= 10 ? 0 : 1).replace(/\.?0+$/,'') + 'k';  }
+  return sign + Math.round(a);
+}
+
+/* TF → allowed yfinance periods */
+const TF_PERIODS = {
+  "1m":["1d","5d"], "2m":["1d","5d","1mo"],
+  "5m":["1d","5d","1mo","60d"], "15m":["1d","5d","1mo","60d"], "30m":["1d","5d","1mo","60d"],
+  "60m":["1d","5d","1mo","3mo","6mo","1y","2y"], "90m":["1d","5d","1mo","3mo","6mo","1y","2y"],
+  "1h":["5d","1mo","3mo","6mo","1y","2y"], "4h":["1mo","3mo","6mo","1y","2y"],
+  "1d":["1mo","3mo","6mo","1y","2y","5y","10y"], "5d":["1mo","3mo","6mo","1y","2y","5y","10y"],
+  "1wk":["1mo","3mo","6mo","1y","2y","5y","10y"], "1mo":["1y","2y","5y","10y"], "3mo":["2y","5y","10y"],
+};
+const TF_DEFAULT_PERIOD = {
+  "1m":"1d","2m":"1d","5m":"5d","15m":"1mo","30m":"1mo",
+  "60m":"3mo","90m":"3mo","1h":"6mo","4h":"6mo",
+  "1d":"1y","5d":"1y","1wk":"1y","1mo":"2y","3mo":"5y",
+};
+function refreshPeriods(){
+  const tf = $('tf').value;
+  const list = TF_PERIODS[tf] || ["1y"];
+  const sel = $('period');
+  const prev = sel.value;
+  sel.innerHTML = list.map(p => `<option value="${p}">${p}</option>`).join('');
+  sel.value = list.includes(prev) ? prev : (TF_DEFAULT_PERIOD[tf] || list[list.length-1]);
+}
+$('tf').addEventListener('change', refreshPeriods);
+refreshPeriods();
+
+/* show only the active indicator's params */
+function syncIndicatorParams(){
+  $('secWTParams').style.display = $('src_wt').checked ? '' : 'none';
+  $('secCEParams').style.display = $('src_ce').checked ? '' : 'none';
+  $('secSTParams').style.display = $('src_st').checked ? '' : 'none';
+}
+$('src_wt').addEventListener('change', syncIndicatorParams);
+$('src_ce').addEventListener('change', syncIndicatorParams);
+$('src_st').addEventListener('change', syncIndicatorParams);
+syncIndicatorParams();
+
+/* ===== backtest presets ===== */
+const BT_PRESET_KEY = 'scanner_bt_presets_v1';
+function loadBtPresets(){ try { return JSON.parse(localStorage.getItem(BT_PRESET_KEY) || '{}'); } catch { return {}; } }
+function saveBtPresets(o){ localStorage.setItem(BT_PRESET_KEY, JSON.stringify(o)); }
+
+function captureBtPreset(){
+  return {
+    symbol:   $('symbol').value,
+    exchange: $('exchange').value,
+    tf:       $('tf').value,
+    period:   $('period').value,
+    indicators: { wt: $('src_wt').checked, ce: $('src_ce').checked,
+                  st: $('src_st').checked },
+    strat_mode: document.querySelector('input[name="strat_mode"]:checked').value,
+    mult_type:  document.querySelector('input[name="mult_type"]:checked')?.value || 'martingale',
+    side_mode:  document.querySelector('input[name="side"]:checked').value,
+    pos_mode:   document.querySelector('input[name="pos_mode"]:checked').value,
+    candle_src: document.querySelector('input[name="candle_src"]:checked').value,
+    buffer:     $('cfg_buffer').value,
+    wait:       $('cfg_wait').value,
+    target_mode:$('cfg_target_mode').value,
+    target:     $('cfg_target').value,
+    stop:       $('cfg_stop').value,
+    opp:        $('cfg_opp').checked,
+    capital:    $('cfg_capital').value,
+    comm:       $('cfg_comm').value,
+    slip:       $('cfg_slip').value,
+    amount:     $('cfg_amount').value,
+    qty:        $('cfg_qty').value,
+    position:   $('cfg_position').value,
+    max_levels: $('cfg_max_levels').value,
+    wt_n1:      $('cfg_wt_n1').value,
+    wt_n2:      $('cfg_wt_n2').value,
+    wt_newest_only: $('cfg_wt_newest_only').checked,
+    ce_len:     $('cfg_ce_len').value,
+    ce_mult:    $('cfg_ce_mult').value,
+    st_left:        $('cfg_st_left').value,
+    st_right:       $('cfg_st_right').value,
+    st_entry_mode:  $('cfg_st_entry_mode').value,
+    st_exit_mode:   $('cfg_st_exit_mode').value,
+    st_reentry_mode: $('cfg_st_reentry_mode').value,
+    fno:        $('cfg_fno').checked,
+    trail_on:   $('cfg_trail_on').checked,
+    trail_start:$('cfg_trail_start').value,
+    trail_step: $('cfg_trail_step').value,
+    trail_tighten:    $('cfg_trail_tighten').checked,
+    trail_tighten_at: $('cfg_trail_tighten_at').value,
+    trail_tighten_step: $('cfg_trail_tighten_step').value,
+    wt_filter:      $('cfg_wt_filter').checked,
+    wt_buy_max:     $('cfg_wt_buy_max').value,
+    wt_sell_min:    $('cfg_wt_sell_min').value,
+    htf_filter:     $('cfg_htf_filter').checked,
+    rsi_filter:     $('cfg_rsi_filter').checked,
+    rsi_period:     $('cfg_rsi_period').value,
+    vol_filter:     $('cfg_vol_filter').checked,
+    vol_mult:       $('cfg_vol_mult').value,
+    vol_lookback:   $('cfg_vol_lookback').value,
+    rec_mode:       $('cfg_rec_mode').value,
+    rec_buffer:     $('cfg_rec_buffer').value,
+    rec_trail:      $('cfg_rec_trail').checked,
+    rec_premium:    $('cfg_rec_premium').value,
+    rec_step:       $('cfg_rec_step').value,
+  };
+}
+
+function applyBtPreset(p){
+  const setRadio = (name, val) => {
+    const el = document.querySelector(`input[name="${name}"][value="${val}"]`);
+    if (el) el.checked = true;
+  };
+  const setVal = (id, val) => { if (val != null) $(id).value = val; };
+  const setChk = (id, val) => { if (val != null) $(id).checked = val; };
+
+  setVal('symbol', p.symbol);
+  setVal('exchange', p.exchange);
+  setVal('tf', p.tf); refreshPeriods();
+  setVal('period', p.period);
+  setChk('src_wt', p.indicators?.wt);
+  setChk('src_ce', p.indicators?.ce);
+  setChk('src_st', p.indicators?.st);
+  if (p.strat_mode) setRadio('strat_mode', p.strat_mode);
+  if (p.mult_type)  setRadio('mult_type',  p.mult_type);
+  if (p.side_mode)  setRadio('side',       p.side_mode);
+  if (p.pos_mode)   setRadio('pos_mode',   p.pos_mode);
+  if (p.candle_src) setRadio('candle_src', p.candle_src);
+  setVal('cfg_buffer', p.buffer);
+  setVal('cfg_wait', p.wait);
+  setVal('cfg_target_mode', p.target_mode);
+  setVal('cfg_target', p.target);
+  setVal('cfg_stop', p.stop);
+  setChk('cfg_opp', p.opp);
+  setVal('cfg_capital', p.capital);
+  setVal('cfg_comm', p.comm);
+  setVal('cfg_slip', p.slip);
+  setVal('cfg_amount', p.amount);
+  setVal('cfg_qty', p.qty);
+  setVal('cfg_position', p.position);
+  setVal('cfg_max_levels', p.max_levels);
+  setVal('cfg_wt_n1', p.wt_n1);
+  setVal('cfg_wt_n2', p.wt_n2);
+  setChk('cfg_wt_newest_only', p.wt_newest_only);
+  setVal('cfg_ce_len', p.ce_len);
+  setVal('cfg_ce_mult', p.ce_mult);
+  setVal('cfg_st_left', p.st_left);
+  setVal('cfg_st_right', p.st_right);
+  setVal('cfg_st_entry_mode', p.st_entry_mode);
+  setVal('cfg_st_exit_mode',  p.st_exit_mode);
+  setVal('cfg_st_reentry_mode', p.st_reentry_mode);
+  setChk('cfg_fno', p.fno);
+  setChk('cfg_trail_on', p.trail_on);
+  setVal('cfg_trail_start', p.trail_start);
+  setVal('cfg_trail_step', p.trail_step);
+  setChk('cfg_trail_tighten', p.trail_tighten);
+  setVal('cfg_trail_tighten_at', p.trail_tighten_at);
+  setVal('cfg_trail_tighten_step', p.trail_tighten_step);
+  setChk('cfg_wt_filter',   p.wt_filter);
+  setVal('cfg_wt_buy_max',  p.wt_buy_max);
+  setVal('cfg_wt_sell_min', p.wt_sell_min);
+  setChk('cfg_htf_filter',  p.htf_filter);
+  setChk('cfg_rsi_filter',  p.rsi_filter);
+  setVal('cfg_rsi_period',  p.rsi_period);
+  setChk('cfg_vol_filter',  p.vol_filter);
+  setVal('cfg_vol_mult',    p.vol_mult);
+  setVal('cfg_vol_lookback',p.vol_lookback);
+  setVal('cfg_rec_mode',    p.rec_mode);
+  setVal('cfg_rec_buffer',  p.rec_buffer);
+  setChk('cfg_rec_trail',   p.rec_trail);
+  setVal('cfg_rec_premium', p.rec_premium);
+  setVal('cfg_rec_step',    p.rec_step);
+  syncRecoveryInputs();
+  syncStratMode();
+  syncIndicatorParams();
+  syncBatchSource();
+}
+
+function renderBtPresetList(){
+  const list = $('btPresetList');
+  const all = loadBtPresets();
+  const names = Object.keys(all);
+  if (!names.length){
+    list.innerHTML = '<span style="color:var(--muted);font-size:11px">no presets saved</span>';
+    return;
+  }
+  list.innerHTML = names.map(n =>
+    `<div class="presetRow" style="padding:4px 8px">
+       <span class="name" style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n}</span>
+       <button class="lil" data-load="${n}">Load</button>
+       <button class="lil del" data-del="${n}">✕</button>
+     </div>`).join('');
+  list.querySelectorAll('[data-load]').forEach(el => el.addEventListener('click', () => {
+    applyBtPreset(loadBtPresets()[el.dataset.load]);
+    setStatus('preset loaded', 'ok');
+  }));
+  list.querySelectorAll('[data-del]').forEach(el => el.addEventListener('click', () => {
+    const all = loadBtPresets(); delete all[el.dataset.del]; saveBtPresets(all); renderBtPresetList();
+  }));
+  const cnt = $('btPresetCount');
+  if (cnt) cnt.textContent = names.length;
+}
+
+$('btPresetToggle')?.addEventListener('click', () => {
+  const list = $('btPresetList');
+  list.hidden = !list.hidden;
+  $('btPresetToggle').textContent =
+    (list.hidden ? '▸' : '▾') + ' SAVED PRESETS (' + ($('btPresetCount')?.textContent || '0') + ')';
+});
+$('btPresetSave').addEventListener('click', () => {
+  const n = $('btPresetName').value.trim();
+  if (!n){ $('btPresetName').focus(); return; }
+  const all = loadBtPresets();
+  all[n] = captureBtPreset();
+  saveBtPresets(all);
+  $('btPresetName').value = '';
+  renderBtPresetList();
+  setStatus('preset saved', 'ok');
+});
+
+function autoFno(){
+  const ex = $('exchange').value;
+  $('cfg_fno').checked = (ex === '.NS' || ex === '.BO');
+}
+$('exchange').addEventListener('change', autoFno);
+autoFno();
+
+function syncStratMode(){
+  const mode = document.querySelector('input[name="strat_mode"]:checked').value;
+  $('multBlock').hidden = (mode === "simple");
+  if (mode === "same_side"){
+    const both = document.querySelector('input[name="side"][value="both"]');
+    if (both && both.checked){
+      document.querySelector('input[name="side"][value="long"]').checked = true;
+    }
+  }
+}
+document.querySelectorAll('input[name="strat_mode"]').forEach(el =>
+  el.addEventListener('change', syncStratMode));
+syncStratMode();
+
+function syncRecoveryInputs(){
+  const on = $('cfg_rec_mode').value !== 'off';
+  $('recoveryInputs').style.display = on ? '' : 'none';
+}
+$('cfg_rec_mode').addEventListener('change', syncRecoveryInputs);
+syncRecoveryInputs();
+
+$('cfg_target_mode').addEventListener('change', () => {
+  const v = parseFloat($('cfg_target').value) || 0;
+  if ($('cfg_target_mode').value === 'amount' && v < 10) $('cfg_target').value = 100;
+  if ($('cfg_target_mode').value === 'pct' && v >= 10)   $('cfg_target').value = 1;
+});
+
+/* ---- batch toggle ---- */
+let batchPanelOpen = true;
+
+function autoOutputTabName(){
+  const tab = ($('bTab').value || '').trim();
+  const prefix = tab.split('_')[0] || 'bt';
+  const picked = [];
+  if ($('src_wt').checked) picked.push('WT');
+  if ($('src_ce').checked) picked.push('CE');
+  if ($('src_st').checked) picked.push('ST');
+  const mid = picked.length ? picked.join('_') : 'scan';
+  return `${prefix}_${mid}_${$('tf').value}`;
+}
+function syncBatchMode(){
+  const on = $('batchMode').checked;
+  $('run').hidden = on;
+  $('runBatch').hidden = !on;
+  $('batchSourceRow').hidden = !on;
+  $('batchOutputRow').hidden = !on;
+  $('batchLoadRow').hidden = !on;
+  if (on){
+    $('batchResultsWrap').hidden = false;
+    if (!$('bOutputTab').value) $('bOutputTab').placeholder = autoOutputTabName();
+  }
+}
+$('batchMode').addEventListener('change', syncBatchMode);
+syncBatchMode();
+
+$('batchToggle').addEventListener('click', () => {
+  batchPanelOpen = !batchPanelOpen;
+  const body = $('batchPanelBody');
+  const hint = $('batchToggle');
+  if (body) body.style.display = batchPanelOpen ? '' : 'none';
+  if (hint) hint.textContent   = batchPanelOpen ? '▾ BATCH RESULTS' : '▸ BATCH RESULTS';
+});
+
+$('bResetOutput')?.addEventListener('click', () => {
+  $('bOutputTab').value = '';
+  $('bOutputTab').placeholder = autoOutputTabName();
+});
+
+$('bLoadBtn')?.addEventListener('click', async () => {
+  const book = $('bBook').value;
+  const tab  = $('bLoadTab').value;
+  const st   = $('bLoadStatus');
+  if (!tab){
+    st.textContent = 'pick a tab first';
+    st.style.color = 'var(--bad)';
+    return;
+  }
+  st.style.color = 'var(--muted)';
+  st.textContent = 'loading…';
+  try {
+    const r = await fetch(`/api/backtest/batch/load?book=${encodeURIComponent(book)}&tab=${encodeURIComponent(tab)}`);
+    const d = await r.json();
+    if (!d.ok){
+      st.textContent = '⚠️ ' + (d.error || 'load failed');
+      st.style.color = 'var(--bad)';
+      return;
+    }
+    // replace the current table + summary with the loaded rows
+    batchRows = d.rows;
+    batchSort = { key: null, dir: null };
+    $('batchResultsWrap').hidden = false;
+    renderBatchTable();
+    renderBatchSummary();
+    st.textContent = `loaded ${d.count} rows from ${book}::${tab}`;
+    st.style.color = 'var(--good)';
+    setStatus(`loaded ${d.count} rows from sheet`, 'ok');
+  } catch(e){
+    st.textContent = 'request failed';
+    st.style.color = 'var(--bad)';
+    console.error(e);
+  }
+});
+
+$('tf').addEventListener('change', () => {
+  if (!$('bOutputTab').value) $('bOutputTab').placeholder = autoOutputTabName();
+});
+$('bTab')?.addEventListener('change', () => {
+  if (!$('bOutputTab').value) $('bOutputTab').placeholder = autoOutputTabName();
+});
+
+/* toggle book/tab vs manual */
+function syncBatchSource(){
+  const isManual = $('bSource').value === 'manual';
+  $('bBook').style.display  = isManual ? 'none' : '';
+  $('bTab').style.display   = isManual ? 'none' : '';
+  $('bBookLbl').style.display = isManual ? 'none' : '';
+  $('bTabLbl').style.display  = isManual ? 'none' : '';
+  $('bManual').style.display  = isManual ? '' : 'none';
+}
+$('bSource').addEventListener('change', syncBatchSource);
+syncBatchSource();
+
+/* fetch available tabs when book changes (same endpoint as scanner) */
+async function loadBatchTabs(){
+  const book = $('bBook').value;
+  const sel  = $('bTab');
+  const prev = sel.value;
+  sel.innerHTML = '<option>loading…</option>';
+  try {
+    const r = await fetch(`/api/sheets/tabs?book=${encodeURIComponent(book)}`);
+    const d = await r.json();
+    const tabs = (d.ok && d.tabs && d.tabs.length) ? d.tabs : [];
+    if (!tabs.length){
+      sel.innerHTML = '<option value="">(no tabs found)</option>';
+      return;
+    }
+    sel.innerHTML = tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+    if (tabs.includes(prev)) sel.value = prev;
+    else if (tabs.includes('zero_input')) sel.value = 'zero_input';
+
+    // mirror the same tab list into the Load dropdown
+    const lsel = $('bLoadTab');
+    if (lsel){
+      const lprev = lsel.value;
+      lsel.innerHTML = '<option value="">(pick a tab)</option>' +
+        tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+      if (tabs.includes(lprev)) lsel.value = lprev;
+    }
+  } catch(e){
+    console.error('batch tab fetch failed', e);
+    sel.innerHTML = '<option value="">(error)</option>';
+  }
+}
+$('bBook').addEventListener('change', loadBatchTabs);
+loadBatchTabs();
+
+function readCfg(){
+  const base = $('symbol').value.trim().toUpperCase();
+  const exch = $('exchange').value;
+  let symbol;
+  if (base.includes('.') || base.startsWith('^') || base.endsWith('=X')){
+    symbol = base;
+  } else if (exch === '_FX'){
+    symbol = base + '=X';
+  } else if (exch === ''){
+    symbol = base;
+  } else {
+    symbol = base + exch;
+  }
+
+  const sideEl = document.querySelector('input[name="side"]:checked');
+  const srcEl  = document.querySelector('input[name="candle_src"]:checked');
+  const posEl  = document.querySelector('input[name="pos_mode"]:checked');
+  const stratEl= document.querySelector('input[name="strat_mode"]:checked');
+  const multEl = document.querySelector('input[name="mult_type"]:checked');
+
+  return {
+    symbol,
+    interval: $('tf').value,
+    period:   $('period').value,
+    indicators: {
+      wt: $('src_wt').checked,
+      ce: $('src_ce').checked,
+      st: $('src_st').checked,
+    },
+    wt_newest_only:            $('cfg_wt_newest_only').checked,
+    params: {
+      wt: { n1: parseFloat($('cfg_wt_n1').value), n2: parseFloat($('cfg_wt_n2').value) },
+      ce: { length: parseFloat($('cfg_ce_len').value),
+            mult:   parseFloat($('cfg_ce_mult').value),
+            use_close: true },
+      st: { left:  parseInt($('cfg_st_left').value, 10)  || 15,
+            right: parseInt($('cfg_st_right').value, 10) || 15 },
+    },
+    capital:          parseFloat($('cfg_capital').value),
+    position_pct:     parseFloat($('cfg_position').value),
+    position_amount:  parseFloat($('cfg_amount').value),
+    fixed_qty:        parseInt($('cfg_qty').value, 10) || 1,
+    sizing_mode:      posEl ? posEl.value : 'fixed',
+    commission_pct:   parseFloat($('cfg_comm').value),
+    slippage_pct:     parseFloat($('cfg_slip').value),
+    buffer_pts:       parseFloat($('cfg_buffer').value),
+    wait_bars:        parseInt($('cfg_wait').value, 10),
+    profit_target_mode:  $('cfg_target_mode').value,
+    profit_target_value: parseFloat($('cfg_target').value),
+    profit_target_pct:   parseFloat($('cfg_target').value),
+    stop_loss_pct:       parseFloat($('cfg_stop').value),
+    exit_on_opposite:    $('cfg_opp').checked,
+    side_mode:           sideEl ? sideEl.value : 'both',
+    logic:               'any',
+    match_window:        5,
+    heikin_ashi:         srcEl ? srcEl.value === 'ha' : true,
+    fno_filter:          $('cfg_fno').checked,
+    strategy_mode:       stratEl ? stratEl.value : 'simple',
+    multiplier_type:     multEl ? multEl.value : 'martingale',
+    base_qty:            parseInt($('cfg_qty').value, 10) || 1,
+    max_levels:          parseInt($('cfg_max_levels').value, 10) || 5,
+    trailing_enabled:          $('cfg_trail_on').checked,
+    trailing_start_pct:        parseFloat($('cfg_trail_start').value),
+    trailing_step_pct:         parseFloat($('cfg_trail_step').value),
+    trailing_tighten_enabled:  $('cfg_trail_tighten').checked,
+    trailing_tighten_at:       parseFloat($('cfg_trail_tighten_at').value),
+    trailing_tighten_step:     parseFloat($('cfg_trail_tighten_step').value),
+    wt_filter_enabled:         $('cfg_wt_filter').checked,
+    wt_buy_max:                parseFloat($('cfg_wt_buy_max').value),
+    wt_sell_min:               parseFloat($('cfg_wt_sell_min').value),
+    htf_filter_enabled:        $('cfg_htf_filter').checked,
+    rsi_filter_enabled:        $('cfg_rsi_filter').checked,
+    rsi_period:                parseInt($('cfg_rsi_period').value, 10) || 14,
+    vol_filter_enabled:        $('cfg_vol_filter').checked,
+    vol_mult:                  parseFloat($('cfg_vol_mult').value),
+    vol_lookback:              parseInt($('cfg_vol_lookback').value, 10) || 20,
+    // ST entry/exit modes
+    st_entry_mode:             $('cfg_st_entry_mode').value,
+    st_exit_mode:              $('cfg_st_exit_mode').value,
+    st_reentry_mode:           $('cfg_st_reentry_mode').value,
+
+    // recovery overlay params
+    recovery_enabled:          $('cfg_rec_mode').value !== 'off',
+    recovery_cumulative:       $('cfg_rec_mode').value === 'cumulative',
+    recovery_buffer_amount:    parseFloat($('cfg_rec_buffer').value),
+    recovery_trail_enabled:    $('cfg_rec_trail').checked,
+    recovery_trail_premium:    parseFloat($('cfg_rec_premium').value),
+    recovery_trail_step:       parseFloat($('cfg_rec_step').value),
+  };
+}
+
+/* ---- chart collapse toggles ---- */
+let priceChartOpen = false;
+let equityChartOpen = false;
+$('togglePrice').addEventListener('click', () => {
+  priceChartOpen = !priceChartOpen;
+  $('priceWrap').hidden = !priceChartOpen;
+  $('togglePrice').textContent =
+    (priceChartOpen ? '▾ ' : '▸ ') + 'PRICE + TRADES';
+  if (priceChartOpen && window._lastBT) drawPriceChart(window._lastBT.candles, window._lastBT.events, window._lastBT.trades);
+});
+$('toggleEquity').addEventListener('click', () => {
+  equityChartOpen = !equityChartOpen;
+  $('equityWrap').hidden = !equityChartOpen;
+  $('toggleEquity').textContent =
+    (equityChartOpen ? '▾ ' : '▸ ') + 'EQUITY CURVE';
+  if (equityChartOpen && window._lastBT) drawEquityChart(window._lastBT.equity, window._lastBT.metrics.capital);
+});
+
+/* ============================ CHARTS ============================ */
+function fit(cv){
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  cv.width = Math.max(1, Math.floor(r.width * dpr));
+  cv.height = Math.max(1, Math.floor(r.height * dpr));
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+
+function drawPriceChart(candles, events, trades){
+  const cv = $('priceChart');
+  const { ctx, w, h } = fit(cv);
+  ctx.clearRect(0, 0, w, h);
+  const n = candles.length; if (!n) return;
+  const padL = 8, padR = 62, padT = 10, padB = 18;
+  const X = i => padL + (w - padL - padR) * (n <= 1 ? 0 : i / (n - 1));
+  let lo = Infinity, hi = -Infinity;
+  for (const c of candles){ lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
+  const pad = (hi - lo) * 0.05 || 1; lo -= pad; hi += pad;
+  const Y = v => padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+  ctx.strokeStyle = '#222a35'; ctx.fillStyle = '#8b949e'; ctx.font = '10px system-ui';
+  for (let g = 0; g <= 4; g++){
+    const v = lo + (hi - lo) * g / 4, y = Y(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(v.toFixed(2), w - padR + 6, y + 3);
+  }
+  ctx.strokeStyle = '#5c6b7f'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  candles.forEach((c, i) => { const x = X(i), y = Y(c.c);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+  ctx.stroke();
+
+  ctx.strokeStyle = '#d2a8ff'; ctx.lineWidth = 1;
+  for (const e of events){
+    const c = candles[e.valid_i];
+    const x = X(e.valid_i), y = Y(e.direction === 'buy' ? c.h : c.l);
+    const r = 3.5;
+    ctx.strokeRect(x - r, y - r, r * 2, r * 2);
+  }
+  for (const e of events){
+    const x = X(e.trigger_i), y = Y(e.level);
+    ctx.fillStyle = e.direction === 'buy' ? '#3fb950' : '#f85149';
+    ctx.beginPath();
+    if (e.direction === 'buy'){
+      ctx.moveTo(x, y - 7); ctx.lineTo(x - 5, y + 1); ctx.lineTo(x + 5, y + 1);
+    } else {
+      ctx.moveTo(x, y + 7); ctx.lineTo(x - 5, y - 1); ctx.lineTo(x + 5, y - 1);
+    }
+    ctx.closePath(); ctx.fill();
+  }
+  for (const t of trades){
+    const xx = X(t.exit_i), xy = Y(t.exit_px);
+    ctx.fillStyle = t.pnl >= 0 ? '#7ee787' : '#f85149';
+    ctx.beginPath(); ctx.arc(xx, xy, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawEquityChart(equity, capital){
+  const cv = $('equityChart');
+  const { ctx, w, h } = fit(cv);
+  ctx.clearRect(0, 0, w, h);
+  const n = equity.length; if (!n) return;
+  const padL = 8, padR = 62, padT = 10, padB = 18;
+  const X = i => padL + (w - padL - padR) * (n <= 1 ? 0 : i / (n - 1));
+  let lo = Infinity, hi = -Infinity;
+  for (const e of equity){ lo = Math.min(lo, e); hi = Math.max(hi, e); }
+  const pad = (hi - lo) * 0.08 || 1; lo -= pad; hi += pad;
+  const Y = v => padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+  ctx.strokeStyle = '#222a35'; ctx.fillStyle = '#8b949e'; ctx.font = '10px system-ui';
+  for (let g = 0; g <= 3; g++){
+    const v = lo + (hi - lo) * g / 3, y = Y(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(Math.round(v).toLocaleString(), w - padR + 6, y + 3);
+  }
+  if (capital >= lo && capital <= hi){
+    ctx.strokeStyle = '#3d4552'; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(padL, Y(capital)); ctx.lineTo(w - padR, Y(capital)); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const grad = ctx.createLinearGradient(0, padT, 0, h - padB);
+  grad.addColorStop(0, 'rgba(88,166,255,.28)'); grad.addColorStop(1, 'rgba(88,166,255,0)');
+  ctx.beginPath();
+  ctx.moveTo(X(0), Y(equity[0]));
+  for (let i = 1; i < n; i++) ctx.lineTo(X(i), Y(equity[i]));
+  ctx.lineTo(X(n - 1), h - padB); ctx.lineTo(X(0), h - padB);
+  ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i < n; i++){ const x = X(i), y = Y(equity[i]);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+/* ============================ MULTI-COLUMN SORT ============================ */
+function _cmpVals(a, b){
+  const aE = a == null || a === '' || (typeof a === 'number' && !isFinite(a));
+  const bE = b == null || b === '' || (typeof b === 'number' && !isFinite(b));
+  if (aE && bE) return 0;
+  if (aE) return 1;
+  if (bE) return -1;
+  const an = Number(a), bn = Number(b);
+  if (!isNaN(an) && !isNaN(bn)) return an - bn;
+  return String(a).localeCompare(String(b));
+}
+function _multiSort(rows, spec){
+  if (!spec.length) return rows.slice();
+  return rows.slice().sort((a, b) => {
+    for (const {key, dir} of spec){
+      const c = _cmpVals(a[key], b[key]);
+      if (c !== 0) return dir === 'desc' ? -c : c;
+    }
+    return 0;
+  });
+}
+function _updateSortSpec(spec, key, shift){
+  const i = spec.findIndex(s => s.key === key);
+  if (shift){
+    if (i < 0) spec.push({ key, dir: 'asc' });
+    else if (spec[i].dir === 'asc') spec[i].dir = 'desc';
+    else spec.splice(i, 1);
+  } else {
+    if (spec.length === 1 && spec[0].key === key){
+      if (spec[0].dir === 'asc') spec[0].dir = 'desc';
+      else spec.length = 0;
+    } else {
+      spec.length = 0;
+      spec.push({ key, dir: 'asc' });
+    }
+  }
+}
+function _sortMark(spec, key){
+  const i = spec.findIndex(s => s.key === key);
+  if (i < 0) return '';
+  const arrow = spec[i].dir === 'asc' ? '▲' : '▼';
+  const num   = spec.length > 1 ? `<sup>${i + 1}</sup>` : '';
+  return ` <span class="sortMark">${arrow}${num}</span>`;
+}
+
+/* live sort state for the two tables */
+const TRADES_SORT = [];
+const EVENTS_SORT = [];
+const expandedTradeSigs = new Set();
+let _lastTradesData = [];
+let _lastEventsData = [];
+
+/* ============================ RENDERERS ============================ */
+function cls(v){ return v >= 0 ? 'buy' : 'sell'; }
+
+function renderCards(m, trades){
+  const net = m.net_pnl != null ? m.net_pnl : (m.final_equity - m.capital);
+  const netColor = net >= 0 ? 'buy' : 'sell';
+  const netStr = (net >= 0 ? '+' : '') + Math.round(net).toLocaleString();
+
+  // per-trade return stats (used for new cards)
+  const tList = Array.isArray(trades) ? trades : [];
+  const pctList = tList.map(t => Number(t.pnl_pct)).filter(v => !isNaN(v));
+  const avgRet = pctList.length ? pctList.reduce((s, v) => s + v, 0) / pctList.length : 0;
+  const bestRet = pctList.length ? Math.max(...pctList) : 0;
+
+  const cards = [
+    ['Final equity',
+      Math.round(m.final_equity).toLocaleString() +
+      ` <span class="${netColor}" style="font-size:12px;font-weight:500;margin-left:6px">${netStr}</span>`, ''],
+    ['Total return',   m.total_return_pct.toFixed(2) + '%', cls(m.total_return_pct)],
+    ['Buy & hold',     m.buy_hold_pct.toFixed(2) + '%', cls(m.buy_hold_pct)],
+    ['Avg return',     avgRet.toFixed(2) + '%', cls(avgRet)],
+    ['Best return',    bestRet.toFixed(2) + '%', cls(bestRet)],
+    ['Max drawdown',   m.max_dd_pct.toFixed(2) + '%', 'sell'],
+    ['Sharpe',         m.sharpe.toFixed(2), cls(m.sharpe)],
+    ['Max win ₹',      Math.round(m.max_win  || 0).toLocaleString(), 'buy'],
+    ['Max loss ₹',     Math.round(m.max_loss || 0).toLocaleString(), 'sell'],
+    ['Signals',        m.events, ''],
+    ['Trades',         m.trades, ''],
+    ['Win rate',       m.win_rate.toFixed(1) + '%', ''],
+    ['Profit factor',  m.profit_factor.toFixed(2), cls(m.profit_factor - 1)],
+    ['Expectancy',     Math.round(m.expectancy).toLocaleString(), cls(m.expectancy)],
+    ['Avg win',        Math.round(m.avg_win).toLocaleString(), 'buy'],
+    ['Avg loss',       Math.round(m.avg_loss).toLocaleString(), 'sell'],
+  ];
+  $('cards').innerHTML = cards.map(([k,v,c]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+}
+
+function renderLatestSignal(events){
+  if (!events.length){ $('latestSig').style.display = 'none'; return; }
+  const e = events[events.length - 1];
+  $('latestSig').style.display = '';
+  const cell = (label, val, klass = '') =>
+    `<div><div class="k">${label}</div>
+       <div class="v ${klass}" style="font-size:13px;font-weight:600">${val}</div></div>`;
+  $('latestSigBody').innerHTML =
+    cell('Direction', e.direction.toUpperCase(),
+         e.direction === 'buy' ? 'buy' : 'sell') +
+    cell('Source',    e.source.toUpperCase()) +
+    cell('Trend',
+         e.source === 'st'
+           ? (e.direction === 'buy' ? 'Buy Trend' : 'Sell Trend')
+           : (e.wt_val > 0 ? 'Buy Trend' : 'Sell Trend'),
+         e.direction === 'buy' ? 'buy' : 'sell') +
+    cell('Perfect?',  e.perfect) +
+    cell('Valid candle',  e.valid_t.slice(0, 16).replace('T', ' ')) +
+    cell('Trigger bar',   e.trigger_t.slice(0, 16).replace('T', ' ')) +
+    cell('Trigger level', e.level.toFixed(2)) +
+    cell('Entry @',
+         (e.level + (e.direction === 'buy' ? 1 : -1)).toFixed(2),
+         e.direction === 'buy' ? 'buy' : 'sell');
+}
+
+/* --- trades table with multi-column sort + expandable detail rows --- */
+function _tradeSig(t){
+  return [t.entry_t, t.entry_px, t.exit_t, t.exit_px, t.pnl].join('|');
+}
+
+function renderTrades(trades, stratMode){
+  _lastTradesData = trades || [];
+  const wrap = $('tradesWrap');
+
+  if (!_lastTradesData.length){
+    wrap.innerHTML =
+      '<p style="color:var(--muted);font-size:12px;padding:20px">No trades.</p>';
+    return;
+  }
+
+  const isMulti = (stratMode === "same_side" || stratMode === "alternate");
+  const levelsHead = isMulti
+    ? `<th class="sortable" data-tsort="levels">Levels</th>` : '';
+
+  // rows with stable _i to keep detail mapping intact
+  const indexed = _lastTradesData.map((t, i) => ({ ...t, _i: i }));
+  const sorted  = _multiSort(indexed, TRADES_SORT);
+
+  const rows = sorted.map((t, r) => {
+    const i         = t._i;
+    const qty       = (t.total_qty != null) ? t.total_qty : '';
+    const levels    = (t.levels != null) ? t.levels
+                    : (t.level != null ? t.level + 1 : '');
+    const capital   = fmtAmt(t.capital_used);
+    const detail    = t.entries_detail || [];
+    const hasDetail = detail.length > 0;
+    const levelsCell = isMulti ? `<td>${levels}</td>` : '';
+    const sig = _tradeSig(t);
+    const isExpanded = expandedTradeSigs.has(sig);
+    const arrow = hasDetail ? `<span class="expander">${isExpanded ? '▾' : '▸'}</span> ` : '';
+
+    const mainRow = `
+      <tr class="tradeRow ${hasDetail ? 'hasDetail' : ''}" data-i="${i}" data-sig="${sig}">
+        <td>${arrow}${r + 1}</td>
+        <td class="${t.side === 'long' ? 'buy' : 'sell'}">${t.side}</td>
+        <td>${t.key.toUpperCase()}</td>
+        <td>${capital}</td>
+        <td>${t.entry_t.slice(0, 16).replace('T', ' ')}</td>
+        <td>${t.entry_px}</td>
+        <td>${t.exit_t.slice(0, 16).replace('T', ' ')}</td>
+        <td>${t.exit_px}</td>
+        <td>${qty}</td>
+        <td>${t.bars}</td>
+        ${levelsCell}
+        <td class="${cls(t.pnl)}">${t.pnl}</td>
+        <td class="${cls(t.pnl_pct)}">${t.pnl_pct}%</td>
+        <td class="mut">${t.reason}</td>
+      </tr>`;
+
+    let detailRow = '';
+    if (hasDetail){
+      const lines = detail.map((e, k) => {
+        const sigSide = (e.sign === 1) ? 'BUY' : 'SELL';
+        const sigCl   = (e.sign === 1) ? 'buy' : 'sell';
+        const legCl   = (e.leg_pnl >= 0) ? 'buy' : 'sell';
+        const lp      = (e.leg_pnl != null) ? e.leg_pnl : '';
+        return `<div class="detLine">
+           <span class="detTag">L${k + 1}</span>
+           <span class="${sigCl}" style="font-weight:700;margin-right:8px;
+                  display:inline-block;min-width:38px">${sigSide}</span>
+           <span style="color:var(--fg)">${e.t.slice(0, 16).replace('T', ' ')}</span>
+           <span style="color:var(--muted)"> @ </span><b>${e.px}</b>
+           <span style="color:var(--muted)"> · qty </span><b>${e.qty}</b>
+           <span style="color:var(--muted)"> → </span>
+           <span style="color:var(--fg)">${(e.t_out || '').slice(0, 16).replace('T', ' ')}</span>
+           <span style="color:var(--muted)"> @ </span><b>${e.px_out || ''}</b>
+           <span style="color:var(--muted)"> · leg P&L </span>
+           <b class="${legCl}">${lp}</b>
+           <span style="color:var(--muted)"> · </span>
+           <span style="color:var(--muted);font-style:italic">${e.reason || ''}</span>
+           <span style="color:var(--muted)"> · </span>
+           <span style="color:var(--muted);font-style:italic">${e.perfect || ''}</span>
+         </div>`;
+      }).join('');
+      detailRow = `
+        <tr class="detailRow" data-for="${i}" style="display:${isExpanded ? '' : 'none'}">
+          <td colspan="${isMulti ? 14 : 13}"
+              style="text-align:left;padding:8px 16px 8px 40px;
+                     background:#0f1620;color:var(--muted);font-size:11px;
+                     white-space:normal;border-left:3px solid var(--accent)">
+            ${lines}
+            <div class="detLine" style="margin-top:6px;color:var(--good)">
+              <span class="detTag">EXIT</span>
+              ${t.exit_t.slice(0, 16).replace('T', ' ')}
+              · @ <b>${t.exit_px}</b>
+              · close qty <b>${qty}</b>
+              · reason <b>${t.reason}</b>
+            </div>
+          </td>
+        </tr>`;
+    }
+    return mainRow + detailRow;
+  }).join('');
+
+  const th = (key, label, extra='') =>
+    `<th class="sortable" data-tsort="${key}" ${extra}>${label}${_sortMark(TRADES_SORT, key)}</th>`;
+
+  wrap.innerHTML = `
+    <div class="chartCap">
+      Trades (${_lastTradesData.length}) — click to expand · click a header to sort · shift-click to add a level
+    </div>
+    <div class="tblwrap"><table class="tlog">
+      <thead><tr>
+        ${th('_i', '#')}
+        ${th('side', 'Side')}
+        ${th('key', 'Source')}
+        ${th('capital_used', 'Capital Used')}
+        ${th('entry_t', 'Entry time')}
+        ${th('entry_px', 'Avg entry')}
+        ${th('exit_t', 'Exit time')}
+        ${th('exit_px', 'Exit px')}
+        ${th('total_qty', 'Qty')}
+        ${th('bars', 'Bars')}
+        ${isMulti ? th('levels', 'Levels') : ''}
+        ${th('pnl', 'P&L')}
+        ${th('pnl_pct', 'Return')}
+        ${th('reason', 'Reason')}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+
+  // wire sort header clicks
+  wrap.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', (ev) => {
+      _updateSortSpec(TRADES_SORT, th.dataset.tsort, ev.shiftKey);
+      renderTrades(_lastTradesData, stratMode);
+    });
+  });
+
+  // wire detail row toggles
+  wrap.querySelectorAll('.tradeRow.hasDetail').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const i   = tr.dataset.i;
+      const sig = tr.dataset.sig;
+      const det = wrap.querySelector(`.detailRow[data-for="${i}"]`);
+      if (!det) return;
+      const hidden = det.style.display === 'none';
+      det.style.display = hidden ? '' : 'none';
+      if (hidden) expandedTradeSigs.add(sig);
+      else        expandedTradeSigs.delete(sig);
+      const arrow = tr.querySelector('.expander');
+      if (arrow) arrow.textContent = hidden ? '▾' : '▸';
+    });
+  });
+}
+
+/* --- events table with multi-column sort + WT Trend column --- */
+function _wtTrend(e){
+  if (e.wt_val != null && !isNaN(e.wt_val)) {
+    return e.wt_val > 0 ? 'Buy Trend' : 'Sell Trend';
+  }
+  return e.direction === 'buy' ? 'Buy Trend' : 'Sell Trend';
+}
+
+function renderEvents(events){
+  _lastEventsData = events || [];
+
+  if (!_lastEventsData.length){
+    $('eventsWrap').innerHTML =
+      '<p style="color:var(--muted);font-size:12px;padding:20px">No WT/CE events detected.</p>';
+    return;
+  }
+
+  const buffer = parseFloat($('cfg_buffer').value) || 1;
+
+  // decorate rows with derived fields so sorting works naturally
+  const decorated = _lastEventsData.map((e, i) => ({
+    ...e, _i: i,
+    wt_trend: _wtTrend(e),
+    entry_price: e.level + (e.direction === 'buy' ? buffer : -buffer),
+  }));
+
+  const passed  = decorated.filter(e => !e.filtered).length;
+  const stat = (label, cnt) => `<span style="color:var(--muted);font-size:11px;
+      margin-right:14px">${label} <b style="color:${cnt?'var(--bad)':'var(--muted)'}">${cnt}</b></span>`;
+  const wtR  = decorated.filter(e => (e.filter_reasons||[]).some(r => r.includes('WT'))).length;
+  const htfR = decorated.filter(e => (e.filter_reasons||[]).some(r => r.includes('HTF'))).length;
+  const rsiR = decorated.filter(e => (e.filter_reasons||[]).some(r => r.includes('RSI'))).length;
+  const volR = decorated.filter(e => (e.filter_reasons||[]).some(r => r.includes('Vol'))).length;
+  const statsHtml = `<div style="margin-bottom:8px">
+      <span style="color:var(--muted);font-size:11px;margin-right:14px">
+        Total <b>${decorated.length}</b></span>
+      <span style="color:var(--muted);font-size:11px;margin-right:14px">
+        Passed <b class="buy">${passed}</b></span>
+      ${stat('WT cut', wtR)} ${stat('HTF cut', htfR)} ${stat('RSI cut', rsiR)} ${stat('VOL cut', volR)}
+    </div>`;
+
+  const sorted = _multiSort(decorated, EVENTS_SORT);
+
+  const rows = sorted.map((e, r) => {
+    const reasons = (e.filter_reasons || []).join(', ');
+    const filtTag = e.filtered
+      ? ` <span style="color:var(--bad);font-size:10px">[${reasons}]</span>` : '';
+    const wtStr = (e.wt_val != null) ? e.wt_val.toFixed(2) : '—';
+    const trendCl = e.wt_trend === 'Buy Trend' ? 'buy' : 'sell';
+    return `
+    <tr ${e.filtered ? 'style="opacity:.45"' : ''}>
+      <td>${r + 1}</td>
+      <td class="${e.direction === 'buy' ? 'buy' : 'sell'}">${e.direction}</td>
+      <td>${e.source.toUpperCase()}</td>
+      <td class="${trendCl}">${e.wt_trend}</td>
+      <td>${e.valid_t.slice(0, 16).replace('T', ' ')}</td>
+      <td>${e.level}</td>
+      <td>${wtStr}${filtTag}</td>
+      <td>${e.trigger_t.slice(0, 16).replace('T', ' ')}</td>
+      <td>${e.entry_price.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+
+  const th = (key, label) =>
+    `<th class="sortable" data-esort="${key}">${label}${_sortMark(EVENTS_SORT, key)}</th>`;
+
+  $('eventsWrap').innerHTML = `
+    <div class="chartCap">
+      All signals detected (${decorated.length}) — compare with Scanner · click a header to sort
+    </div>
+    ${statsHtml}
+    <div class="tblwrap"><table class="tlog">
+      <thead><tr>
+        ${th('_i', '#')}
+        ${th('direction', 'Direction')}
+        ${th('source', 'Source')}
+        ${th('wt_trend', 'WT Trend')}
+        ${th('valid_t', 'Valid candle')}
+        ${th('level', 'Level')}
+        ${th('wt_val', 'WT Val')}
+        ${th('trigger_t', 'Trigger bar')}
+        ${th('entry_price', 'Entry @')}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+
+  $('eventsWrap').querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', (ev) => {
+      _updateSortSpec(EVENTS_SORT, th.dataset.esort, ev.shiftKey);
+      renderEvents(_lastEventsData);
+    });
+  });
+}
+
+async function runBacktest(){
+  /* hide batch panel when running single */
+  if (!$('batchMode').checked) $('batchResultsWrap').hidden = true;
+  const cfg = readCfg();
+  const ind = cfg.indicators;
+  if (!ind.wt && !ind.ce && !ind.st){ setStatus('pick at least one source', 'err'); return; }
+  const activeSrcCount = [ind.wt, ind.ce, ind.st].filter(Boolean).length;
+  if ((cfg.strategy_mode === "same_side" || cfg.strategy_mode === "alternate") && activeSrcCount > 1){
+    setStatus('same-side / alternate support only ONE source', 'err'); return;
+  }
+
+  const btn = $('run');
+  btn.disabled = true; setStatus('running…');
+  try {
+    const res = await fetch('/api/backtest/run', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    const data = await res.json();
+    if (!data.ok){ setStatus(data.error || 'failed', 'err'); return; }
+
+    // stash the strategy mode so renderers know whether to show Levels column
+    data.strategy_mode = cfg.strategy_mode;
+    renderBacktest(data);
+    saveBtResult(data);
+    setStatus(`${data.bars} bars · ${data.events.length} signals · ${data.trades.length} trades · ${data.ms} ms`, 'ok');
+  } catch (e){
+    setStatus('request failed', 'err'); console.error(e);
+  } finally { btn.disabled = false; }
+}
+$('run').addEventListener('click', runBacktest);
+
+/* ---- S/R diagnostic ---- */
+async function runSRDiagnostic(){
+  const base = $('symbol').value.trim().toUpperCase();
+  const exch = $('exchange').value;
+  let symbol;
+  if (base.includes('.') || base.startsWith('^') || base.endsWith('=X')){
+    symbol = base;
+  } else if (exch === '_FX'){
+    symbol = base + '=X';
+  } else if (exch === ''){
+    symbol = base;
+  } else {
+    symbol = base + exch;
+  }
+
+  const btn = $('runSRDiag');
+  btn.disabled = true;
+  setStatus('fetching S/R segments…');
+
+  try {
+    const qs = new URLSearchParams({
+      symbol,
+      interval: $('tf').value,
+      period:   $('period').value,
+      left:     $('cfg_st_left').value  || '15',
+      right:    $('cfg_st_right').value || '15',
+    });
+    const r = await fetch('/api/backtest/sr_segments?' + qs);
+    const d = await r.json();
+    if (!d.ok){ setStatus(d.error || 'failed', 'err'); return; }
+
+    renderSRDiagnostic(d);
+    setStatus(`${d.segments.length} segments · ${d.bars} bars · ${d.ms} ms`, 'ok');
+  } catch(e){
+    setStatus('request failed', 'err');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSRDiagnostic(d){
+  $('srDiagWrap').hidden = false;
+
+  // --- summary cards ---
+  const rSegs = d.segments.filter(s => s.type === 'R');
+  const sSegs = d.segments.filter(s => s.type === 'S');
+  const cards = [
+    ['Total segments', d.segments.length, ''],
+    ['Resistance',     rSegs.length,      'sell'],
+    ['Support',        sSegs.length,      'buy'],
+    ['Bars',           d.bars,            ''],
+  ];
+  $('srDiagSummary').innerHTML = cards.map(([k, v, c]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+
+  // --- table ---
+  const rows = d.segments.map((s, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td class="${s.type === 'R' ? 'sell' : 'buy'}"><b>${s.type}</b></td>
+      <td>${s.level}</td>
+      <td class="mut">${s.start_t.slice(0, 16).replace('T', ' ')}</td>
+      <td class="mut">${s.end_t.slice(0, 16).replace('T', ' ')}</td>
+      <td>${s.bars}</td>
+      <td class="mut">${(s.usable_from_t || '').slice(0, 16).replace('T', ' ')}</td>
+    </tr>`).join('');
+  $('srDiagBody').innerHTML = rows;
+
+  // --- chart ---
+  drawSRChart(d);
+}
+
+function drawSRChart(d){
+  const cv = $('srDiagChart');
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  cv.width  = Math.max(1, Math.floor(r.width  * dpr));
+  cv.height = Math.max(1, Math.floor(r.height * dpr));
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const w = r.width, h = r.height;
+  ctx.clearRect(0, 0, w, h);
+  const candles = d.candles;
+  const n = candles.length;
+  if (!n) return;
+
+  const padL = 8, padR = 62, padT = 10, padB = 18;
+  const X = i => padL + (w - padL - padR) * (n <= 1 ? 0 : i / (n - 1));
+
+  let lo = Infinity, hi = -Infinity;
+  for (const c of candles){ lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
+  for (const s of d.segments){ lo = Math.min(lo, s.level); hi = Math.max(hi, s.level); }
+  const pad = (hi - lo) * 0.04 || 1; lo -= pad; hi += pad;
+  const Y = v => padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+  // grid + axis
+  ctx.strokeStyle = '#222a35'; ctx.fillStyle = '#8b949e';
+  ctx.font = '10px system-ui';
+  for (let g = 0; g <= 4; g++){
+    const v = lo + (hi - lo) * g / 4, y = Y(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(v.toFixed(2), w - padR + 6, y + 3);
+  }
+
+  // price
+  ctx.strokeStyle = '#5c6b7f'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  candles.forEach((c, i) => {
+    const x = X(i), y = Y(c.c);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.stroke();
+
+  // segments
+  ctx.lineWidth = 2.5;
+  for (const s of d.segments){
+    const x1 = X(s.start_i), x2 = X(s.end_i), y = Y(s.level);
+    ctx.strokeStyle = s.type === 'R' ? '#f85149' : '#58a6ff';
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
+    // small tick at each end
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x1, y - 4); ctx.lineTo(x1, y + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y - 4); ctx.lineTo(x2, y + 4); ctx.stroke();
+    ctx.lineWidth = 2.5;
+  }
+}
+
+$('runSRDiag').addEventListener('click', runSRDiagnostic);
+
+/* ---- info modal (click ⓘ to see setting help) ---- */
+const INFO_TEXT = {
+  st_reentry: `Standard
+After a trade closes, take the next valid signal. Buy → profit → next buy (if price triggers).
+
+One per opposite
+After a buy close, wait for a sell signal before the next buy. Effect: only one buy between each sell (and vice versa).
+
+Wait fresh R
+After a buy close, ignore the current R value. Wait until R changes to a NEW value, then wait for a valid candle for that new R, then trigger. Same idea applies to sell side using S. Use this if you don't want to enter using the R that formed while you were in the trade.`
+};
+
+function showInfo(key, title){
+  $('infoTitle').textContent = title || 'Setting info';
+  $('infoBody').textContent = INFO_TEXT[key] || '(no help available)';
+  $('infoModal').style.display = 'flex';
+}
+
+$('stReentryInfo').addEventListener('click', () => showInfo('st_reentry', 'Re-entry mode'));
+$('infoClose').addEventListener('click', () => { $('infoModal').style.display = 'none'; });
+$('infoModal').addEventListener('click', (e) => {
+  if (e.target.id === 'infoModal') $('infoModal').style.display = 'none';
+});
+
+/* ---- batch run ---- */
+let batchJobId = null;
+let batchEventSource = null;
+let batchRows = [];
+
+async function runBatch(){
+  const cfg = readCfg();
+
+  cfg.source         = $('bSource').value;
+  cfg.sheet_name     = $('bBook').value.trim();
+  cfg.input_sheet    = $('bTab').value.trim();
+  cfg.manual_symbols = $('bManual').value;
+
+  const btn = $('runBatch');
+  btn.disabled = true;
+  $('stopBatch').hidden = false;
+  setStatus('starting batch…');
+
+  batchRows = [];
+  $('batchBody').innerHTML = '';
+  $('batchSummary').innerHTML = '';
+  $('batchProgress').textContent = '';
+
+  try {
+    const res = await fetch('/api/backtest/batch/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source:         cfg.source,
+        sheet_name:     cfg.sheet_name,
+        input_sheet:    cfg.input_sheet,
+        manual_symbols: cfg.manual_symbols,
+        settings:       cfg,
+      }),
+    });
+    const data = await res.json();
+    if (!data.ok){ setStatus(data.error || 'batch failed', 'err'); return; }
+
+    batchJobId = data.job_id;
+    setStatus(`batch running · ${data.count} symbols`);
+
+    batchEventSource = new EventSource(`/api/backtest/batch/stream?job=${batchJobId}`);
+    batchEventSource.onmessage = ev => {
+      try {
+        const msg = JSON.parse(ev.data);
+        if (msg.type === 'row'){
+          batchRows.push(msg.row);
+          renderBatchTable();
+          $('batchProgress').textContent = `${batchRows.length} / ${msg.total}`;
+        } else if (msg.type === 'done'){
+          setStatus(`batch done · ${msg.count} symbols`, 'ok');
+          renderBatchTable();
+          renderBatchSummary();
+          closeBatchStream();
+          writeBatchToSheet();
+        } else if (msg.type === 'stopped'){
+          setStatus(`batch stopped · ${msg.processed} done`, 'err');
+          renderBatchTable();
+          renderBatchSummary();
+          closeBatchStream();
+        }
+      } catch(e){ console.error('SSE parse', e); }
+    };
+
+    async function writeBatchToSheet(){
+      if (!batchRows.length) return;
+      setStatus('writing to sheet…');
+      try {
+        const picked = { wt: $('src_wt').checked, ce: $('src_ce').checked,
+                         st: $('src_st').checked };
+        const r = await fetch('/api/backtest/batch/write', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sheet_name:  $('bBook').value,
+            input_sheet: $('bTab').value,
+            tf:          $('tf').value,
+            indicators:  picked,
+            rows:        batchRows,
+            output_tab:  $('bOutputTab').value || "",
+          }),
+        });
+        const d = await r.json();
+        if (d.ok){
+          setStatus(`batch done · wrote ${d.count} rows → ${d.output_sheet}`, 'ok');
+        } else {
+          setStatus(`batch done · sheet write failed: ${d.error || '?'}`, 'err');
+        }
+      } catch(e){
+        setStatus('batch done · sheet write error', 'err');
+        console.error(e);
+      }
+    }
+
+    batchEventSource.onerror = () => {
+      setStatus('stream closed', 'err');
+      closeBatchStream();
+    };
+  } catch (e){
+    setStatus('request failed', 'err');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function closeBatchStream(){
+  if (batchEventSource){ batchEventSource.close(); batchEventSource = null; }
+  $('stopBatch').hidden = true;
+  $('runBatch').disabled = false;
+}
+
+async function stopBatch(){
+  if (!batchJobId) return;
+  try {
+    await fetch('/api/backtest/batch/stop', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_id: batchJobId }),
+    });
+  } catch(e){ console.error(e); }
+}
+
+$('runBatch').addEventListener('click', runBatch);
+$('stopBatch').addEventListener('click', stopBatch);
+
+function appendBatchRow(r, idx){
+  const t = document.createElement('tr');
+  const okCls = v => (v == null || isNaN(v)) ? 'mut' : (v >= 0 ? 'buy' : 'sell');
+  const num   = (v, dec = 2) => (v == null || isNaN(v)) ? '—'
+                              : Number(v).toFixed(dec);
+
+  if (!r.ok){
+    t.innerHTML = `
+      <td>${idx + 1}</td>
+      <td><b>${r.symbol || '?'}</b></td>
+      <td colspan="11" style="text-align:left;color:var(--bad);font-size:11px">
+        ⚠️ ${r.error || 'failed'}
+      </td>`;
+    $('batchBody').appendChild(t);
+    return;
+  }
+
+  t.innerHTML = `
+    <td>${idx + 1}</td>
+    <td><b>${r.symbol}</b></td>
+    <td class="${okCls(r.return_pct)}">${num(r.return_pct)}%</td>
+    <td class="${okCls(r.buy_hold_pct)}">${num(r.buy_hold_pct)}%</td>
+    <td>${r.trades ?? '—'}</td>
+    <td>${num(r.win_rate, 1)}%</td>
+    <td>${num(r.profit_factor)}</td>
+    <td class="sell">${num(r.max_dd_pct)}%</td>
+    <td class="${okCls(r.net_pnl)}">${Math.round(r.net_pnl || 0).toLocaleString()}</td>
+    <td class="buy">${Math.round(r.max_win || 0).toLocaleString()}</td>
+    <td class="sell">${Math.round(r.max_loss || 0).toLocaleString()}</td>
+    <td>${num(r.sharpe)}</td>
+    <td class="mut">${r.ms ?? 0} ms</td>`;
+  t.style.cursor = 'pointer';
+  t.title = `Click to open ${r.symbol} full backtest`;
+  t.addEventListener('click', () => {
+    const base = r.symbol.replace(/\.(NS|BO)$/, '').replace(/=X$/, '');
+    $('symbol').value = base;
+    if (r.symbol.endsWith('.NS')) $('exchange').value = '.NS';
+    else if (r.symbol.endsWith('.BO')) $('exchange').value = '.BO';
+    else if (r.symbol.endsWith('=X')) $('exchange').value = '_FX';
+    else $('exchange').value = '';
+    $('batchMode').checked = false;
+    syncBatchMode();
+    setStatus('opening…');
+    runBacktest();
+  });
+  $('batchBody').appendChild(t);
+}
+
+/* ---- batch sorting + sums ---- */
+let batchSort = { key: null, dir: null };
+
+function _batchSortRows(rows){
+  if (!batchSort.key || !batchSort.dir) return rows.slice();
+  const { key, dir } = batchSort;
+  return rows.slice().sort((a, b) => {
+    const av = a[key], bv = b[key];
+    const aE = (av == null || av === ''), bE = (bv == null || bv === '');
+    if (aE && bE) return 0;
+    if (aE) return 1;
+    if (bE) return -1;
+    const an = parseFloat(av), bn = parseFloat(bv);
+    const aNum = !isNaN(an) && isFinite(an), bNum = !isNaN(bn) && isFinite(bn);
+    let cmp = (aNum && bNum) ? an - bn : String(av).localeCompare(String(bv));
+    return dir === 'desc' ? -cmp : cmp;
+  });
+}
+
+function renderBatchTable(){
+  const tbody = $('batchBody');
+  tbody.innerHTML = '';
+  const sorted = _batchSortRows(batchRows);
+  sorted.forEach((r, i) => appendBatchRow(r, i));
+
+  // sums
+  const ok = batchRows.filter(r => r.ok);
+  const sumNet  = ok.reduce((s,r) => s + (r.net_pnl || 0), 0);
+  const sumWin  = ok.reduce((s,r) => s + (r.max_win || 0), 0);
+  const sumLoss = ok.reduce((s,r) => s + (r.max_loss || 0), 0);
+  const fmt = v => (v >= 0 ? '' : '-') + Math.abs(Math.round(v)).toLocaleString();
+  const el = $('batchSumNet'); if (el) el.textContent = fmt(sumNet);
+  const ew = $('batchSumWin'); if (ew) ew.textContent = fmt(sumWin);
+  const el2= $('batchSumLoss'); if (el2) el2.textContent = fmt(sumLoss);
+
+  // header sort indicators
+  document.querySelectorAll('#batchTable th[data-bsort]').forEach(th => {
+    th.style.cursor = 'pointer';
+    const k = th.dataset.bsort;
+    let icon = ' ↕';
+    if (batchSort.key === k && batchSort.dir === 'asc')  icon = ' ▲';
+    if (batchSort.key === k && batchSort.dir === 'desc') icon = ' ▼';
+    th.textContent = th.textContent.replace(/\s*[↕▲▼]$/, '') + icon;
+    if (!th.dataset.bound){
+      th.dataset.bound = '1';
+      th.addEventListener('click', () => {
+        if (batchSort.key !== k)         batchSort = { key: k, dir: 'asc'  };
+        else if (batchSort.dir === 'asc')  batchSort = { key: k, dir: 'desc' };
+        else                               batchSort = { key: null, dir: null };
+        renderBatchTable();
+      });
+    }
+  });
+}
+
+/* ---- summary cards for batch ---- */
+function renderBatchSummary(){
+  if (!batchRows.length) return;
+  const ok = batchRows.filter(r => r.ok);
+  const total = batchRows.length;
+  const profitable = ok.filter(r => r.return_pct > 0).length;
+  const avgRet = ok.length ? ok.reduce((s,r) => s + r.return_pct, 0) / ok.length : 0;
+  const avgWin = ok.length ? ok.reduce((s,r) => s + r.win_rate, 0) / ok.length : 0;
+  const totalTrades = ok.reduce((s,r) => s + r.trades, 0);
+  const totalPnl = ok.reduce((s,r) => s + r.net_pnl, 0);
+  const best = ok.reduce((a,b) => a.return_pct > b.return_pct ? a : b, ok[0] || {});
+  const worst = ok.reduce((a,b) => a.return_pct < b.return_pct ? a : b, ok[0] || {});
+
+  const cards = [
+    ['Symbols',         total, ''],
+    ['Profitable',      `${profitable}/${ok.length}`, profitable > ok.length/2 ? 'buy':'sell'],
+    ['Avg return',      avgRet.toFixed(2)+'%', avgRet >= 0 ? 'buy':'sell'],
+    ['Avg win rate',    avgWin.toFixed(1)+'%', ''],
+    ['Total trades',    totalTrades, ''],
+    ['Total net ₹',     Math.round(totalPnl).toLocaleString(), totalPnl>=0?'buy':'sell'],
+    ['Best symbol',     best.symbol || '—', 'buy'],
+    ['Best return',     best.return_pct != null ? best.return_pct.toFixed(2)+'%' : '—', 'buy'],
+    ['Worst symbol',    worst.symbol || '—', 'sell'],
+    ['Worst return',    worst.return_pct != null ? worst.return_pct.toFixed(2)+'%' : '—', 'sell'],
+  ];
+  $('batchSummary').innerHTML = cards.map(([k,v,c]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+}
+
+let rz;
+window.addEventListener('resize', () => {
+  clearTimeout(rz);
+  rz = setTimeout(() => {
+    if (window._lastBT){
+      if (priceChartOpen)  drawPriceChart(window._lastBT.candles, window._lastBT.events, window._lastBT.trades);
+      if (equityChartOpen) drawEquityChart(window._lastBT.equity, window._lastBT.metrics.capital);
+    }
+  }, 150);
+});
+
+/* ═══════════════ BOOT ═══════════════ */
+/* 1. restore prior inputs FIRST so all sync functions see correct values */
+restoreBtState();
+
+/* 2. run all the sync/refresh helpers */
+refreshPeriods();
+syncStratMode();
+syncIndicatorParams();
+syncBatchSource();
+syncBatchMode();
+syncRecoveryInputs();
+autoFno();
+renderBtPresetList();
+
+/* 3. restore last result — session first, then server cache */
+(async () => {
+  const local = tryRestoreBtResult();
+  if (!local) await tryFetchServerLastBacktest();
+})();
+</script>
+{% endblock %}
