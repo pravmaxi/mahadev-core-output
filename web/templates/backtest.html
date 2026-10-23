@@ -42,6 +42,7 @@
 
     <span style="width:14px"></span>
     <label class="runChk"><input type="checkbox" id="batchMode"> Batch (sheet)</label>
+    <label class="runChk"><input type="checkbox" id="autoTestMode"> 🧪 Auto-Test</label>
 
     <span style="flex:1"></span>
     <button id="runSRDiag" class="pillBtn" style="margin-right:6px">📐 S/R diagnostic</button>
@@ -104,6 +105,47 @@
             style="flex:none">📂 Load results</button>
     <span id="bLoadStatus" style="color:var(--muted);font-size:11px"></span>
   </div>
+
+  <!-- ===== AUTO TEST PANEL ===== -->
+  <div id="autoTestPanel" hidden
+       style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border)">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <span style="font-weight:600; color:var(--fg)">Select settings to vary (Tick to test all possible values):</span>
+      <span style="color:var(--accent); font-size:16px; font-weight:700;">
+        Total Runs: <span id="atCount">1</span>
+      </span>
+    </div>
+    
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; margin-bottom:14px;">
+      <!-- Strategy & Side -->
+      <label class="chk"><input type="checkbox" class="at-var" data-key="strategy_mode" data-count="3"> Strategy Mode (3)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="side_mode" data-count="3"> Order Side (3)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="heikin_ashi" data-count="2"> Candle Source (2)</label>
+      
+      <!-- WT & ST -->
+      <label class="chk"><input type="checkbox" class="at-var" data-key="wt_pending_rule" data-count="3"> WT Pending Rule (3)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="st_entry_mode" data-count="2"> ST Entry Mode (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="st_exit_mode" data-count="2"> ST Exit Mode (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="st_reentry_mode" data-count="3"> ST Re-entry (3)</label>
+
+      <!-- Exits -->
+      <label class="chk"><input type="checkbox" class="at-var" data-key="recovery" data-count="3"> Recovery Mode (3)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="trailing_enabled" data-count="2"> Trailing SL (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="exit_on_opposite" data-count="2"> Exit on Opposite (2)</label>
+
+      <!-- Filters -->
+      <label class="chk"><input type="checkbox" class="at-var" data-key="wt_filter_enabled" data-count="2"> WT Extreme (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="htf_filter_enabled" data-count="2"> HTF Trend (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="rsi_filter_enabled" data-count="2"> RSI Filter (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="vol_filter_enabled" data-count="2"> Volume (2)</label>
+    </div>
+    
+    <div style="display:flex; gap:10px; align-items:center;">
+        <button id="runAutoBtn" class="btnPrimary">▶ Run Auto-Test</button>
+        <button id="stopAutoBtn" hidden class="btnDanger" style="background:#f85149; border:none; color:#fff; padding:8px 20px; border-radius:6px;">■ Stop</button>
+        <span id="atProgress" style="font-size:12px; color:var(--muted);"></span>
+    </div>
+  </div>
 </div>
 
 <div id="batchResultsWrap" hidden
@@ -150,6 +192,28 @@
         <tbody id="batchBody"></tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<div id="autoTestResultsWrap" hidden
+     style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:14px;">
+  <div class="chartCap">Auto-Test Results — sorted by highest return</div>
+  <div class="tblwrap">
+    <table class="tlog">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th style="width:40%; text-align:left;">Settings</th>
+          <th>Return %</th>
+          <th>Max DD %</th>
+          <th>Trades</th>
+          <th>Win %</th>
+          <th>PF</th>
+          <th>Net ₹</th>
+        </tr>
+      </thead>
+      <tbody id="autoTestBody"></tbody>
+    </table>
   </div>
 </div>
 
@@ -262,7 +326,22 @@
     <div class="setHead" style="margin-top:14px">Candle source</div>
     <label class="chk"><input type="radio" name="candle_src" value="ha" checked> Heikin Ashi</label>
     <label class="chk"><input type="radio" name="candle_src" value="real"> Real candles</label>
-    <label class="chk" style="margin-top:6px"><input type="checkbox" id="cfg_fno" checked> F&amp;O 15:15 filter</label>
+    <div class="numRow" style="margin-top:6px">
+      <span>F&O 15:15 Filter</span>
+      <select id="cfg_fno_mode" class="inp" style="width:110px">
+        <option value="all" selected>All symbols</option>
+        <option value="sheet">From sheet</option>
+        <option value="none">Off</option>
+      </select>
+    </div>
+    <div class="numRow" id="fnoSheetRow" style="display:none">
+      <span>F&O Book</span>
+      <input type="text" id="cfg_fno_book" value="Backtest scanner" style="width:110px">
+    </div>
+    <div class="numRow" id="fnoTabRow" style="display:none">
+      <span>F&O Sheet Tab</span>
+      <input type="text" id="cfg_fno_sheet" value="F&O_input" style="width:110px">
+    </div>
 
     <div id="secWTParams">
       <div class="setHead" style="margin-top:14px">WT params</div>
@@ -270,10 +349,18 @@
       <div class="numRow"><span>n2</span><input type="number" id="cfg_wt_n2" value="27" step="1"></div>
 
       <div class="setHead" style="margin-top:14px">Pending candle rule</div>
-      <label class="chk"><input type="checkbox" id="cfg_wt_newest_only"> Newest valid candle only</label>
+      <div class="numRow">
+        <span>WT Rule</span>
+        <select id="cfg_wt_pending_rule" class="inp" style="width:160px">
+          <option value="every" selected>Every Cross</option>
+          <option value="same_dir">Newest Same-Direction</option>
+          <option value="any_dir">Newest Any-Direction</option>
+        </select>
+      </div>
       <div style="color:var(--muted);font-size:10.5px;margin-bottom:6px">
-        Off: every WT cross stays alive for <b>Wait max (bars)</b>. Older crosses can still fire later.
-        On: only the newest cross of each direction is live. A newer buy cross kills the older buy cross.
+        <b>Every:</b> All crosses stay alive.<br>
+        <b>Same-Direction:</b> New buy kills old buy. New sell kills old sell.<br>
+        <b>Any-Direction:</b> New buy kills old buy AND old sell.
       </div>
 
       <div class="setHead" style="margin-top:14px">Confirmation filters</div>
@@ -682,7 +769,7 @@ function captureBtPreset(){
     max_levels: $('cfg_max_levels').value,
     wt_n1:      $('cfg_wt_n1').value,
     wt_n2:      $('cfg_wt_n2').value,
-    wt_newest_only: $('cfg_wt_newest_only').checked,
+    wt_pending_rule: $('cfg_wt_pending_rule').value,
     ce_len:     $('cfg_ce_len').value,
     ce_mult:    $('cfg_ce_mult').value,
     st_left:        $('cfg_st_left').value,
@@ -690,7 +777,8 @@ function captureBtPreset(){
     st_entry_mode:  $('cfg_st_entry_mode').value,
     st_exit_mode:   $('cfg_st_exit_mode').value,
     st_reentry_mode: $('cfg_st_reentry_mode').value,
-    fno:        $('cfg_fno').checked,
+    fno_mode:   $('cfg_fno_mode').value,
+    fno_sheet:  $('cfg_fno_sheet').value,
     trail_on:   $('cfg_trail_on').checked,
     trail_start:$('cfg_trail_start').value,
     trail_step: $('cfg_trail_step').value,
@@ -749,7 +837,7 @@ function applyBtPreset(p){
   setVal('cfg_max_levels', p.max_levels);
   setVal('cfg_wt_n1', p.wt_n1);
   setVal('cfg_wt_n2', p.wt_n2);
-  setChk('cfg_wt_newest_only', p.wt_newest_only);
+  setVal('cfg_wt_pending_rule', p.wt_pending_rule);
   setVal('cfg_ce_len', p.ce_len);
   setVal('cfg_ce_mult', p.ce_mult);
   setVal('cfg_st_left', p.st_left);
@@ -757,7 +845,8 @@ function applyBtPreset(p){
   setVal('cfg_st_entry_mode', p.st_entry_mode);
   setVal('cfg_st_exit_mode',  p.st_exit_mode);
   setVal('cfg_st_reentry_mode', p.st_reentry_mode);
-  setChk('cfg_fno', p.fno);
+  setVal('cfg_fno_mode', p.fno_mode);
+  setVal('cfg_fno_sheet', p.fno_sheet);
   setChk('cfg_trail_on', p.trail_on);
   setVal('cfg_trail_start', p.trail_start);
   setVal('cfg_trail_step', p.trail_step);
@@ -828,7 +917,12 @@ $('btPresetSave').addEventListener('click', () => {
 
 function autoFno(){
   const ex = $('exchange').value;
-  $('cfg_fno').checked = (ex === '.NS' || ex === '.BO');
+  if (ex === '.NS' || ex === '.BO') {
+    if ($('cfg_fno_mode').value === 'none') $('cfg_fno_mode').value = 'all';
+  } else {
+    $('cfg_fno_mode').value = 'none';
+  }
+  $('cfg_fno_mode').dispatchEvent(new Event('change'));
 }
 $('exchange').addEventListener('change', autoFno);
 autoFno();
@@ -989,6 +1083,12 @@ async function loadBatchTabs(){
 $('bBook').addEventListener('change', loadBatchTabs);
 loadBatchTabs();
 
+$('cfg_fno_mode').addEventListener('change', () => {
+  const show = $('cfg_fno_mode').value === 'sheet' ? 'flex' : 'none';
+  $('fnoSheetRow').style.display = show;
+  $('fnoTabRow').style.display = show;
+});
+
 function readCfg(){
   const base = $('symbol').value.trim().toUpperCase();
   const exch = $('exchange').value;
@@ -1018,7 +1118,7 @@ function readCfg(){
       ce: $('src_ce').checked,
       st: $('src_st').checked,
     },
-    wt_newest_only:            $('cfg_wt_newest_only').checked,
+    wt_pending_rule:           $('cfg_wt_pending_rule').value,
     params: {
       wt: { n1: parseFloat($('cfg_wt_n1').value), n2: parseFloat($('cfg_wt_n2').value) },
       ce: { length: parseFloat($('cfg_ce_len').value),
@@ -1045,7 +1145,9 @@ function readCfg(){
     logic:               'any',
     match_window:        5,
     heikin_ashi:         srcEl ? srcEl.value === 'ha' : true,
-    fno_filter:          $('cfg_fno').checked,
+    fno_mode:            $('cfg_fno_mode').value,
+    sheet_name:          $('cfg_fno_book').value,
+    fno_sheet:           $('cfg_fno_sheet').value,
     strategy_mode:       stratEl ? stratEl.value : 'simple',
     multiplier_type:     multEl ? multEl.value : 'martingale',
     base_qty:            parseInt($('cfg_qty').value, 10) || 1,
@@ -1508,13 +1610,11 @@ function renderEvents(events){
     const filtTag = e.filtered
       ? ` <span style="color:var(--bad);font-size:10px">[${reasons}]</span>` : '';
     const wtStr = (e.wt_val != null) ? e.wt_val.toFixed(2) : '—';
-    const trendCl = e.wt_trend === 'Buy Trend' ? 'buy' : 'sell';
     return `
     <tr ${e.filtered ? 'style="opacity:.45"' : ''}>
       <td>${r + 1}</td>
       <td class="${e.direction === 'buy' ? 'buy' : 'sell'}">${e.direction}</td>
       <td>${e.source.toUpperCase()}</td>
-      <td class="${trendCl}">${e.wt_trend}</td>
       <td>${e.valid_t.slice(0, 16).replace('T', ' ')}</td>
       <td>${e.level}</td>
       <td>${wtStr}${filtTag}</td>
@@ -1536,10 +1636,9 @@ function renderEvents(events){
         ${th('_i', '#')}
         ${th('direction', 'Direction')}
         ${th('source', 'Source')}
-        ${th('wt_trend', 'WT Trend')}
         ${th('valid_t', 'Valid candle')}
         ${th('level', 'Level')}
-        ${th('wt_val', 'WT Val')}
+        ${th('wt_val', 'Valid WT Val')}
         ${th('trigger_t', 'Trigger bar')}
         ${th('entry_price', 'Entry @')}
       </tr></thead>
@@ -1741,18 +1840,58 @@ $('infoModal').addEventListener('click', (e) => {
   if (e.target.id === 'infoModal') $('infoModal').style.display = 'none';
 });
 
-/* ---- batch run ---- */
+/* ---- BATCH RUN (Refactored for background persistence) ---- */
 let batchJobId = null;
 let batchEventSource = null;
 let batchRows = [];
 
+function connectBatchStream(jobId) {
+  if (batchEventSource) batchEventSource.close();
+  batchEventSource = new EventSource(`/api/backtest/batch/stream?job=${jobId}`);
+  
+  batchEventSource.onmessage = ev => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === 'row'){
+        // FIX 1: Prevent duplicate rows
+        if (!batchRows.find(r => r.symbol === msg.row.symbol)) {
+            batchRows.push(msg.row);
+            renderBatchTable();
+            $('batchProgress').textContent = `${batchRows.length} / ${msg.total}`;
+        }
+      } else if (msg.type === 'done'){
+        setStatus(`batch done · ${msg.count} symbols`, 'ok');
+        renderBatchTable();
+        renderBatchSummary();
+        closeBatchStream();
+        // FIX 2: Do NOT remove from localStorage so it restores on return.
+        // We only clear it when starting a new batch.
+        if (!$('batchMode').hidden) writeBatchToSheet();
+      } else if (msg.type === 'stopped'){
+        setStatus(`batch stopped · ${msg.processed} done`, 'err');
+        renderBatchTable();
+        renderBatchSummary();
+        closeBatchStream();
+        localStorage.removeItem('active_batch_job');
+      }
+    } catch(e){ console.error('SSE parse', e); }
+  };
+  
+  batchEventSource.onerror = () => {
+    setStatus('stream closed', 'err');
+    closeBatchStream();
+  };
+}
+
 async function runBatch(){
   const cfg = readCfg();
-
   cfg.source         = $('bSource').value;
   cfg.sheet_name     = $('bBook').value.trim();
   cfg.input_sheet    = $('bTab').value.trim();
   cfg.manual_symbols = $('bManual').value;
+
+  // Clear old job id when starting a fresh run
+  localStorage.removeItem('active_batch_job');
 
   const btn = $('runBatch');
   btn.disabled = true;
@@ -1779,69 +1918,44 @@ async function runBatch(){
     if (!data.ok){ setStatus(data.error || 'batch failed', 'err'); return; }
 
     batchJobId = data.job_id;
+    localStorage.setItem('active_batch_job', batchJobId);
     setStatus(`batch running · ${data.count} symbols`);
-
-    batchEventSource = new EventSource(`/api/backtest/batch/stream?job=${batchJobId}`);
-    batchEventSource.onmessage = ev => {
-      try {
-        const msg = JSON.parse(ev.data);
-        if (msg.type === 'row'){
-          batchRows.push(msg.row);
-          renderBatchTable();
-          $('batchProgress').textContent = `${batchRows.length} / ${msg.total}`;
-        } else if (msg.type === 'done'){
-          setStatus(`batch done · ${msg.count} symbols`, 'ok');
-          renderBatchTable();
-          renderBatchSummary();
-          closeBatchStream();
-          writeBatchToSheet();
-        } else if (msg.type === 'stopped'){
-          setStatus(`batch stopped · ${msg.processed} done`, 'err');
-          renderBatchTable();
-          renderBatchSummary();
-          closeBatchStream();
-        }
-      } catch(e){ console.error('SSE parse', e); }
-    };
-
-    async function writeBatchToSheet(){
-      if (!batchRows.length) return;
-      setStatus('writing to sheet…');
-      try {
-        const picked = { wt: $('src_wt').checked, ce: $('src_ce').checked,
-                         st: $('src_st').checked };
-        const r = await fetch('/api/backtest/batch/write', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sheet_name:  $('bBook').value,
-            input_sheet: $('bTab').value,
-            tf:          $('tf').value,
-            indicators:  picked,
-            rows:        batchRows,
-            output_tab:  $('bOutputTab').value || "",
-          }),
-        });
-        const d = await r.json();
-        if (d.ok){
-          setStatus(`batch done · wrote ${d.count} rows → ${d.output_sheet}`, 'ok');
-        } else {
-          setStatus(`batch done · sheet write failed: ${d.error || '?'}`, 'err');
-        }
-      } catch(e){
-        setStatus('batch done · sheet write error', 'err');
-        console.error(e);
-      }
-    }
-
-    batchEventSource.onerror = () => {
-      setStatus('stream closed', 'err');
-      closeBatchStream();
-    };
+    
+    connectBatchStream(batchJobId);
   } catch (e){
     setStatus('request failed', 'err');
     console.error(e);
   } finally {
     btn.disabled = false;
+  }
+}
+
+async function writeBatchToSheet(){
+  if (!batchRows.length) return;
+  setStatus('writing to sheet…');
+  try {
+    const picked = { wt: $('src_wt').checked, ce: $('src_ce').checked,
+                     st: $('src_st').checked };
+    const r = await fetch('/api/backtest/batch/write', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sheet_name:  $('bBook').value,
+        input_sheet: $('bTab').value,
+        tf:          $('tf').value,
+        indicators:  picked,
+        rows:        batchRows,
+        output_tab:  $('bOutputTab').value || "",
+      }),
+    });
+    const d = await r.json();
+    if (d.ok){
+      setStatus(`batch done · wrote ${d.count} rows → ${d.output_sheet}`, 'ok');
+    } else {
+      setStatus(`batch done · sheet write failed: ${d.error || '?'}`, 'err');
+    }
+  } catch(e){
+    setStatus('batch done · sheet write error', 'err');
+    console.error(e);
   }
 }
 
@@ -2007,6 +2121,120 @@ window.addEventListener('resize', () => {
   }, 150);
 });
 
+/* ===== AUTO-TEST LOGIC ===== */
+const autoTestVars = document.querySelectorAll('.at-var');
+const atCountEl = $('atCount');
+
+function calcCombos() {
+  let total = 1;
+  autoTestVars.forEach(cb => {
+    if (cb.checked) total *= parseInt(cb.dataset.count);
+  });
+  atCountEl.textContent = total;
+}
+autoTestVars.forEach(cb => cb.addEventListener('change', calcCombos));
+
+// Toggle panels
+$('autoTestMode').addEventListener('change', () => {
+  const on = $('autoTestMode').checked;
+  $('autoTestPanel').hidden = !on;
+  $('batchMode').checked = false; // Turn off batch if autotest is on
+  syncBatchMode();
+  $('run').hidden = on;
+});
+// Ensure batch turns off autotest
+$('batchMode').addEventListener('change', () => {
+  if ($('batchMode').checked) {
+    $('autoTestMode').checked = false;
+    $('autoTestPanel').hidden = true;
+    $('run').hidden = false;
+  }
+  syncBatchMode();
+});
+
+/* ---- AUTO-TEST RUN (Refactored for background persistence) ---- */
+let autoJobId = null;
+let autoEventSource = null;
+
+function connectAutoStream(jobId) {
+  if (autoEventSource) autoEventSource.close();
+  $('autoTestResultsWrap').hidden = false;
+  autoEventSource = new EventSource(`/api/backtest/autotest/stream?job=${jobId}`);
+  
+  autoEventSource.onmessage = ev => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'start') {
+      $('atProgress').textContent = `0 / ${msg.total}`;
+    } else if (msg.type === 'row') {
+      $('atProgress').textContent = `${msg.current} / ${msg.total}`;
+      const s = msg.row.settings;
+      const settingStr = Object.entries(s).map(([k,v]) => `<b>${k}:</b> ${v}`).join(' | ');
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${msg.row.combo_id}</td>
+        <td style="font-size:11px; white-space:normal; text-align:left; line-height:1.4;">${settingStr}</td>
+        <td class="${cls(msg.row.return_pct)}">${msg.row.return_pct}%</td>
+        <td class="sell">${msg.row.max_dd_pct}%</td>
+        <td>${msg.row.trades}</td>
+        <td>${msg.row.win_rate}%</td>
+        <td>${msg.row.profit_factor}</td>
+        <td class="${cls(msg.row.net_pnl)}">${Math.round(msg.row.net_pnl).toLocaleString()}</td>
+      `;
+      $('autoTestBody').appendChild(tr);
+    } else if (msg.type === 'done' || msg.type === 'stopped') {
+      $('atProgress').textContent = `Finished! (${msg.count} valid results)`;
+      localStorage.removeItem('active_auto_job');
+      closeAutoStream();
+    }
+  };
+}
+
+$('runAutoBtn').addEventListener('click', async () => {
+  const cfg = readCfg();
+  const vary = [];
+  autoTestVars.forEach(cb => { if (cb.checked) vary.push(cb.dataset.key); });
+  
+  if (vary.length === 0) { setStatus('select at least one setting to vary', 'err'); return; }
+  
+  $('runAutoBtn').disabled = true;
+  $('stopAutoBtn').hidden = false;
+  $('atProgress').textContent = 'Starting...';
+  $('autoTestResultsWrap').hidden = false;
+  $('autoTestBody').innerHTML = '';
+  
+  try {
+    const res = await fetch('/api/backtest/autotest/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config: cfg, vary: vary })
+    });
+    const data = await res.json();
+    if (!data.ok) { setStatus('auto-test failed', 'err'); return; }
+    
+    autoJobId = data.job_id;
+    localStorage.setItem('active_auto_job', autoJobId);
+    connectAutoStream(autoJobId);
+    
+  } catch(e) {
+    setStatus('request failed', 'err'); console.error(e);
+    $('runAutoBtn').disabled = false;
+  }
+});
+
+$('stopAutoBtn').addEventListener('click', async () => {
+  if (!autoJobId) return;
+  await fetch('/api/backtest/autotest/stop', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ job_id: autoJobId })
+  });
+});
+
+function closeAutoStream() {
+  if (autoEventSource) { autoEventSource.close(); autoEventSource = null; }
+  $('runAutoBtn').disabled = false;
+  $('stopAutoBtn').hidden = true;
+}
+
 /* ═══════════════ BOOT ═══════════════ */
 /* 1. restore prior inputs FIRST so all sync functions see correct values */
 restoreBtState();
@@ -2021,10 +2249,29 @@ syncRecoveryInputs();
 autoFno();
 renderBtPresetList();
 
-/* 3. restore last result — session first, then server cache */
-(async () => {
-  const local = tryRestoreBtResult();
-  if (!local) await tryFetchServerLastBacktest();
-})();
+/* 3. Check if there are any jobs running in the background */
+const activeBatch = localStorage.getItem('active_batch_job');
+const activeAuto  = localStorage.getItem('active_auto_job');
+
+if (activeBatch) {
+  batchJobId = activeBatch;
+  $('batchMode').checked = true;
+  syncBatchMode();
+  setStatus('reconnecting to batch...');
+  connectBatchStream(batchJobId);
+} else if (activeAuto) {
+  autoJobId = activeAuto;
+  $('autoTestMode').checked = true;
+  $('autoTestPanel').hidden = false;
+  $('run').hidden = true;
+  setStatus('reconnecting to auto-test...');
+  connectAutoStream(autoJobId);
+} else {
+  /* 4. No active jobs, just restore last result */
+  (async () => {
+    const local = tryRestoreBtResult();
+    if (!local) await tryFetchServerLastBacktest();
+  })();
+}
 </script>
 {% endblock %}

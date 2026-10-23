@@ -29,7 +29,7 @@ def _now():
 
 
 def place_order(symbol, exchange, side, qty, order_type, price, product,
-                trigger_price=None, ltp=None):
+                trigger_price=None, ltp=None, tag=""):
     """Record a paper order. MARKET fills instantly at ltp (if given)."""
     data = _load()
     ot = order_type.upper()
@@ -48,6 +48,7 @@ def place_order(symbol, exchange, side, qty, order_type, price, product,
         "status":       "FILLED" if filled else "OPEN",
         "fill_price":   float(ltp) if filled else None,
         "fill_ts":      _now() if filled else None,
+        "tag":          tag,
     }
     data["orders"].append(o)
     _save(data)
@@ -84,18 +85,20 @@ def positions():
     """Net positions from filled orders — weight-avg entry per symbol."""
     from collections import defaultdict
     acc = defaultdict(lambda: {
-        "symbol": "", "exchange": "", "product": "",
+        "symbol": "", "exchange": "", "product": "", "tag": "",
         "net_qty": 0, "buy_qty": 0, "sell_qty": 0,
         "buy_value": 0.0, "sell_value": 0.0,
     })
     for o in _load().get("orders", []):
         if o["status"] != "FILLED":
             continue
-        key = (o["symbol"], o["product"])
+        tag = o.get("tag", "")
+        key = (o["symbol"], o["exchange"], o["product"], tag)
         a = acc[key]
         a["symbol"]   = o["symbol"]
         a["exchange"] = o["exchange"]
         a["product"]  = o["product"]
+        a["tag"]      = tag
         fp = o.get("fill_price") or o.get("price") or 0
         if o["side"] == "BUY":
             a["net_qty"]    += o["qty"]
@@ -106,8 +109,8 @@ def positions():
             a["sell_qty"]   += o["qty"]
             a["sell_value"] += fp * o["qty"]
     out = []
-    for (sym, prod), a in acc.items():
-        if a["buy_qty"] == 0 and a["sell_qty"] == 0:
+    for (sym, exch, prod, tag), a in acc.items():
+        if a["net_qty"] == 0:
             continue
         if a["net_qty"] > 0 and a["buy_qty"]:
             avg = a["buy_value"] / a["buy_qty"]
@@ -116,8 +119,8 @@ def positions():
         else:
             avg = 0
         out.append({
-            "symbol":   a["symbol"], "exchange": a["exchange"],
-            "product":  a["product"], "qty": a["net_qty"],
+            "symbol":   sym, "exchange": exch,
+            "product":  prod, "tag": tag, "qty": a["net_qty"],
             "buy_qty":  a["buy_qty"], "sell_qty": a["sell_qty"],
             "avg_price": round(avg, 2),
             "buy_value":  round(a["buy_value"], 2),

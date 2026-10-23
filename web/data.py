@@ -118,24 +118,52 @@ _TF_PERIODS = {
 
 
 # ── Public download ────────────────────────────────────────────────────────
+_SYMBOL_MAP = {
+    "XAUUSD": "GC=F", "XAUUSD=X": "GC=F",
+    "XAGUSD": "SI=F", "XAGUSD=X": "SI=F",
+    "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X",
+    "USDJPY": "USDJPY=X", "AUDUSD": "AUDUSD=X",
+    "USDCAD": "USDCAD=X", "USDCHF": "USDCHF=X",
+    "NZDUSD": "NZDUSD=X"
+}
+
 def download(symbol, interval="1h", period="1mo"):
+    # Translate common metal/forex symbols to their Yahoo Finance equivalents
+    sym_upper = symbol.upper().strip()
+    
+    # If the Google Sheet appended .NS to a forex ticker, strip it
+    if sym_upper.endswith(".NS") and sym_upper[:-3] in _SYMBOL_MAP:
+        sym_upper = sym_upper[:-3]
+        
+    symbol = _SYMBOL_MAP.get(sym_upper, symbol)
     allowed = _TF_PERIODS.get(interval)
     if allowed and period not in allowed:
         period = allowed[-1]
-    try:
-        df = yf.download(symbol, interval=interval, period=period,
-                         progress=False, auto_adjust=False)
-    except Exception as e:
-        print(f"⚠️ yf.download({symbol}) raised: {e}")
-        return []
-    if df is None or df.empty:
-        return []
-    df = _flatten(df).dropna()
-    rows = _rows(df)
-    if not rows:
-        print(f"⚠️ {symbol}: yfinance returned {len(df)} rows but _rows produced 0 "
-              f"(columns={list(df.columns)})")
-    return rows
+    
+    # Create a fallback list of periods (e.g., if '2y' fails, try '1y', '6mo', '3mo')
+    periods_to_try = [period]
+    if allowed:
+        for p in reversed(allowed):
+            if p not in periods_to_try:
+                periods_to_try.append(p)
+                
+    for p in periods_to_try:
+        for attempt in range(2):
+            try:
+                df = yf.download(symbol, interval=interval, period=p,
+                                 progress=False, auto_adjust=False)
+                if df is not None and not df.empty:
+                    df = _flatten(df).dropna()
+                    rows = _rows(df)
+                    if len(rows) >= 40:
+                        return rows
+            except Exception as e:
+                print(f"⚠️ yf.download({symbol}) attempt {attempt+1} ({p}) raised: {e}")
+            
+            time.sleep(0.5)
+
+    print(f"❌ {symbol}: still no data after trying all periods.")
+    return []
 
 
 def download_batch(symbols, interval="1h", period="1mo", force_refresh=False):

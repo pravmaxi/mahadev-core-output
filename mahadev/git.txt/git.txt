@@ -27,3 +27,102 @@ Open GitHub.
 Create a Pull Request from b10 → main.
 Merge it.git  ds
 Merge it. -u origin b17
+
+
+ Complete Git Workflow Cheat Sheet (VS Code)
+Step 1: Make sure your main branch is up-to-date
+Before creating a new branch, always pull the latest code from the remote repository.
+
+VS Code UI:
+
+Click the branch name in the bottom-left corner (ensure it says main).
+Click the Sync Changes icon (circular arrows) in the Source Control panel, or click the ... menu and select Pull.
+Terminal:
+
+bash
+git checkout main
+git pull origin main
+Step 2: Create and switch to a new branch
+Create a fresh branch for your new work so main stays clean. Name it something descriptive (e.g., feature-login or bugfix-html).
+
+VS Code UI:
+
+Click the branch name main in the bottom-left corner.
+Select + Create new branch... from the top dropdown.
+Type your new branch name (e.g., my-new-feature) and press Enter.
+Terminal:
+
+bash
+git checkout -b my-new-feature
+Step 3: Make your changes and stage them
+Write your code, modify files, and save them. Then, tell Git which files you want to include in the next commit.
+
+VS Code UI:
+
+Go to the Source Control panel (the branch icon on the left).
+You will see a list of changed files under Changes.
+Hover over the file you want to add and click the + (Plus) icon to stage it. (Or hover over the word "Changes" and click + to stage all files).
+Terminal:
+
+bash
+# To add all changed files:
+git add .
+
+# To add specific files only:
+git add filename.py
+Step 4: Commit your changes
+Save a snapshot of your staged changes with a descriptive message.
+
+VS Code UI:
+
+In the Source Control panel, type a clear message in the box (e.g., "Added new login button").
+Click the blue Commit button. (If this is a brand new branch, click Commit & Publish or Publish Branch when prompted).
+Terminal:
+
+bash
+git commit -m "Added new login button"
+Step 5: Push the branch to GitHub
+Upload your local branch and commits to the remote repository.
+
+VS Code UI:
+
+Click the Sync Changes icon (circular arrows) or click the Publish Branch button if it's the first time pushing this branch.
+Terminal:
+
+bash
+# First time pushing this new branch:
+git push -u origin my-new-feature
+
+# For subsequent pushes on the same branch:
+git push
+Step 6: Create a Pull Request (PR) and Merge
+Note: This step is done in your web browser on GitHub.com.
+
+Go to your repository on GitHub.
+
+Click the green Compare & pull request button that appears for your recently pushed branch.
+
+Add a title and description, then click Create pull request.
+
+Once created, click the Merge pull request button, then Confirm merge.
+
+(Optional) Click Delete branch on GitHub to clean up the remote branch.
+
+Step 7: Update your local main branch and clean up
+Now that the code is merged on GitHub, bring those changes back down to your local VS Code and delete your old local branch.
+
+VS Code UI:
+
+Click the branch name in the bottom-left and select main to switch back.
+Click Sync Changes (or Pull) to download the merged code.
+Click the branch name again, right-click your old branch (my-new-feature), and select Delete Branch.
+Terminal:
+
+bash
+git checkout main
+git pull origin main
+git branch -d my-new-feature
+💡 Quick Tips for the Terminal:
+git status - Run this anytime you are confused to see what branch you are on and what files are staged/modified.
+
+git log - View your recent commit history.
