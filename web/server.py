@@ -5,6 +5,7 @@ Run from web/:   python server.py
 import os
 import time
 import queue
+import threading
 import pandas as pd
 import pytz
 from dotenv import load_dotenv
@@ -27,6 +28,7 @@ CANCEL_FLAGS  = {}
 # ---- last-result caches (survive page navigation) ------------------------
 LAST_SCAN_CACHE     = {"rows": [], "meta": None, "ts": 0}
 LAST_BACKTEST_CACHE = {"data": None, "ts": 0}
+SCANNER_JOBS = {}
 
 
 # ---- persistent trigger state --------------------------------------------
@@ -184,6 +186,15 @@ def api_sheets_tabs():
 @app.route("/api/sheets/service_account")
 def api_service_account():
     return jsonify({"email": sheets.service_account_email()})
+
+@app.route("/api/sheets/symbols")
+def api_sheets_symbols():
+    book = request.args.get("book") or ""
+    tab = request.args.get("tab") or ""
+    if not book or not tab:
+        return jsonify({"ok": False, "symbols": []})
+    syms = sheets.read_symbols(book, tab)
+    return jsonify({"ok": True, "symbols": syms})
 
 
 # ---- Zerodha broker -------------------------------------------------------
@@ -376,9 +387,25 @@ def _resolve_ltp(exchange, symbol):
         if r.get("ok"): return r["last_price"], "kite"
     try:
         import yfinance as yf
-        if exchange == "NSE":   yf_sym = symbol + ".NS"
-        elif exchange == "BSE": yf_sym = symbol + ".BO"
-        else:                   yf_sym = symbol
+        from data import _SYMBOL_MAP
+        
+        sym_clean = symbol.strip().upper()
+        
+        # Strip .NS if it's a known forex pair
+        if sym_clean.endswith(".NS") and sym_clean[:-3] in _SYMBOL_MAP:
+            sym_clean = sym_clean[:-3]
+            
+        sym_clean = _SYMBOL_MAP.get(sym_clean, sym_clean)
+
+        # Don't append suffixes if it's an index (^), forex (=X), mapped (=F), or already has a suffix (.)
+        if sym_clean.startswith("^") or "." in sym_clean or "=" in sym_clean:
+            yf_sym = sym_clean
+        elif exchange == "NSE":
+            yf_sym = sym_clean + ".NS"
+        elif exchange == "BSE":
+            yf_sym = sym_clean + ".BO"
+        else:
+            yf_sym = sym_clean
         df = yf.download(yf_sym, period="5d", interval="1d",
                          progress=False, auto_adjust=False)
         if df is not None and not df.empty:
@@ -402,6 +429,50 @@ def api_trade_ltp():
         return jsonify({"ok": False, "error": "no LTP available"})
     return jsonify({"ok": True, "last_price": px, "source": src})
 
+@app.route("/api/trade/ltp_batch", methods=["POST"])
+def api_trade_ltp_batch():
+    body = request.get_json(silent=True) or {}
+    reqs = body.get("symbols", [])
+    if not reqs:
+        return jsonify({"ok": False, "error": "no symbols"})
+    
+    from data import get_live_ltp, _SYMBOL_MAP
+    yf_syms = []
+    for r in reqs:
+        sym = r.get("symbol", "").strip().upper()
+        exch = r.get("exchange", "NSE").strip().upper()
+        if not sym: continue
+        
+        yf_sym = _SYMBOL_MAP.get(sym, sym)
+        if yf_sym.startswith("^") or "." in yf_sym or "=" in yf_sym:
+            pass
+        elif exch in ("NASDAQ", "NYSE", "AMEX"):
+            pass
+        elif exch == "NSE":
+            yf_sym = yf_sym + ".NS"
+        elif exch == "BSE":
+            yf_sym = yf_sym + ".BO"
+        
+        yf_syms.append(yf_sym)
+        
+    live_prices = get_live_ltp(list(set(yf_syms)))
+    out = {}
+    for r in reqs:
+        sym = r.get("symbol", "").strip().upper()
+        exch = r.get("exchange", "NSE").strip().upper()
+        yf_sym = _SYMBOL_MAP.get(sym, sym)
+        if yf_sym.startswith("^") or "." in yf_sym or "=" in yf_sym:
+            pass
+        elif exch in ("NASDAQ", "NYSE", "AMEX"):
+            pass
+        elif exch == "NSE":
+            yf_sym = yf_sym + ".NS"
+        elif exch == "BSE":
+            yf_sym = yf_sym + ".BO"
+            
+        out[sym] = live_prices.get(yf_sym)
+        
+    return jsonify({"ok": True, "prices": out})
 
 @app.route("/api/trade/paper/place", methods=["POST"])
 def api_trade_paper_place():
@@ -470,6 +541,32 @@ def api_trade_paper_fill():
 def api_trade_paper_clear():
     paper_trades.clear_all()
     return jsonify({"ok": True})
+
+import autotrader
+
+@app.route("/api/trade/auto/start", methods=["POST"])
+def api_trade_auto_start():
+    body = request.get_json(silent=True) or {}
+    job_id = f"auto_{int(time.time()*1000)}"
+    autotrader.start_job(job_id, body)
+    return jsonify({"ok": True, "job_id": job_id})
+
+@app.route("/api/trade/auto/stop", methods=["POST"])
+def api_trade_auto_stop():
+    body = request.get_json(silent=True) or {}
+    jid = body.get("job_id")
+    if jid:
+        autotrader.stop_job(jid)
+    return jsonify({"ok": True})
+
+@app.route("/api/trade/auto/status")
+def api_trade_auto_status():
+    import autotrader
+    return jsonify({
+        "ok": True, 
+        "state": autotrader.AUTO_STATE,
+        "is_scanning": autotrader.IS_SCANNING
+    })
 
 
 @app.route("/api/trade/live/place", methods=["POST"])
@@ -580,19 +677,18 @@ def _params_for(ind_key, body):
     return {}
 
 
-# ---- Real scan ------------------------------------------------------------
+# ---- Real scan (background thread + SSE) ----------------------------------
 
 @app.route("/api/scanner/run", methods=["POST"])
 def api_scanner_run():
     body = request.get_json(silent=True) or {}
+    job_id = body.get("job_id") or f"scan_{int(time.time()*1000)}"
 
     tf          = body.get("tf", "1h")
     indicators  = body.get("indicators", {"t3": True, "wt": True, "ce": False})
     use_ha      = bool(body.get("heikin_ashi", True))
-    use_fno     = bool(body.get("fno_filter", True))
-    job_id      = body.get("job_id") or "default"
-
-    CANCEL_FLAGS[job_id] = False
+    fno_mode    = body.get("fno_mode", "none")
+    fno_list    = set(sheets.read_symbols(body.get("sheet_name", "Stock Price Scraper"), body.get("fno_sheet", "F&O_input"))) if fno_mode == "sheet" else None
 
     picked = [k for k, v in indicators.items() if v]
     if not picked:
@@ -600,189 +696,206 @@ def api_scanner_run():
 
     symbols = _resolve_symbols(body)
     if not symbols:
-        CANCEL_FLAGS.pop(job_id, None)
         return jsonify({"ok": False, "error": "no symbols to scan"})
 
-    from settings import YF_CONFIG
-    period = YF_CONFIG.get(tf, {}).get("default_period", "60d")
+    q = queue.Queue()
+    SCANNER_JOBS[job_id] = {
+        "q": q, "stop": False, "results": [],
+        "total": len(symbols), "done": False
+    }
 
-    t0 = time.time()
-    print(f"⏳ [job {job_id}] Downloading {len(symbols)} symbols @ {tf} / {period} for {picked}…")
+    def worker():
+        from settings import YF_CONFIG
+        period = YF_CONFIG.get(tf, {}).get("default_period", "60d")
+        t0 = time.time()
+        print(f"⏳ [job {job_id}] Downloading {len(symbols)} symbols @ {tf} / {period} for {picked}…")
 
-    try:
-        force = bool(body.get("force_refresh", False))
-        data = download_batch(symbols, interval=tf, period=period,
-                              force_refresh=force)
-    except Exception as e:
-        CANCEL_FLAGS.pop(job_id, None)
-        return jsonify({"ok": False, "error": f"download failed: {e}"})
+        try:
+            force = bool(body.get("force_refresh", False))
+            data = download_batch(symbols, interval=tf, period=period, force_refresh=force)
+        except Exception as e:
+            q.put({"type": "error", "msg": f"download failed: {e}"})
+            SCANNER_JOBS[job_id]["done"] = True
+            return
 
-    dl_ms = int((time.time() - t0) * 1000)
-    print(f"✅ [job {job_id}] Download done in {dl_ms}ms")
+        try:
+            live_ltp = get_live_ltp(symbols)
+        except Exception:
+            live_ltp = {}
 
-    try:
-        live_ltp = get_live_ltp(symbols)
-        got = sum(1 for v in live_ltp.values() if v is not None)
-        print(f"✅ [job {job_id}] LTP ready ({got}/{len(symbols)})")
-    except Exception as e:
-        print(f"⚠️ [job {job_id}] LTP fetch failed: {e}")
-        live_ltp = {}
+        stopped_early = False
+        for idx, sym in enumerate(symbols):
+            if SCANNER_JOBS[job_id]["stop"]:
+                stopped_early = True
+                break
 
-    rows = []
-    stopped_early = False
-
-    for sym in symbols:
-        if CANCEL_FLAGS.get(job_id):
-            stopped_early = True
-            print(f"🛑 [job {job_id}] Cancelled — {len(rows)} partial rows")
-            break
-
-        sym_rows = data.get(sym, [])
-        if not sym_rows or len(sym_rows) < 40:
-            continue
-
-        # ST always uses REAL candles. WT/CE follow the Heikin Ashi setting.
-        df_real = candles_to_df(sym_rows)
-        if use_fno:
-            df_real = apply_fno_filter(df_real, timeframe=tf)
-        if len(df_real) < 30:
-            continue
-        df_ha = heikin_ashi(df_real) if use_ha else df_real
-
-        s0 = time.time()
-        live_px = live_ltp.get(sym)
-        display_ltp = live_px if live_px is not None else round(float(df_real["Close"].iloc[-2]), 2)
-
-        row = {
-            "symbol": sym.replace(".NS", ""),
-            "ltp":    round(display_ltp, 2),
-            "is_new": False,
-            "ms":     0,
-        }
-        for k in ("t3_trend","t3_value","t3_action","t3_colour",
-                  "t3_valid_open","t3_valid_high","t3_valid_low","t3_valid_close",
-                  "t3_valid_dt","t3_valid_t3","t3_trigger_status","t3_trigger_dt",
-                  "t3_trigger_candle_date","t3_trigger_candle_time",
-                  "t3_ltp","t3_diff","t3_diff_pct","t3_profit",
-                  "t3_booking_status","t3_max_profit_pct","t3_max_profit_value",
-                  "wt1","wt2","wt_diff","wt_cross","wt_trend",
-                  "wt_valid_open","wt_valid_high","wt_valid_low","wt_valid_close",
-                  "wt_valid_dt","wt_valid_diff","wt_valid_wt_value","wt_perfect",
-                  "wt_trigger_status","wt_trigger_dt",
-                  "wt_trigger_candle_date","wt_trigger_candle_time",
-                  "wt_ltp","wt_trigger_diff","wt_diff_pct","wt_profit",
-                  "wt_booking_status","wt_max_profit_pct","wt_max_profit_value",
-                  "ce_dir","ce_valid_open","ce_valid_high","ce_valid_low","ce_valid_close",
-                  "ce_valid_dt","ce_valid_stop","ce_perfect",
-                  "ce_trigger_status","ce_trigger_dt",
-                  "ce_trigger_candle_date","ce_trigger_candle_time",
-                  "ce_ltp","ce_trigger_diff","ce_diff_pct","ce_profit",
-                  "ce_booking_status","ce_max_profit_pct","ce_max_profit_value"):
-            row.setdefault(k, "")
-
-        for key in picked:
-            mod = get_indicator(key)
-            if mod is None:
+            sym_rows = data.get(sym, [])
+            if not sym_rows or len(sym_rows) < 40:
                 continue
-            try:
-                params = _params_for(key, body)
-                params["investment"]        = float(body.get("invest", 5000))
-                params["profit_target_pct"] = float(body.get("target_pct", 5))
-                params["live_ltp"]          = live_px
 
-                mem_key    = f"{sym}|{key}"
-                last_state = TRIGGER_STATE.get(mem_key)
+            df_real = candles_to_df(sym_rows)
+            if fno_mode == "all" or (fno_mode == "sheet" and fno_list and sym in fno_list):
+                df_real = apply_fno_filter(df_real, timeframe=tf)
+            if len(df_real) < 30:
+                continue
+            df_ha = heikin_ashi(df_real) if use_ha else df_real
 
-                # ST is candle-source-immune; others follow cfg_ha
-                df_for_ind = df_real if key == "st" else df_ha
+            s0 = time.time()
+            live_px = live_ltp.get(sym)
+            display_ltp = live_px if live_px is not None else round(float(df_real["Close"].iloc[-2]), 2)
 
-                computed = mod.compute(df_for_ind, params)
+            row = {
+                "symbol": sym.replace(".NS", ""),
+                "ltp":    round(display_ltp, 2),
+                "is_new": False,
+                "ms":     0,
+            }
+            for k in ("t3_trend","t3_value","t3_action","t3_colour",
+                      "t3_valid_open","t3_valid_high","t3_valid_low","t3_valid_close",
+                      "t3_valid_dt","t3_valid_t3","t3_trigger_status","t3_trigger_dt",
+                      "t3_trigger_candle_date","t3_trigger_candle_time",
+                      "t3_ltp","t3_diff","t3_diff_pct","t3_profit",
+                      "t3_booking_status","t3_max_profit_pct","t3_max_profit_value",
+                      "wt1","wt2","wt_diff","wt_cross","wt_trend",
+                      "wt_valid_open","wt_valid_high","wt_valid_low","wt_valid_close",
+                      "wt_valid_dt","wt_valid_diff","wt_valid_wt_value","wt_perfect",
+                      "wt_trigger_status","wt_trigger_dt",
+                      "wt_trigger_candle_date","wt_trigger_candle_time",
+                      "wt_ltp","wt_trigger_diff","wt_diff_pct","wt_profit",
+                      "wt_booking_status","wt_max_profit_pct","wt_max_profit_value",
+                      "ce_dir","ce_valid_open","ce_valid_high","ce_valid_low","ce_valid_close",
+                      "ce_valid_dt","ce_valid_stop","ce_perfect",
+                      "ce_trigger_status","ce_trigger_dt",
+                      "ce_trigger_candle_date","ce_trigger_candle_time",
+                      "ce_ltp","ce_trigger_diff","ce_diff_pct","ce_profit",
+                      "ce_booking_status","ce_max_profit_pct","ce_max_profit_value",
+                      "st_resistance","st_support","st_trend","st_valid_open","st_valid_high",
+                      "st_valid_low","st_valid_close","st_valid_dt","st_valid_resistance",
+                      "st_prev_close","st_r_change_dt","st_s_change_dt","st_dist_to_res_pct",
+                      "st_dist_to_sup_pct","st_rsi","st_rsi_dir","st_perfect",
+                      "st_trigger_status","st_trigger_dt","st_action","st_trigger_candle_date",
+                      "st_trigger_candle_time","st_ltp","st_trigger_diff","st_diff_pct",
+                      "st_profit","st_booking_status","st_max_profit_pct","st_max_profit_value"):
+                row.setdefault(k, "")
+
+            for key in picked:
+                mod = get_indicator(key)
+                if mod is None: continue
                 try:
-                    sig = mod.signals(df_for_ind, params, computed, state=last_state)
-                except TypeError:
-                    sig = mod.signals(df_for_ind, params, computed)
+                    params = _params_for(key, body)
+                    params["investment"]        = float(body.get("invest", 5000))
+                    params["profit_target_pct"] = float(body.get("target_pct", 5))
+                    params["live_ltp"]          = live_px
 
-                new_state = sig.pop("_new_state", None)
-                if new_state is not None:
-                    TRIGGER_STATE[mem_key] = new_state
-                sig.pop(f"{key}_details", None)
+                    mem_key    = f"{sym}|{key}"
+                    last_state = TRIGGER_STATE.get(mem_key)
+                    df_for_ind = df_real if key == "st" else df_ha
 
-                row.update(sig)
-                if sig.get(f"{key}_triggered"):
-                    row["is_new"] = True
-            except Exception as e:
-                print(f"⚠️ {key} on {sym}: {e}")
+                    computed = mod.compute(df_for_ind, params)
+                    try:
+                        sig = mod.signals(df_for_ind, params, computed, state=last_state)
+                    except TypeError:
+                        sig = mod.signals(df_for_ind, params, computed)
 
-        row["ms"] = int((time.time() - s0) * 1000)
-        rows.append(row)
+                    new_state = sig.pop("_new_state", None)
+                    if new_state is not None:
+                        TRIGGER_STATE[mem_key] = new_state
+                    sig.pop(f"{key}_details", None)
+                    row.update(sig)
+                    if sig.get(f"{key}_triggered"):
+                        row["is_new"] = True
+                except Exception as e:
+                    print(f"⚠️ {key} on {sym}: {e}")
 
-    total_ms = int((time.time() - t0) * 1000)
-    CANCEL_FLAGS.pop(job_id, None)
-    print(f"📊 [job {job_id}] Real scan ({'+'.join(picked)}) → {len(rows)} rows in {total_ms}ms"
-          + (" (stopped)" if stopped_early else ""))
+            row["ms"] = int((time.time() - s0) * 1000)
 
-    # ---- cache for later restore ----
-    if not stopped_early and rows:
-        LAST_SCAN_CACHE.update({
-            "rows": rows,
-            "meta": {"tf": tf, "total_ms": total_ms},
-            "ts": time.time(),
-        })
+            SCANNER_JOBS[job_id]["results"].append(row)
+            q.put({"type": "row", "row": row, "current": idx + 1, "total": len(symbols)})
 
-    # ---- optional: write to Google Sheet ----
-    sheet_written = False
-    output_sheet  = body.get("output_sheet") or ""
-    write_back    = bool(body.get("write_to_sheet", False))
-    book_name     = body.get("sheet_name") or "Stock Price Scraper"
+        total_ms = int((time.time() - t0) * 1000)
 
-    print(f"📝 write_to_sheet={write_back} output_sheet='{output_sheet}' book='{book_name}'")
+        # Optional: write to sheet
+        sheet_written = False
+        output_sheet = body.get("output_sheet") or ""
+        write_back = bool(body.get("write_to_sheet", False))
+        book_name = body.get("sheet_name") or "Stock Price Scraper"
 
-    if write_back and output_sheet and rows:
-        headers = ["Symbol", "LTP"]
-        for key in picked:
-            mod = get_indicator(key)
-            if mod and "columns" in mod.META:
-                for col in mod.META["columns"]:
-                    headers.append(col["label"])
-        headers += ["New", "Time(ms)"]
-
-        data_rows = []
-        for r in rows:
-            line = [r.get("symbol", ""), r.get("ltp", "")]
+        if write_back and output_sheet and SCANNER_JOBS[job_id]["results"]:
+            headers = ["Symbol", "LTP"]
             for key in picked:
                 mod = get_indicator(key)
                 if mod and "columns" in mod.META:
                     for col in mod.META["columns"]:
-                        line.append(r.get(col["key"], ""))
-            line.append("Y" if r.get("is_new") else "")
-            line.append(r.get("ms", ""))
-            data_rows.append(line)
+                        headers.append(col["label"])
+            headers += ["New", "Time(ms)"]
 
-        summary = None
-        if stopped_early:
-            summary = f"⚠️ Run stopped early — showing {len(rows)} of {len(symbols)} symbols"
+            data_rows = []
+            for r in SCANNER_JOBS[job_id]["results"]:
+                line = [r.get("symbol", ""), r.get("ltp", "")]
+                for key in picked:
+                    mod = get_indicator(key)
+                    if mod and "columns" in mod.META:
+                        for col in mod.META["columns"]:
+                            line.append(r.get(col["key"], ""))
+                line.append("Y" if r.get("is_new") else "")
+                line.append(r.get("ms", ""))
+                data_rows.append(line)
 
-        try:
-            print(f"📤 Writing {len(data_rows)} rows × {len(headers)} cols to {book_name}::{output_sheet}")
-            sheet_written = sheets.write_results(book_name, output_sheet,
-                                                 headers, data_rows, summary=summary)
-            print(f"📤 write_results returned: {sheet_written}")
-        except Exception as e:
-            print(f"❌ Sheet write-back failed: {e}")
-            import traceback
-            traceback.print_exc()
-    else:
-        if not write_back:    print("   (skipped: write_to_sheet checkbox not ticked)")
-        if not output_sheet:  print("   (skipped: output_sheet name empty)")
-        if not rows:          print("   (skipped: no rows)")
+            try:
+                sheet_written = sheets.write_results(book_name, output_sheet, headers, data_rows)
+            except Exception as e:
+                print(f"❌ Sheet write-back failed: {e}")
 
-    _save_trigger_state(TRIGGER_STATE)
+        _save_trigger_state(TRIGGER_STATE)
 
-    return jsonify({
-        "ok": True, "tf": tf, "total_ms": total_ms,
-        "count": len(rows), "stopped_early": stopped_early, "rows": rows,
-        "sheet_written": sheet_written, "output_sheet": output_sheet,
-    })
+        SCANNER_JOBS[job_id]["done"] = True
+        q.put({
+            "type": "done",
+            "count": len(SCANNER_JOBS[job_id]["results"]),
+            "stopped_early": stopped_early,
+            "total_ms": total_ms,
+            "sheet_written": sheet_written,
+            "output_sheet": output_sheet
+        })
+
+    threading.Thread(target=worker, daemon=True).start()
+
+    return jsonify({"ok": True, "job_id": job_id, "count": len(symbols)})
+
+
+@app.route("/api/scanner/stream")
+def api_scanner_stream():
+    import json as _json
+    from flask import Response
+    job_id = request.args.get("job")
+    if not job_id or job_id not in SCANNER_JOBS:
+        return jsonify({"ok": False, "error": "unknown job"})
+
+    def gen():
+        job = SCANNER_JOBS[job_id]
+        q = job["q"]
+
+        # 1. Replay history
+        for i, row in enumerate(job["results"]):
+            item = {"type": "row", "row": row, "current": i+1, "total": job["total"]}
+            yield f"data: {_json.dumps(item)}\n\n"
+
+        if job["done"]:
+            yield f"data: {_json.dumps({'type': 'done', 'count': len(job['results'])})}\n\n"
+            return
+
+        # 2. Stream new items
+        while True:
+            try:
+                item = q.get(timeout=30)
+            except queue.Empty:
+                yield ": keep-alive\n\n"
+                continue
+            yield f"data: {_json.dumps(item)}\n\n"
+            if item.get("type") in ("done", "stopped"):
+                break
+
+    return Response(gen(), mimetype="text/event-stream")
 
 
 # ---- Last-result restore endpoints ---------------------------------------
@@ -813,8 +926,6 @@ def api_scanner_load_saved():
         return jsonify({"ok": False,
                         "error": f"no rows found in {book}::{tab}"})
 
-    # Build label -> key map from the indicator registry.
-    # Every indicator META has {"columns": [{"key": "...", "label": "..."}]}.
     label_to_key = {}
     for ind_key in list_all().keys():
         mod = get_indicator(ind_key)
@@ -822,7 +933,6 @@ def api_scanner_load_saved():
             for col in mod.META["columns"]:
                 label_to_key[col["label"].strip().lower()] = col["key"]
 
-    # Fixed columns that aren't indicator-specific
     fixed_map = {
         "symbol":   "symbol",
         "ltp":      "ltp",
@@ -840,7 +950,6 @@ def api_scanner_load_saved():
             elif h in label_to_key:
                 k = label_to_key[h]
             else:
-                # unknown header — keep it lowercase so nothing is lost
                 k = h
             if k == "is_new":
                 out["is_new"] = str(value).strip().upper() in ("Y", "YES", "TRUE", "1")
@@ -998,9 +1107,9 @@ def api_backtest_run():
             st_entry_mode     = body.get("st_entry_mode", "strict"),
             st_exit_mode      = body.get("st_exit_mode",  "strict"),
             st_reentry_mode   = body.get("st_reentry_mode", "standard"),
-            wt_newest_only    = bool(body.get("wt_newest_only", False)),
-            heikin_ashi_flag  = bool(body.get("heikin_ashi", True)),
-            fno_filter_flag   = bool(body.get("fno_filter", False)),
+            wt_pending_rule   = body.get("wt_pending_rule", "every"),
+            fno_mode          = body.get("fno_mode", "none"),
+            fno_list          = set(sheets.read_symbols(body.get("sheet_name", "Stock Price Scraper"), body.get("fno_sheet", "F&O_input"))) if body.get("fno_mode") == "sheet" else None,
             strategy_mode     = body.get("strategy_mode", "simple"),
             multiplier_type   = body.get("multiplier_type", "martingale"),
             base_qty          = int(body.get("base_qty", 1)),
@@ -1035,6 +1144,65 @@ def api_backtest_run():
         return jsonify({"ok": False, "error": str(e)})
 
 # ---- Batch backtest -------------------------------------------------------
+
+import autotest
+
+@app.route("/api/backtest/autotest/start", methods=["POST"])
+def api_autotest_start():
+    body = request.get_json(silent=True) or {}
+    cfg = body.get("config", {})
+    vary = body.get("vary", [])
+
+    job_id = f"at_{int(time.time()*1000)}_{os.urandom(3).hex()}"
+
+    if cfg.get("fno_mode") == "sheet":
+        cfg["fno_list"] = set(sheets.read_symbols(cfg.get("sheet_name", "Stock Price Scraper"), cfg.get("fno_sheet", "F&O_input")))
+
+    autotest.start_job(job_id, cfg, vary)
+    return jsonify({"ok": True, "job_id": job_id})
+
+@app.route("/api/backtest/autotest/stream")
+def api_autotest_stream():
+    import json as _json
+    from flask import Response
+    job_id = request.args.get("job")
+    if not job_id or job_id not in autotest.JOBS:
+        return jsonify({"ok": False, "error": "unknown job"})
+
+    def gen():
+        job = autotest.JOBS[job_id]
+        q = job["q"]
+
+        history = job.get("results", [])
+        total = job.get("total", 1)
+        for i, row in enumerate(history):
+            item = {"type": "row", "row": row, "current": i+1, "total": total}
+            yield f"data: {_json.dumps(item)}\n\n"
+
+        if job.get("done"):
+            yield f"data: {_json.dumps({'type': 'done', 'count': len(history)})}\n\n"
+            return
+
+        while True:
+            try:
+                item = q.get(timeout=30)
+            except queue.Empty:
+                yield ": keep-alive\n\n"
+                continue
+            yield f"data: {_json.dumps(item)}\n\n"
+            if item.get("type") in ("done", "stopped"):
+                job["done"] = True
+                break
+
+    return Response(gen(), mimetype="text/event-stream")
+
+@app.route("/api/backtest/autotest/stop", methods=["POST"])
+def api_autotest_stop():
+    body = request.get_json(silent=True) or {}
+    jid = body.get("job_id")
+    if not jid: return jsonify({"ok": False, "error": "no job_id"})
+    autotest.stop_job(jid)
+    return jsonify({"ok": True})
 
 @app.route("/api/backtest/batch/start", methods=["POST"])
 def api_backtest_batch_start():
@@ -1085,9 +1253,9 @@ def api_backtest_batch_start():
         "st_entry_mode":       settings.get("st_entry_mode", "strict"),
         "st_exit_mode":        settings.get("st_exit_mode",  "strict"),
         "st_reentry_mode":     settings.get("st_reentry_mode", "standard"),
-        "wt_newest_only":      bool(settings.get("wt_newest_only", False)),
-        "heikin_ashi_flag":    bool(settings.get("heikin_ashi", True)),
-        "fno_filter_flag":     bool(settings.get("fno_filter", True)),
+        "wt_pending_rule":     settings.get("wt_pending_rule", "every"),
+        "fno_mode":            settings.get("fno_mode", "none"),
+        "fno_list":            set(sheets.read_symbols(settings.get("sheet_name", "Stock Price Scraper"), settings.get("fno_sheet", "F&O_input"))) if settings.get("fno_mode") == "sheet" else None,
         "strategy_mode":       settings.get("strategy_mode", "simple"),
         "multiplier_type":     settings.get("multiplier_type", "martingale"),
         "base_qty":            int(settings.get("base_qty", 1)),
@@ -1116,6 +1284,7 @@ def api_backtest_batch_start():
     }
 
     batch_backtest.start_job(job_id, symbols, kwargs)
+    batch_backtest.JOBS[job_id]["total"] = len(symbols)
     print(f"🚀 Batch {job_id}: {len(symbols)} symbols from {book}::{tab}")
     return jsonify({"ok": True, "job_id": job_id, "count": len(symbols)})
 
@@ -1129,7 +1298,19 @@ def api_backtest_batch_stream():
         return jsonify({"ok": False, "error": "unknown job"})
 
     def gen():
-        q = batch_backtest.JOBS[job_id]["q"]
+        job = batch_backtest.JOBS[job_id]
+        q = job["q"]
+
+        history = job.get("results", [])
+        total = job.get("total", len(history))
+        for i, row in enumerate(history):
+            item = {"type": "row", "row": row, "current": i+1, "total": total}
+            yield f"data: {_json.dumps(item)}\n\n"
+
+        if job.get("done"):
+            yield f"data: {_json.dumps({'type': 'done', 'count': len(history)})}\n\n"
+            return
+
         while True:
             try:
                 item = q.get(timeout=30)
@@ -1138,6 +1319,7 @@ def api_backtest_batch_stream():
                 continue
             yield f"data: {_json.dumps(item)}\n\n"
             if item.get("type") in ("done", "stopped"):
+                job["done"] = True
                 break
 
     return Response(gen(), mimetype="text/event-stream")
@@ -1222,8 +1404,6 @@ def api_backtest_batch_results():
 
 @app.route("/api/backtest/batch/load")
 def api_backtest_batch_load():
-    """Read a previously-written batch tab from Google Sheets and return
-    the rows in the same shape the front-end batch table expects."""
     book = request.args.get("book") or "Backtest scanner"
     tab  = (request.args.get("tab") or "").strip()
     if not tab:
@@ -1284,10 +1464,9 @@ def api_backtest_batch_load():
 def api_scanner_stop():
     body = request.get_json(silent=True) or {}
     jid = body.get("job_id")
-    if not jid:
-        return jsonify({"ok": False, "error": "no job_id"})
-    CANCEL_FLAGS[jid] = True
-    print(f"🛑 Cancel requested for {jid}")
+    if not jid: return jsonify({"ok": False, "error": "no job_id"})
+    if jid in SCANNER_JOBS:
+        SCANNER_JOBS[jid]["stop"] = True
     return jsonify({"ok": True})
 
 

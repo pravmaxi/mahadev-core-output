@@ -161,14 +161,13 @@ def _htf_uptrend_at(hdf, ts):
 # EVENT DETECTION
 # =========================================================================
 
-def detect_wt_events(df, params, buffer_pts, max_wait=20, newest_only=False):
+def detect_wt_events(df, params, buffer_pts, max_wait=20, pending_rule="every"):
     """WaveTrend event detector.
-
-    newest_only=False  → every cross is checked against its own wait window.
-                         Older pendings stay alive even after newer crosses.
-    newest_only=True   → only the newest cross of each direction is alive.
-                         A newer buy cross kills an older buy pending (same for
-                         sell). Buy and sell pendings are independent.
+    
+    pending_rule:
+      "every"    → Every cross checked against its own wait window.
+      "same_dir" → Only newest cross of each direction is alive.
+      "any_dir"  → Only newest cross total is alive (buy kills sell, sell kills buy).
     """
     mod = get_indicator("wt")
     comp = mod.compute(df, params)
@@ -188,8 +187,7 @@ def detect_wt_events(df, params, buffer_pts, max_wait=20, newest_only=False):
         wt_val = None if (_v != _v) else round(float(_v), 2)
         return level, perfect, wt_val
 
-    if newest_only:
-        # Single pending per direction — new cross of same direction replaces old
+    if pending_rule in ("same_dir", "any_dir"):
         pend = {"buy": None, "sell": None}
         for i in range(1, n):
             h = float(df.iloc[i]["High"])
@@ -212,6 +210,7 @@ def detect_wt_events(df, params, buffer_pts, max_wait=20, newest_only=False):
                     pend[direction] = None
                 elif i - p["valid_i"] >= max_wait:
                     pend[direction] = None
+            
             # Fresh cross
             c = cross.iloc[i]
             if c in ("Bull Cross", "Bear Cross"):
@@ -221,6 +220,10 @@ def detect_wt_events(df, params, buffer_pts, max_wait=20, newest_only=False):
                     "valid_i": i, "level": level,
                     "perfect": perfect, "cross": c, "wt_val": wt_val,
                 }
+                if pending_rule == "any_dir":
+                    # Wipe out the opposite direction
+                    opposite = "sell" if direction == "buy" else "buy"
+                    pend[opposite] = None
         return events
 
     # --- Default: every cross has its own wait window ---
@@ -969,11 +972,11 @@ def run(symbol, interval="1h", period="6mo",
         exit_on_opposite=True,
         side_mode="both",
         logic="any", match_window=5,
-        heikin_ashi_flag=True, fno_filter_flag=False,
+        heikin_ashi_flag=True, fno_mode="none", fno_sheet="F&O_input", fno_list=None,
         st_entry_mode="strict",
         st_exit_mode="strict",
         st_reentry_mode="standard",
-        wt_newest_only=False,
+        wt_pending_rule="every",
         wait_bars=20,
         strategy_mode="simple",
         multiplier_type="martingale", base_qty=1, max_levels=5,
@@ -1002,8 +1005,9 @@ def run(symbol, interval="1h", period="6mo",
     df = candles_to_df(rows)
     df = _to_ist(df)
 
-    if fno_filter_flag and interval in ("5m", "15m", "30m", "1h"):
-        df = apply_fno_filter(df, interval)
+    if fno_mode == "all" or (fno_mode == "sheet" and fno_list and symbol in fno_list):
+        if interval in ("5m", "15m", "30m", "1h"):
+            df = apply_fno_filter(df, interval)
 
     volume_series = df["Volume"] if "Volume" in df.columns else None
     df_real = df.copy()
@@ -1018,7 +1022,7 @@ def run(symbol, interval="1h", period="6mo",
     if indicators.get("wt"):
         try:    wt_evts = detect_wt_events(df, params.get("wt", {}), buffer_pts,
                                             max_wait=wait_bars,
-                                            newest_only=wt_newest_only)
+                                            pending_rule=wt_pending_rule)
         except Exception as e: print(f"⚠️ WT detect: {e}")
     if indicators.get("ce"):
         try:    ce_evts = detect_ce_events(df, params.get("ce", {}), buffer_pts, max_wait=wait_bars)

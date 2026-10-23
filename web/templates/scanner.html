@@ -80,7 +80,18 @@
       <div id="secRules">
         <div class="setHead">Rules</div>
         <label class="chk"><input type="checkbox" id="cfg_ha" checked> Use Heikin Ashi candles</label>
-        <label class="chk"><input type="checkbox" id="cfg_fno" checked> F&amp;O filter (drop ≥ 15:15 IST)</label>
+        <div class="numRow">
+          <span>F&O 15:15 Filter</span>
+          <select id="cfg_fno_mode" class="inp" style="width:110px">
+            <option value="all" selected>All symbols</option>
+            <option value="sheet">From sheet</option>
+            <option value="none">Off</option>
+          </select>
+        </div>
+        <div class="numRow" id="fnoSheetRow" style="display:none">
+          <span>F&O Sheet Tab</span>
+          <input type="text" id="cfg_fno_sheet" value="F&O_input" style="width:110px">
+        </div>
         <label class="chk"><input type="checkbox" id="cfg_ltp" checked> Include LTP (live price)</label>
         <label class="chk"><input type="checkbox" id="cfg_market" checked> Market order (else limit)</label>
         <div class="numRow"><span>Investment ₹</span><input type="number" id="cfg_invest" value="5000" step="500"></div>
@@ -1331,6 +1342,10 @@ function renderRows(rows, meta, totalCount){
   if (ns){ ns.scrollLeft = sv.left; ns.scrollTop = sv.top; }
 }
 
+$('cfg_fno_mode').addEventListener('change', () => {
+  $('fnoSheetRow').style.display = $('cfg_fno_mode').value === 'sheet' ? 'flex' : 'none';
+});
+
 /* ===== payload ===== */
 function readSettings(){
   return {
@@ -1341,7 +1356,8 @@ function readSettings(){
     tf:             $('tf').value,
     indicators:     runSelected(),
     heikin_ashi:    $('cfg_ha').checked,
-    fno_filter:     $('cfg_fno').checked,
+    fno_mode:       $('cfg_fno_mode').value,
+    fno_sheet:      $('cfg_fno_sheet').value,
     ltp:            $('cfg_ltp').checked,
     market_order:   $('cfg_market').checked,
     invest:         parseFloat($('cfg_invest').value),
@@ -1366,6 +1382,7 @@ function readSettings(){
 
 /* ===== run / stop ===== */
 const stopBtn = $('stop');
+let scanEventSource = null;
 let currentJob = null;
 
 async function runScan(opts = {}){
@@ -1375,9 +1392,14 @@ async function runScan(opts = {}){
   if (!run.t3 && !run.wt && !run.ce && !run.st){ setStatus('select at least one indicator', 'err'); return; }
   if (cfg.source === 'manual' && !cfg.manual_symbols.trim()){ setStatus('type at least one symbol', 'err'); return; }
 
-  const job_id = 'job_' + Math.random().toString(36).slice(2,10);
+  const job_id = 'scan_' + Math.random().toString(36).slice(2,10);
   currentJob = job_id; cfg.job_id = job_id;
-  btn.disabled = true; stopBtn.hidden = false; setStatus('scanning…');
+
+  btn.disabled = true; stopBtn.hidden = false; setStatus('starting scan…');
+
+  // Clear previous results for a fresh run
+  window._lastData = { rows: [], meta: { tf: cfg.tf, total_ms: 0 } };
+  redraw();
 
   try {
     const res = await fetch('/api/scanner/run', {
@@ -1390,28 +1412,63 @@ async function runScan(opts = {}){
       if ($('autoRefresh').checked && (data.error || '').includes('no symbols')){
         $('autoRefresh').checked = false; stopAutoRefresh();
       }
+      btn.disabled = false; stopBtn.hidden = true; currentJob = null;
       return;
     }
 
-    const meta = { tf: cfg.tf, total_ms: data.total_ms };
-    window._lastData = { rows: data.rows, meta };
-    redraw();
-    saveScannerResult(data.rows, meta);
-
-    const sheetNote = data.sheet_written ? ` · ✅ wrote ${data.output_sheet}` : '';
-    setStatus(
-      data.stopped_early
-        ? `stopped · ${data.count} rows · ${fmtMs(data.total_ms)}${sheetNote}`
-        : `${data.count} rows · ${fmtMs(data.total_ms)}${sheetNote}`,
-      data.stopped_early ? 'err' : 'ok'
-    );
+    localStorage.setItem('active_scan_job', job_id);
+    localStorage.setItem('active_scan_meta', JSON.stringify(window._lastData.meta));
+    connectScannerStream(job_id, cfg.tf);
   } catch (e){
     setStatus('request failed', 'err'); console.error(e);
-  } finally {
     btn.disabled = false; stopBtn.hidden = true; currentJob = null;
   }
 }
-btn.addEventListener('click', runScan);
+
+function connectScannerStream(jobId, tf) {
+  if (scanEventSource) scanEventSource.close();
+  setStatus('scanning in background…');
+  btn.disabled = true; stopBtn.hidden = false;
+
+  scanEventSource = new EventSource(`/api/scanner/stream?job=${jobId}`);
+
+  scanEventSource.onmessage = ev => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'row') {
+      window._lastData.rows.push(msg.row);
+      redraw();
+      setStatus(`scanning… ${msg.current} / ${msg.total}`);
+    } else if (msg.type === 'done') {
+      localStorage.removeItem('active_scan_job');
+      localStorage.removeItem('active_scan_meta');
+      window._lastData.meta.total_ms = msg.total_ms;
+      redraw();
+      saveScannerResult(window._lastData.rows, window._lastData.meta);
+
+      const sheetNote = msg.sheet_written ? ` · ✅ wrote ${msg.output_sheet}` : '';
+      setStatus(
+        msg.stopped_early
+          ? `stopped · ${msg.count} rows${sheetNote}`
+          : `done · ${msg.count} rows${sheetNote}`,
+        msg.stopped_early ? 'err' : 'ok'
+      );
+      closeScanStream();
+    } else if (msg.type === 'error') {
+      setStatus(msg.msg, 'err');
+      closeScanStream();
+    }
+  };
+
+  scanEventSource.onerror = () => {
+    setStatus('stream closed', 'err');
+    closeScanStream();
+  };
+}
+
+function closeScanStream() {
+  if (scanEventSource) { scanEventSource.close(); scanEventSource = null; }
+  btn.disabled = false; stopBtn.hidden = true; currentJob = null;
+}
 
 async function stopScan(){
   if (!currentJob) return;
@@ -1424,6 +1481,8 @@ async function stopScan(){
   } catch(e){ console.error(e); }
   finally { stopBtn.disabled = false; }
 }
+
+btn.addEventListener('click', runScan);
 stopBtn.addEventListener('click', stopScan);
 
 /* ===== LOAD SAVED RESULTS ===== */
@@ -1517,10 +1576,20 @@ refreshOutputName();
 renderColumnsPanel();
 loadWtFilterCfg();
 
-/* try to restore last result — localStorage first, then server cache */
-(async () => {
-  const local = tryRestoreScannerResult();
-  if (!local) await tryFetchServerLastScan();
-})();
+/* Check if a scan is running in the background */
+const activeScan = localStorage.getItem('active_scan_job');
+if (activeScan) {
+  currentJob = activeScan;
+  const meta = JSON.parse(localStorage.getItem('active_scan_meta') || '{"tf": "1h", "total_ms": 0}');
+  window._lastData = { rows: [], meta };
+  redraw();
+  connectScannerStream(activeScan, meta.tf);
+} else {
+  /* No active scan, try to restore last result */
+  (async () => {
+    const local = tryRestoreScannerResult();
+    if (!local) await tryFetchServerLastScan();
+  })();
+}
 </script>
 {% endblock %}
