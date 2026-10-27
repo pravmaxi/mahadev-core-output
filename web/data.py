@@ -4,6 +4,7 @@ Handles MultiIndex columns from yfinance robustly.
 """
 import time
 import yfinance as yf
+import pandas as pd
 
 
 _BATCH_CACHE = {}
@@ -62,7 +63,8 @@ def _flatten(df):
     if df is None:
         return None
     if not hasattr(df.columns, "levels"):
-        return df                      # already flat
+        # ✅ FIX: Drop duplicates even if it's already flat
+        return df.loc[:, ~df.columns.duplicated()]  # already flat
 
     lvl0 = set(str(x) for x in df.columns.get_level_values(0))
     lvl1 = set(str(x) for x in df.columns.get_level_values(1))
@@ -74,6 +76,9 @@ def _flatten(df):
     else:
         # last resort: take level 0
         df.columns = df.columns.get_level_values(0)
+        
+    # ✅ FIX: Drop duplicate columns (e.g., if a batch download left us with 14 'Close' columns)
+    df = df.loc[:, ~df.columns.duplicated()]
     return df
 
 
@@ -84,11 +89,20 @@ def _rows(df):
         return out
     for idx, r in df.iterrows():
         try:
+            # ✅ FIX: If a column accidentally returns a Series (duplicate columns), take the first value
+            def _val(col):
+                v = r[col]
+                if isinstance(v, pd.Series):
+                    return float(v.iloc[0])
+                if isinstance(v, pd.DataFrame):
+                    return float(v.iloc[0, 0])
+                return float(v)
+                
             out.append({
                 "t": idx.isoformat(),
-                "o": float(r["Open"]),  "h": float(r["High"]),
-                "l": float(r["Low"]),   "c": float(r["Close"]),
-                "v": float(r["Volume"]) if "Volume" in r else 0.0,
+                "o": _val("Open"),  "h": _val("High"),
+                "l": _val("Low"),   "c": _val("Close"),
+                "v": _val("Volume") if "Volume" in r else 0.0,
             })
         except Exception as e:
             # print once so we know if columns are misaligned
@@ -151,7 +165,7 @@ def download(symbol, interval="1h", period="1mo"):
         for attempt in range(2):
             try:
                 df = yf.download(symbol, interval=interval, period=p,
-                                 progress=False, auto_adjust=False)
+                                 progress=False, auto_adjust=False, timeout=15)
                 if df is not None and not df.empty:
                     df = _flatten(df).dropna()
                     rows = _rows(df)
@@ -169,6 +183,11 @@ def download(symbol, interval="1h", period="1mo"):
 def download_batch(symbols, interval="1h", period="1mo", force_refresh=False):
     if not symbols:
         return {}
+
+    # ✅ FIX: Auto-correct invalid periods before calling Yahoo Finance
+    allowed = _TF_PERIODS.get(interval)
+    if allowed and period not in allowed:
+        period = allowed[-1] # Defaults to the max allowed period (e.g., 60d for 5m)
 
     # ── single symbol: batch API is unreliable for length-1 lists ──
     if len(symbols) == 1:
@@ -195,7 +214,7 @@ def download_batch(symbols, interval="1h", period="1mo", force_refresh=False):
     try:
         df = yf.download(symbols, interval=interval, period=period,
                          group_by="ticker", progress=False,
-                         auto_adjust=False, threads=True)
+                         auto_adjust=False, threads=True, timeout=15)
     except Exception as e:
         print(f"⚠️ Batch download failed entirely: {e}")
 

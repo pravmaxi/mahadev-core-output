@@ -961,7 +961,7 @@ def _simulate_alternate(df, events_by_bar, n, C):
 # MAIN
 # =========================================================================
 
-def run(symbol, interval="1h", period="6mo",
+def run(symbol, interval="1h", period="6mo", df_override=None,
         indicators=None, params=None,
         capital=100000, position_pct=100,
         position_amount=5000, fixed_qty=1, sizing_mode="fixed",
@@ -998,12 +998,15 @@ def run(symbol, interval="1h", period="6mo",
     indicators = indicators or {"wt": True, "ce": False}
     params = params or {}
 
-    rows = download(symbol, interval, period)
-    if not rows or len(rows) < 40:
-        return {"ok": False, "error": f"not enough data for {symbol}"}
+    if df_override is not None:
+        df = df_override.copy()
+    else:
+        rows = download(symbol, interval, period)
+        if not rows or len(rows) < 40:
+            return {"ok": False, "error": f"not enough data for {symbol}"}
 
-    df = candles_to_df(rows)
-    df = _to_ist(df)
+        df = candles_to_df(rows)
+        df = _to_ist(df)
 
     if fno_mode == "all" or (fno_mode == "sheet" and fno_list and symbol in fno_list):
         if interval in ("5m", "15m", "30m", "1h"):
