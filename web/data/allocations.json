@@ -1,0 +1,230 @@
+[
+  {
+    "sym": "AMD",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "AAPL",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "ABBV",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "AMZN",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "AVGO",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "COST",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "CTSH",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "GOOGL",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "HD",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "INTC",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "JNJ",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "JPM",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "KO",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "LEVI",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "LLY",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "MA",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "META",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "MSFT",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "NVDA",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "PEP",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "PG",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "SHEL",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "SPY",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "TSLA",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "TSM",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "UNH",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "V",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "IBM",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "NFLX",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "QQQ",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "IWM",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "XAUUSD",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "FX"
+  },
+  {
+    "sym": "XAGUSD",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "FX"
+  },
+  {
+    "sym": "EURUSD",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "FX"
+  },
+  {
+    "sym": "GBPUSD",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "FX"
+  },
+  {
+    "sym": "USDJPY",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "FX"
+  },
+  {
+    "sym": "USDCAD",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "FX"
+  },
+  {
+    "sym": "USDCHF",
+    "amt": 125000,
+    "tf": "1h",
+    "exch": "FX"
+  }
+]

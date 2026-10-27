@@ -28,6 +28,7 @@ Create a Pull Request from b10 → main.
 Merge it.git  ds
 Merge it. -u origin b17
 
+===============================
 
  Complete Git Workflow Cheat Sheet (VS Code)
 Step 1: Make sure your main branch is up-to-date

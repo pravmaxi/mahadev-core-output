@@ -30,8 +30,8 @@ IST = pytz.timezone("Asia/Kolkata")
 # Yahoo restricts which period is available for each interval.
 YF_CONFIG = {
     "5m":  {"default_period": "5d",  "allowed": ["1d", "5d", "1mo", "60d"]},
-    "15m": {"default_period": "1mo", "allowed": ["1d", "5d", "1mo", "60d"]},
-    "30m": {"default_period": "1mo", "allowed": ["1d", "5d", "1mo", "60d"]},
+    "15m": {"default_period": "60d", "allowed": ["1d", "5d", "1mo", "60d"]},
+    "30m": {"default_period": "60d", "allowed": ["1d", "5d", "1mo", "60d"]},
     "1h":  {"default_period": "6mo", "allowed": ["5d", "1mo", "3mo", "6mo", "1y", "2y"]},
     "1d":  {"default_period": "2y",  "allowed": ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "max"]},
     "1wk": {"default_period": "5y",  "allowed": ["1y", "2y", "5y", "10y", "max"]},

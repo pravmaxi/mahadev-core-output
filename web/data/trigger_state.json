@@ -1,8 +1,8 @@
 {
   "HAL.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-10-19 11:15",
-    "level": 4957.6
+    "direction": "buy",
+    "datetime": "2026-10-26 12:15",
+    "level": 4813.1
   },
   "WIPRO.NS|wt": {
     "direction": "sell",
@@ -638,5 +638,30 @@
     "direction": "buy",
     "datetime": "2026-10-20 19:00",
     "level": 40.72
+  },
+  "APOLLOHOSP.NS|wt": {
+    "direction": "buy",
+    "datetime": "2026-10-26 11:30",
+    "level": 7720.0
+  },
+  "AARTIPHARM.NS|wt": {
+    "direction": "sell",
+    "datetime": "2026-10-26 11:30",
+    "level": 826.05
+  },
+  "PFC.NS|wt": {
+    "direction": "buy",
+    "datetime": "2026-10-26 09:45",
+    "level": 318.1
+  },
+  "JIOFIN.NS|wt": {
+    "direction": "buy",
+    "datetime": "2026-10-26 12:00",
+    "level": 205.19
+  },
+  "AMZN.NS|wt": {
+    "direction": "buy",
+    "datetime": "2026-10-26 19:00",
+    "level": 215.98
   }
 }

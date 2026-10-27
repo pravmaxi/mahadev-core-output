@@ -25,6 +25,22 @@ PORT = int(os.getenv("PORT", "8000"))
 IST = pytz.timezone("Asia/Kolkata")
 CANCEL_FLAGS  = {}
 
+# ✅ FIX: Filter out the continuous 5-second polling logs from the terminal
+import logging
+class PollingFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        # Ignore these specific background routes
+        noisy_routes = [
+            "/api/trade/auto/status",
+            "/api/trade/paper/positions",
+            "/api/trade/paper/orders"
+        ]
+        return not any(route in msg for route in noisy_routes)
+
+log = logging.getLogger('werkzeug')
+log.addFilter(PollingFilter())
+
 # ---- last-result caches (survive page navigation) ------------------------
 LAST_SCAN_CACHE     = {"rows": [], "meta": None, "ts": 0}
 LAST_BACKTEST_CACHE = {"data": None, "ts": 0}
@@ -412,7 +428,9 @@ def _resolve_ltp(exchange, symbol):
             if hasattr(df.columns, "levels"):
                 df.columns = df.columns.get_level_values(0)
             c = df["Close"].dropna()
-            if len(c): return round(float(c.iloc[-1]), 2), "yfinance"
+            if len(c):
+                px = float(c.iloc[-1])
+                return (round(px, 5) if abs(px) < 10 else round(px, 2)), "yfinance"
     except Exception as e:
         print(f"⚠️ LTP resolve failed: {e}")
     return None, None
@@ -499,23 +517,42 @@ def api_trade_paper_place():
 
 @app.route("/api/trade/paper/orders")
 def api_trade_paper_orders():
-    return jsonify({"ok": True, "orders": paper_trades.list_orders()})
+    orders = paper_trades.list_orders()
+    import autotrader
+    for o in orders:
+        o["ltp"] = None
+        for state in autotrader.AUTO_STATE.values():
+            if state.get("symbol") == o["symbol"]:
+                o["ltp"] = state.get("ltp")
+                break
+    return jsonify({"ok": True, "orders": orders})
 
 
 @app.route("/api/trade/paper/positions")
 def api_trade_paper_positions():
     pos = paper_trades.positions()
+    import autotrader
     for p in pos:
-        px, _ = _resolve_ltp(p["exchange"], p["symbol"])
-        if px is not None:
-            p["ltp"] = px
-            p["unrealized_pnl"] = round((px - p["avg_price"]) * p["qty"], 2)
-            p["unrealized_pct"] = (round((px - p["avg_price"]) / p["avg_price"] * 100, 2)
-                                   if p["avg_price"] else 0)
-        else:
-            p["ltp"] = None
-            p["unrealized_pnl"] = None
-            p["unrealized_pct"] = None
+        p["ltp"] = None
+        p["target"] = None
+        p["sl"] = None
+        for state in autotrader.AUTO_STATE.values():
+            if state.get("symbol") == p["symbol"]:
+                p["ltp"] = state.get("ltp")
+                p["target"] = state.get("target_val")
+                p["sl"] = state.get("sl_val")
+                break
+        
+        # Recalculate P&L based on the synced Scanner LTP
+        if p["ltp"] is not None and p["qty"] != 0:
+            if p["qty"] > 0:
+                p["unrealized_pnl"] = (p["ltp"] - p["avg_price"]) * p["qty"]
+            else:
+                p["unrealized_pnl"] = (p["avg_price"] - p["ltp"]) * abs(p["qty"])
+            
+            if p["avg_price"] > 0:
+                p["unrealized_pct"] = (p["unrealized_pnl"] / (p["avg_price"] * abs(p["qty"]))) * 100
+                
     return jsonify({"ok": True, "positions": pos})
 
 
@@ -547,6 +584,11 @@ import autotrader
 @app.route("/api/trade/auto/start", methods=["POST"])
 def api_trade_auto_start():
     body = request.get_json(silent=True) or {}
+    
+    # KILL any existing jobs to prevent race conditions (data mixing)
+    for jid in list(autotrader.AUTO_JOBS.keys()):
+        autotrader.stop_job(jid)
+        
     job_id = f"auto_{int(time.time()*1000)}"
     autotrader.start_job(job_id, body)
     return jsonify({"ok": True, "job_id": job_id})
@@ -559,13 +601,162 @@ def api_trade_auto_stop():
         autotrader.stop_job(jid)
     return jsonify({"ok": True})
 
+@app.route("/api/trade/auto/json_files")
+def api_trade_auto_json_files():
+    import autotrader
+    import json
+    
+    def read_file(path):
+        if not path.exists(): return []
+        try: 
+            data = json.loads(path.read_text())
+            return data if isinstance(data, list) else []
+        except: 
+            return []
+
+    alloc_file = autotrader.DATA_DIR / "allocations.json"
+
+    return jsonify({
+        "ok": True,
+        "paper_processed": read_file(autotrader.PAPER_PROCESSED_FILE),
+        "ze_processed": read_file(autotrader.ZE_PROCESSED_FILE),
+        "paper_queue": read_file(autotrader.PAPER_QUEUE_FILE),
+        "ze_queue": read_file(autotrader.ZE_QUEUE_FILE),
+        "allocations": read_file(alloc_file)
+    })
+
+@app.route("/api/trade/auto/reset_signals", methods=["POST"])
+def api_trade_auto_reset_signals():
+    import autotrader
+    import paper_trades
+    
+    # Wipe all 4 files to fully reset the state
+    autotrader.PAPER_PROCESSED_FILE.unlink(missing_ok=True)
+    autotrader.ZE_PROCESSED_FILE.unlink(missing_ok=True)
+    autotrader.PAPER_QUEUE_FILE.unlink(missing_ok=True)
+    autotrader.ZE_QUEUE_FILE.unlink(missing_ok=True)
+    
+    # NEW: Cancel all open paper orders so the bot can re-evaluate immediately
+    for o in paper_trades.list_orders():
+        if o["status"] == "OPEN":
+            paper_trades.cancel_order(o["id"])
+    
+    return jsonify({"ok": True})
+
+
+@app.route("/api/trade/auto/update_config", methods=["POST"])
+def api_trade_auto_update_config():
+    body = request.get_json(silent=True) or {}
+    job_id = body.get("job_id")
+    new_cfg = body.get("config")
+    import autotrader
+    if job_id in autotrader.AUTO_JOBS and new_cfg:
+        autotrader.AUTO_JOBS[job_id]["config"].update(new_cfg)
+        return jsonify({"ok": True})
+    return jsonify({"ok": False})
+
+@app.route("/api/trade/auto/trigger_scan", methods=["POST"])
+def api_trade_auto_trigger_scan():
+    import autotrader
+    autotrader.FORCE_SCAN = True
+    return jsonify({"ok": True})
+
+@app.route("/api/trade/auto/fetch_ltp", methods=["POST"])
+def api_trade_auto_fetch_ltp():
+    import autotrader
+    from data import get_live_ltp, _SYMBOL_MAP
+    
+    # ✅ FIX: Abort if auto-scan is currently running to prevent yfinance clash
+    if getattr(autotrader, "IS_SCANNING", False):
+        return jsonify({"ok": False, "error": "Auto-Scan in progress"})
+
+    if not autotrader.AUTO_STATE: return jsonify({"ok": True})
+    
+    yf_syms = []
+    # Map symbols correctly for Yahoo Finance based on what's in AUTO_STATE
+    for r in autotrader.AUTO_STATE.values():
+        sym = r.get("yf_symbol") or r.get("symbol")
+        if sym:
+            sym_upper = sym.upper()
+            # Strip .NS if it's actually a Forex pair
+            if sym_upper.endswith(".NS") and sym_upper[:-3] in _SYMBOL_MAP:
+                sym_upper = sym_upper[:-3]
+            
+            mapped_sym = _SYMBOL_MAP.get(sym_upper, sym_upper)
+            yf_syms.append(mapped_sym)
+            
+    if not yf_syms: return jsonify({"ok": True})
+    
+    try:
+        live_ltps = get_live_ltp(list(set(yf_syms)))
+    except Exception as e:
+        print(f"⚠️ Manual LTP fetch failed: {e}")
+        return jsonify({"ok": False, "error": str(e)})
+    
+    # Get config to recalculate Target/SL based on new LTP
+    cfg = {}
+    if autotrader.AUTO_JOBS:
+        jid = list(autotrader.AUTO_JOBS.keys())[0]
+        cfg = autotrader.AUTO_JOBS[jid].get("config", {})
+    target_pct = float(cfg.get("target_pct", 2))
+    stop_pct = float(cfg.get("stop_pct", 3))
+
+    updated = 0
+    for key, r in autotrader.AUTO_STATE.items():
+        sym = r.get("yf_symbol") or r.get("symbol")
+        if sym:
+            sym_upper = sym.upper()
+            if sym_upper.endswith(".NS") and sym_upper[:-3] in _SYMBOL_MAP:
+                sym_upper = sym_upper[:-3]
+            
+            mapped_sym = _SYMBOL_MAP.get(sym_upper, sym_upper)
+            
+            if live_ltps.get(mapped_sym):
+                px = live_ltps[mapped_sym]
+                new_ltp = round(px, 5) if abs(px) < 10 else round(px, 2)
+                r["ltp"] = new_ltp
+                updated += 1
+                
+                action = r.get("wt_action", "")
+                if "Position in progress" not in action:
+                    if target_pct > 0:
+                        r["target_val"] = round(new_ltp * (1 + target_pct/100), 5) if "Buy" in action else round(new_ltp * (1 - target_pct/100), 5)
+                    if stop_pct > 0:
+                        r["sl_val"] = round(new_ltp * (1 - stop_pct/100), 5) if "Buy" in action else round(new_ltp * (1 + stop_pct/100), 5)
+                    elif r.get("valid_opp_val"):
+                        r["sl_val"] = r["valid_opp_val"]
+
+    print(f"💡 Manually updated {updated} LTPs via API")
+    return jsonify({"ok": True, "updated": updated})
+
+@app.route("/api/trade/auto/save_allocations", methods=["POST"])
+def api_trade_auto_save_allocations():
+    body = request.get_json(silent=True) or {}
+    tasks = body.get("tasks", [])
+    
+    from pathlib import Path
+    file_path = Path(__file__).resolve().parent / "data" / "allocations.json"
+    file_path.parent.mkdir(exist_ok=True)
+    
+    import json
+    with open(file_path, "w") as f:
+        json.dump(tasks, f, indent=2)
+        
+    # UPDATE RUNNING JOBS IMMEDIATELY
+    import autotrader
+    for jid in autotrader.AUTO_JOBS:
+        autotrader.AUTO_JOBS[jid]["config"]["tasks"] = tasks
+        
+    return jsonify({"ok": True, "count": len(tasks)})
+
 @app.route("/api/trade/auto/status")
 def api_trade_auto_status():
     import autotrader
     return jsonify({
         "ok": True, 
         "state": autotrader.AUTO_STATE,
-        "is_scanning": autotrader.IS_SCANNING
+        "is_scanning": autotrader.IS_SCANNING,
+        "last_scan_time": autotrader.LAST_SCAN_TIME
     })
 
 

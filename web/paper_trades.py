@@ -118,13 +118,16 @@ def positions():
             avg = a["sell_value"] / a["sell_qty"]
         else:
             avg = 0
+        # ✅ FIX: Dynamically round to 5 decimals for Forex (< 10), else 2 decimals
+        dec = 5 if abs(avg) < 10 else 2
+        
         out.append({
             "symbol":   sym, "exchange": exch,
             "product":  prod, "tag": tag, "qty": a["net_qty"],
             "buy_qty":  a["buy_qty"], "sell_qty": a["sell_qty"],
-            "avg_price": round(avg, 2),
-            "buy_value":  round(a["buy_value"], 2),
-            "sell_value": round(a["sell_value"], 2),
+            "avg_price": round(avg, dec),
+            "buy_value":  round(a["buy_value"], dec),
+            "sell_value": round(a["sell_value"], dec),
         })
     return out
 

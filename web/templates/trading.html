@@ -7,6 +7,12 @@
   <span id="modePill" class="tag warn">● PAPER</span>
   <span id="modeHint" style="color:var(--muted);font-size:11.5px"></span>
   <span style="flex:1"></span>
+  <button id="startAutoBtn" class="btnPrimary" style="background:#3fb950;color:#fff; padding:6px 12px; font-size:12px;">
+    ▶ Start Auto-Trading
+  </button>
+  <button id="applySettingsBtn" class="btnPrimary" style="background:var(--accent);color:#fff; display:none; padding:6px 12px; font-size:12px;">
+    ✓ Apply Settings
+  </button>
   <button id="refreshAllBtn" class="ghostBtn">↻ Refresh</button>
 </div>
 <p class="sub" style="margin-top:-6px">Place orders. Paper mode records to a local file — never touches Zerodha. Live mode places real orders (only when enabled in Settings).</p>
@@ -15,18 +21,18 @@
 
   <!-- ═══════════ AUTO-TRADE & MANUAL FORM COLUMN ═══════════ -->
   <div>
-    
+
     <!-- ═══════════ AUTO-TRADE PANEL ═══════════ -->
-    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
-                padding:16px;margin-bottom:16px;max-height:80vh;overflow-y:auto">
-      <div class="setTitle">🤖 Auto-Trading Setup</div>
+    <details style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">🤖 Auto-Trading Setup</summary>
+      <div style="padding-top:14px; max-height:80vh; overflow-y:auto">
 
       <!-- COLLAPSIBLE CONFIGURATION -->
       <details style="margin-bottom:14px; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:8px;">
         <summary style="cursor:pointer; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">
           ⚙️ Source, Capital & Timeframe
         </summary>
-        
+
         <div style="padding-top:12px;">
           <div class="row2" style="margin-bottom:12px;">
             <div>
@@ -84,7 +90,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="row2">
               <div>
                 <label class="lbl">Default Exchange for Imported Stocks</label>
@@ -95,7 +101,7 @@
                 </select>
               </div>
             </div>
-            
+
             <div style="color:var(--muted);font-size:10.5px;margin-bottom:12px;">Click Load to append symbols. They will use the default exchange selected above.</div>
           </div>
         </div>
@@ -118,7 +124,7 @@
           <label class="chk"><input type="radio" name="auto_strat" value="simple" checked> Simple (single position)</label>
           <label class="chk"><input type="radio" name="auto_strat" value="same_side"> Same-side averaging</label>
           <label class="chk"><input type="radio" name="auto_strat" value="alternate"> Alternate (flip sides)</label>
-          
+
           <div id="autoMultBlock" hidden>
             <div class="setHead" style="margin-top:14px">Multiplier</div>
             <label class="chk"><input type="radio" name="auto_mult" value="martingale" checked> Martingale</label>
@@ -186,7 +192,7 @@
           <label class="chk"><input type="checkbox" id="autoWtFilter"> WT extreme</label>
           <div class="row2"><div><label class="lbl">Buy max</label><input id="autoWtMax" class="setInput" type="number" value="-40"></div>
                           <div><label class="lbl">Sell min</label><input id="autoWtMin" class="setInput" type="number" value="40"></div></div>
-          
+
           <label class="chk" style="margin-top:8px"><input type="checkbox" id="autoHtfFilter"> HTF trend (auto)</label>
           <label class="chk" style="margin-top:8px"><input type="checkbox" id="autoRsiFilter"> RSI rising/falling</label>
           <div class="row2"><div><label class="lbl">RSI period</label><input id="autoRsiPeriod" class="setInput" type="number" value="14"></div></div>
@@ -217,10 +223,9 @@
         </div>
       </details>
 
-      <button id="startAutoBtn" class="btnPrimary" style="width:100%;margin-top:14px;background:#3fb950;color:#fff">
-        ▶ Start Auto-Trading
-      </button>
-    </div>
+
+      </div>
+    </details>
 
     <!-- ═══════════ MANUAL ORDER FORM (COLLAPSIBLE) ═══════════ -->
     <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px">
@@ -228,9 +233,9 @@
         <div class="setTitle" style="margin:0">Manual Order</div>
         <span style="color:var(--muted);font-size:12px">▼ Toggle</span>
       </div>
-      
+
       <div id="manualFormWrap" hidden style="margin-top:16px">
-        
+
         <!-- MARKET TOGGLE -->
         <div style="display:flex; gap:8px; margin-bottom:16px;">
           <button type="button" id="mktIndia" class="qtyTab active" style="flex:1">🇮🇳 Indian Market</button>
@@ -357,17 +362,18 @@
 
   <!-- ═══════════ RIGHT SIDE ═══════════ -->
   <div>
-    
+
     <!-- ═══════════ SYMBOLS & ALLOCATION (Moved here) ═══════════ -->
-    <details open style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
       <summary style="cursor:pointer; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;">
         <span>Symbols & Allocation</span>
         <div style="display:flex; align-items:center; gap:12px;">
+          <button type="button" class="ghostBtn" onclick="saveAllocations()" style="padding:2px 8px; font-size:10px; color:#58a6ff; border-color:#58a6ff;">💾 Save Allocations</button>
           <span id="allocStatus" style="color:var(--good); font-size:11px;">Unallocated: ₹0</span>
           <span style="font-size:10px; color:var(--accent);">▼ Toggle View</span>
         </div>
       </summary>
-      
+
       <div style="padding-top:12px;">
         <!-- Bulk Actions -->
         <div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
@@ -376,6 +382,24 @@
           <button type="button" class="ghostBtn" style="color:#e3b341; border-color:#e3b341" onclick="removeUnlockedStocks()">🗑 Remove Unlocked</button>
           <button type="button" class="ghostBtn" style="color:#f85149; border-color:#f85149" onclick="removeAllStocks()">🗑 Remove All</button>
           <span style="flex:1"></span>
+
+          <!-- NEW: Set All TF Dropdown -->
+          <select id="bulkTfSelector" class="setInput" style="width:100px; padding:4px; font-size:11px;" onchange="applyBulkTf(this.value)">
+            <option value="">Set All TF...</option>
+            <option value="1m">1m</option>
+            <option value="2m">2m</option>
+            <option value="5m">5m</option>
+            <option value="15m">15m</option>
+            <option value="30m">30m</option>
+            <option value="60m">60m</option>
+            <option value="90m">90m</option>
+            <option value="1h">1h</option>
+            <option value="4h">4h</option>
+            <option value="1d">1d</option>
+            <option value="1wk">1wk</option>
+            <option value="1mo">1mo</option>
+          </select>
+
           <label class="chk" style="margin:0; font-size:11px;">
             <input type="checkbox" id="autoLtpRefresh" onchange="toggleAutoLtp(this.checked)"> Auto-Refresh LTP (60s)
           </label>
@@ -393,44 +417,58 @@
         </div>
 
         <div id="manualStocksList" style="margin-bottom:10px; display:flex; flex-direction:column; gap:6px; max-height: 350px; overflow-y: auto;"></div>
-        
+
         <button id="addStockBtn" class="ghostBtn" style="width:100%; border-style:dashed;" onclick="addStockRow()">+ Add Stock</button>
       </div>
     </details>
 
-    <!-- LIVE AUTO-TRADER MONITOR -->
-    <div id="autoMonitorPanel" hidden style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:16px;">
-      <div class="secHead" style="margin-bottom:8px">
-        🤖 Live Auto-Trader Monitor
-        <span id="scanStatus" style="color:var(--accent);font-size:10px;margin-left:10px;"></span>
-        <span style="flex:1"></span>
-        
-        <!-- Scan Interval Controls -->
-        <div style="display:flex; align-items:center; gap:8px;">
-          <label class="chk" style="margin:0; font-size:11px;">
-            <input type="checkbox" id="autoScanEnabled" checked> Auto-Scan
-          </label>
-          <span style="color:var(--muted);font-size:11px;">Interval (mins):</span>
-          <input type="number" id="scanIntervalMins" class="setInput" style="width:50px; padding:2px 4px; text-align:center;" value="1" min="1">
-        </div>
-      </div>
-      <div class="tblwrap" style="max-height: 250px;">
-        <table class="tb" style="width: 100%;">
-          <thead>
-            <tr>
-              <th data-msort="sym" style="cursor:pointer">Symbol</th>
-              <th data-msort="tf" style="cursor:pointer">TF</th>
-              <th data-msort="status" style="cursor:pointer">Status</th>
-              <th data-msort="ltp" style="cursor:pointer">LTP</th>
-              <th data-msort="buy_trigger" style="cursor:pointer">Buy Signal</th>
-              <th data-msort="sell_trigger" style="cursor:pointer">Sell Signal</th>
-            </tr>
-          </thead>
-          <tbody id="autoMonitorBody"></tbody>
-        </table>
-      </div>
-    </div>
+  </div>
+</div>
 
+<!-- FULL WIDTH SCANNER REPLICA -->
+<details id="scannerMonitorPanel" style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:16px; width: 100%;">
+  <summary class="secHead" style="margin-bottom:8px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; outline:none;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span>📊 Scanner Replica (Live)</span>
+      <span id="scanStatus" style="color:var(--accent);font-size:10px;margin-left:10px;"></span>
+      <label class="chk" style="margin:0 0 0 10px; font-size:11px;">
+        <input type="checkbox" id="scannerFetchLtpToggle" onchange="toggleScannerLtp(this.checked)"> Fetch LTP
+      </label>
+      <input type="number" id="scannerLtpInterval" class="setInput" style="width:45px; padding:2px 4px; text-align:center;" value="10" min="1" title="LTP interval (sec)"> <span style="font-size:11px; color:var(--muted); margin-right:6px;">sec</span>
+      <button type="button" id="fetchLtpBtn" class="ghostBtn" onclick="fetchScannerLtp()" style="padding:2px 8px; font-size:10px;">↻ Fetch</button>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;" onclick="event.stopPropagation()">
+      <label class="chk" style="margin:0; font-size:11px;">
+        <input type="checkbox" id="paperTradeToggle" checked> Paper Trade
+      </label>
+      <label class="chk" style="margin:0; font-size:11px; color:var(--accent);">
+        <input type="checkbox" id="liveTradeToggle"> Live Trade
+      </label>
+      <label class="chk" style="margin:0; font-size:11px;">
+        <input type="checkbox" id="allowMarketOrders"> Allow Market Orders
+      </label>
+      <label class="chk" style="margin:0; font-size:11px;">
+        <input type="checkbox" id="autoScanEnabled" checked> Auto-Scan
+      </label>
+      <label class="chk" style="margin:0; font-size:11px; color:#e3b341;">
+        <input type="checkbox" id="writeToGSheet"> Write GSheet
+      </label>
+      <span style="color:var(--muted);font-size:11px;">Interval:</span>
+      <input type="number" id="scanIntervalMins" class="setInput" style="width:50px; padding:2px 4px; text-align:center;" value="1" min="1">
+      <span id="lastScanTime" style="color:var(--muted);font-size:11px; margin-right: 10px;">Last: —</span>
+      <button type="button" id="scanNowBtn" class="ghostBtn" onclick="triggerManualScan()" style="padding:2px 8px; font-size:10px; color:#e3b341; border-color:#e3b341;" disabled>⚡ Scan Now</button>
+      <button type="button" class="ghostBtn" onclick="resetProcessedSignals()" style="padding:2px 8px; font-size:10px; color:#f85149; border-color:#f85149;">Reset Signals</button>
+    </div>
+  </summary>
+  <div class="tblwrap" style="max-height: 500px;">
+    <table class="tb" id="scannerTable" style="width: 100%;">
+      <!-- Columns will be injected by JS -->
+    </table>
+  </div>
+</details>
+
+<!-- MOVED FROM RIGHT COLUMN: SUMMARY, POSITIONS, ORDERS, DEBUG -->
+<div style="margin-bottom:16px;">
     <!-- Summary -->
     <div style="display:flex;gap:10px;align-items:stretch;margin-bottom:12px">
       <div id="tradeSummary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;flex:1"></div>
@@ -439,23 +477,57 @@
       </button>
     </div>
 
-    <!-- Positions -->
-    <div class="secHead">
-      Paper positions
-      <span style="flex:1"></span>
-      <span id="posCount" style="color:var(--muted);font-size:11px"></span>
-    </div>
-    <div id="posWrap" class="tblwrap" style="margin-bottom:16px"></div>
+    <!-- Positions (Collapsible) -->
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;" open>
+      <summary style="cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; outline:none; margin-bottom:8px;">
+        <span>Paper positions</span>
+        <span style="flex:1"></span>
+        <span id="posCount" style="color:var(--muted);font-size:11px"></span>
+      </summary>
+      <div id="posWrap" class="tblwrap" style="margin-top:8px;"></div>
+    </details>
 
-    <!-- Orders -->
-    <div class="secHead">
-      Paper orders
-      <span style="flex:1"></span>
-      <button id="clearPaperBtn" class="ghostBtn"
-              style="padding:3px 10px;font-size:11px">Clear all</button>
-    </div>
-    <div id="ordWrap" class="tblwrap"></div>
-  </div>
+    <!-- Orders (Collapsible) -->
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;" open>
+      <summary style="cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; outline:none; margin-bottom:8px;">
+        <span>Paper orders</span>
+        <span style="flex:1"></span>
+      </summary>
+      <div id="ordWrap" class="tblwrap" style="margin-top:8px;"></div>
+      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <button id="clearPaperBtn" class="ghostBtn" style="padding:3px 10px;font-size:11px">Clear all</button>
+      </div>
+    </details>
+
+    <!-- JSON File Viewer -->
+    <details style="margin-top:20px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
+      <summary style="cursor:pointer; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">
+        📁 Debug: JSON Files
+      </summary>
+      <div style="padding-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div>
+          <div class="setHead" style="margin-top:0">Allocations</div>
+          <pre id="jsonAllocations" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Paper Processed</div>
+          <pre id="jsonPaperProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Zerodha Processed</div>
+          <pre id="jsonZeProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Paper Queue</div>
+          <pre id="jsonPaperQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Zerodha Queue</div>
+          <pre id="jsonZeQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+      </div>
+      <button class="ghostBtn" style="margin-top:10px" onclick="fetchJsonFiles()">↻ Refresh JSON View</button>
+    </details>
 </div>
 
 <!-- ═══════════ CONFIRM MODAL ═══════════ -->
@@ -551,9 +623,15 @@ let side = 'BUY';
 let qtyMode = 'qty';
 let currentMarket = 'IN';
 
-function fmtINR(v, dec=2){
+function fmtINR(v, dec=null){
   if (v == null || v === '' || isNaN(v)) return '—';
   const n = Number(v);
+  
+  // ✅ FIX: Automatically use 5 decimals for Forex (< 10), else 2
+  if (dec === null) {
+    dec = Math.abs(n) < 10 ? 5 : 2;
+  }
+  
   const s = n < 0 ? '-' : '';
   const a = Math.abs(n);
   const parts = a.toFixed(dec).split('.');
@@ -598,7 +676,6 @@ function setSide(s){
 
 /* ── qty mode ─────────────────────────────────── */
 document.querySelectorAll('.qtyTab').forEach(b => {
-  // Skip the auto-trading source tabs (they use onclick, not data-mode)
   if (!b.dataset.mode) return;
   b.addEventListener('click', () => {
     qtyMode = b.dataset.mode;
@@ -664,7 +741,7 @@ $('calcQtyBtn').addEventListener('click', async () => {
   const v  = parseFloat(ex.value) || 0;
   let qty;
   if (qtyMode === 'amt') qty = Math.floor(v / ltp);
-  else                   qty = Math.floor((100000 * v / 100) / ltp);  // assumes 1L capital
+  else                   qty = Math.floor((100000 * v / 100) / ltp);
   qty = Math.max(1, qty);
   $('qty').value = qty;
   $('qtyCalcHint').textContent = `${fmtINR(ltp)} × ${qty} = ${fmtINR(ltp * qty)}`;
@@ -762,6 +839,53 @@ function showErr(msg){
 }
 
 /* ── refresh ─────────────────────────────────── */
+let posSort = []; // Array of {key, dir} for multi-sort
+let ordSort = [];
+let scanSort = [];
+
+function sortData(data, sortState) {
+  if (!sortState.length) return data;
+  return data.sort((a, b) => {
+    for (let i = 0; i < sortState.length; i++) {
+      const { key, dir } = sortState[i];
+      let va = a[key], vb = b[key];
+      if (va == null) va = ''; if (vb == null) vb = '';
+      let cmp = 0;
+      if (typeof va === 'string') cmp = va.localeCompare(vb);
+      else cmp = va - vb;
+      if (cmp !== 0) return dir === 'asc' ? cmp : -cmp;
+    }
+    return 0;
+  });
+}
+
+function handleSort(sortState, key) {
+  const existingIdx = sortState.findIndex(s => s.key === key);
+  if (existingIdx !== -1) {
+    // Toggle direction or remove
+    if (sortState[existingIdx].dir === 'asc') {
+      sortState[existingIdx].dir = 'desc';
+    } else {
+      sortState.splice(existingIdx, 1); // Remove sort
+    }
+  } else {
+    // Add new sort level (max 5)
+    if (sortState.length >= 5) sortState.pop();
+    sortState.push({ key, dir: 'asc' });
+  }
+}
+
+function getSortIcon(sortState, key) {
+  const idx = sortState.findIndex(s => s.key === key);
+  if (idx === -1) return ' ↕';
+  return (sortState[idx].dir === 'asc' ? ' ▲' : ' ▼') + `<span style="font-size:9px; color:var(--accent)">${idx+1}</span>`;
+}
+
+function getSortIcon(sortState, key) {
+  if (sortState.key !== key) return ' ↕';
+  return sortState.dir === 'asc' ? ' ▲' : ' ▼';
+}
+
 async function refreshPositions(){
   const el = $('posWrap');
   try {
@@ -771,18 +895,25 @@ async function refreshPositions(){
     const list = d.positions || [];
     $('posCount').textContent = `${list.length} position(s)`;
     if (!list.length){ el.innerHTML = '<div class="empty">No paper positions yet.</div>'; return; }
-    const rows = list.map(p => {
+
+    const sortedList = sortData(list, posSort);
+    const rows = sortedList.map(p => {
       const pnl = p.unrealized_pnl;
       const pct = p.unrealized_pct;
+
+      const target = p.target != null ? fmtINR(p.target) : '—';
+      const stop = p.sl != null ? fmtINR(p.sl) : '—';
       const ltp = p.ltp != null ? fmtINR(p.ltp) : '—';
+
       return `<tr>
         <td><b>${p.symbol}</b><div style="color:var(--muted);font-size:10px">${p.exchange} · ${p.product} · ${p.tag || ''}</div></td>
         <td class="${p.qty >= 0 ? 'buy' : 'sell'}">${p.qty}</td>
         <td>${fmtINR(p.avg_price)}</td>
         <td>${ltp}</td>
+        <td class="buy">${target}</td>
+        <td class="sell">${stop}</td>
         <td class="${cls(pnl)}">${pnl == null ? '—' : sign(pnl) + fmtINR(pnl)}</td>
         <td class="${cls(pct)}">${pct == null ? '—' : sign(pct) + pct.toFixed(2) + '%'}</td>
-        <td>${fmtINR(p.avg_price * Math.abs(p.qty))}</td>
         <td style="text-align:right;white-space:nowrap">
           <button class="lil" onclick="window._closePosition('${p.symbol}','${p.exchange}','${p.product}',${p.qty})">Close</button>
         </td>
@@ -790,11 +921,24 @@ async function refreshPositions(){
     }).join('');
     el.innerHTML = `<table class="tb">
       <thead><tr>
-        <th>Symbol</th><th>Qty</th><th>Avg</th><th>LTP</th>
-        <th>P&amp;L ₹</th><th>P&amp;L %</th><th>Value</th><th></th>
+        <th style="cursor:pointer" data-psort="symbol">Symbol${getSortIcon(posSort, 'symbol')}</th>
+        <th style="cursor:pointer" data-psort="qty">Qty${getSortIcon(posSort, 'qty')}</th>
+        <th style="cursor:pointer" data-psort="avg_price">Avg${getSortIcon(posSort, 'avg_price')}</th>
+        <th>LTP</th>
+        <th>Target</th><th>Stop</th>
+        <th style="cursor:pointer" data-psort="unrealized_pnl">P&amp;L ₹${getSortIcon(posSort, 'unrealized_pnl')}</th>
+        <th style="cursor:pointer" data-psort="unrealized_pct">P&amp;L %${getSortIcon(posSort, 'unrealized_pct')}</th>
+        <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+
+    el.querySelectorAll('[data-psort]').forEach(th => {
+      th.addEventListener('click', () => {
+        handleSort(posSort, th.dataset.psort);
+        refreshPositions();
+      });
+    });
   } catch (e){
     el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
   }
@@ -824,15 +968,29 @@ async function refreshOrders(){
     const d = await r.json();
     const list = (d.orders || []).slice().reverse();
     if (!list.length){ el.innerHTML = '<div class="empty">No paper orders yet.</div>'; return; }
-    const rows = list.map(o => {
+
+    const sortedList = sortData(list, ordSort);
+    const rows = sortedList.map(o => {
       const clsSide = o.side === 'BUY' ? 'buy' : 'sell';
       const statusCls = o.status === 'FILLED'  ? 'ok'
                       : o.status === 'CANCELLED' ? 'mut' : 'warn';
-      const px = o.fill_price || o.price || 'MKT';
+      // ✅ FIX: Show both Limit Price and Fill Price for clarity
+      let px = 'MKT';
+      if (o.order_type === 'LIMIT') {
+          if (o.status === 'FILLED') {
+              px = `${fmtINR(o.price)} (Filled @ ${fmtINR(o.fill_price)})`;
+          } else {
+              px = fmtINR(o.price);
+          }
+      } else if (o.fill_price) {
+          px = fmtINR(o.fill_price);
+      }
+      
       const acts = o.status === 'OPEN'
         ? `<button class="lil" onclick="window._fillOrder('${o.id}')">Fill</button>
            <button class="lil del" onclick="window._cancelOrder('${o.id}')">Cancel</button>`
         : '';
+      const ltpVal = o.ltp != null ? fmtINR(o.ltp) : '—';
       return `<tr>
         <td style="color:var(--muted);font-size:11px">${o.ts.slice(11,19)}</td>
         <td><b>${o.symbol}</b><div style="color:var(--muted);font-size:10px">${o.exchange} · ${o.product}</div></td>
@@ -840,17 +998,32 @@ async function refreshOrders(){
         <td>${o.order_type}</td>
         <td>${o.qty}</td>
         <td>${px !== 'MKT' ? fmtINR(px) : 'MKT'}</td>
+        <td>${ltpVal}</td>
         <td><span class="tag ${statusCls}">${o.status}</span></td>
         <td style="text-align:right;white-space:nowrap">${acts}</td>
       </tr>`;
     }).join('');
     el.innerHTML = `<table class="tb">
       <thead><tr>
-        <th>Time</th><th>Symbol</th><th>Side</th><th>Type</th>
-        <th>Qty</th><th>Price</th><th>Status</th><th></th>
+        <th style="cursor:pointer" data-osort="ts">Time${getSortIcon(ordSort, 'ts')}</th>
+        <th style="cursor:pointer" data-osort="symbol">Symbol${getSortIcon(ordSort, 'symbol')}</th>
+        <th style="cursor:pointer" data-osort="side">Side${getSortIcon(ordSort, 'side')}</th>
+        <th style="cursor:pointer" data-osort="order_type">Type${getSortIcon(ordSort, 'order_type')}</th>
+        <th style="cursor:pointer" data-osort="qty">Qty${getSortIcon(ordSort, 'qty')}</th>
+        <th style="cursor:pointer" data-osort="price">Price${getSortIcon(ordSort, 'price')}</th>
+        <th>LTP</th>
+        <th style="cursor:pointer" data-osort="status">Status${getSortIcon(ordSort, 'status')}</th>
+        <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
+
+    el.querySelectorAll('[data-osort]').forEach(th => {
+      th.addEventListener('click', () => {
+        handleSort(ordSort, th.dataset.osort);
+        refreshOrders();
+      });
+    });
   } catch (e){
     el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
   }
@@ -888,7 +1061,6 @@ async function refreshSummary(){
     const filled  = ord.filter(o => o.status === 'FILLED');
     const openOrd = ord.filter(o => o.status === 'OPEN');
 
-    // Calculate Realized P&L (FIFO matching)
     let realizedPnl = 0;
     const posTracker = {};
     filled.sort((a, b) => a.ts.localeCompare(b.ts)).forEach(o => {
@@ -935,8 +1107,8 @@ let autoSourceMode = 'manual';
 
 function toggleAutoSource(mode, preventFetch = false) {
   autoSourceMode = mode;
-  $('autoSourceSelect').value = mode; // Keep dropdown in sync
-  
+  $('autoSourceSelect').value = mode;
+
   if (mode === 'manual') {
     $('autoSourceManual').hidden = false; $('autoSourceSheet').hidden = true;
   } else {
@@ -973,27 +1145,26 @@ function updateLockIcon(row) {
 
 function toggleLock(row) {
   const isCurrentlyLocked = row.dataset.locked === 'true';
-  
+
   if (!isCurrentlyLocked) {
-    // If unlocking, clear the manual flag so it joins the auto-distribution pool again
     row.querySelector('.stock-amt').dataset.manual = '';
-    
+
     const totalCap = parseFloat($('autoCapital').value) || 0;
     const thisAmt = parseFloat(row.querySelector('.stock-amt').value) || 0;
-    
+
     let otherLockedTotal = 0;
     document.querySelectorAll('#manualStocksList > div').forEach(r => {
       if (r !== row && r.dataset.locked === 'true') {
         otherLockedTotal += parseFloat(r.querySelector('.stock-amt').value) || 0;
       }
     });
-    
+
     if (otherLockedTotal + thisAmt > totalCap) {
       alert(`Cannot lock: Total locked (₹${(otherLockedTotal + thisAmt).toLocaleString()}) exceeds capital (₹${totalCap.toLocaleString()}).`);
       return;
     }
   }
-  
+
   row.dataset.locked = !isCurrentlyLocked ? 'true' : 'false';
   updateLockIcon(row);
   recalcEqualDistribution();
@@ -1007,11 +1178,10 @@ function addStockRow(symbol = '', amount = '', isLocked = false, isRestore = fal
   const div = document.createElement('div');
   div.id = rowId;
   div.dataset.locked = isLocked ? 'true' : 'false';
-  
-  // Determine default dropdown value
+
   let exVal = 'NSE';
   if (forcedExch) {
-    exVal = forcedExch; // <--- OVERRIDE if passed from Google Sheet load
+    exVal = forcedExch;
   } else if (symbol.includes('.NS')) {
     exVal = 'NSE';
   } else if (symbol.includes('.BO')) {
@@ -1022,10 +1192,9 @@ function addStockRow(symbol = '', amount = '', isLocked = false, isRestore = fal
     exVal = 'US';
   }
   div.dataset.exch = exVal;
-  
-  // CSS Grid layout to match the header (added TF column)
+
   div.style = "display:grid; grid-template-columns: 1fr 80px 100px 80px 40px 40px; gap:8px; align-items:center;";
-  
+
   const globalTf = $('autoGlobalTf') ? $('autoGlobalTf').value : '1h';
 
   div.innerHTML = `
@@ -1057,46 +1226,41 @@ function addStockRow(symbol = '', amount = '', isLocked = false, isRestore = fal
     <button class="ghostBtn" style="color:#f85149; border-color:#f85149; padding:6px; width:100%; display:flex; justify-content:center;" onclick="this.parentElement.remove(); recalcEqualDistribution(); saveAutoState();">✕</button>
   `;
   list.appendChild(div);
-  
-  // If we are restoring, mark the input as manual so it doesn't get overwritten
+
   if (isRestore) {
     div.querySelector('.stock-amt').dataset.manual = 'true';
   } else {
-    // If this is a NEW stock being added, clear the manual flag on ALL unlocked rows
-    // so they correctly redistribute the remaining balance
     document.querySelectorAll('#manualStocksList > div').forEach(r => {
       if (r.dataset.locked !== 'true') {
         r.querySelector('.stock-amt').dataset.manual = '';
       }
     });
   }
-  
-  // Handle exchange dropdown change
+
   div.querySelector('.stock-exch-select').addEventListener('change', (e) => {
     div.dataset.exch = e.target.value;
     saveAutoState();
   });
 
-  // Auto-detect exchange when symbol changes (only if they haven't manually changed it)
-  div.querySelector('.stock-sym').addEventListener('input', (e) => {
-    let v = e.target.value.toUpperCase();
+  div.querySelector('.stock-sym').addEventListener('blur', (e) => {
+    let v = e.target.value.toUpperCase().replace(/\s+/g, '');
+    e.target.value = v;
     let sel = div.querySelector('.stock-exch-select');
     if (v.endsWith('.NS')) sel.value = 'NSE';
     else if (v.endsWith('.BO')) sel.value = 'BSE';
     else if (v === 'XAUUSD' || v === 'XAGUSD' || v.endsWith('=X')) sel.value = 'FX';
     else if (currentMarket === 'US') sel.value = 'US';
-    
+
     div.dataset.exch = sel.value;
   });
 
   div.querySelector('.stock-amt').addEventListener('input', (e) => {
-    e.target.dataset.manual = 'true'; 
+    e.target.dataset.manual = 'true';
     if (div.dataset.locked === 'true') {
       div.dataset.locked = 'false';
       updateLockIcon(div);
     }
-    // Only update the totals text, don't overwrite the inputs you are typing in
-    updateAllocStatus(); 
+    updateAllocStatus();
     saveAutoState();
   });
 
@@ -1117,31 +1281,42 @@ function removeUnlockedStocks() {
   saveAutoState();
 }
 
+function applyBulkTf(selectedTf) {
+  if (!selectedTf) return;
+
+  document.querySelectorAll('.stock-tf').forEach(sel => {
+    sel.value = selectedTf;
+  });
+
+  saveAutoState();
+  $('bulkTfSelector').value = '';
+}
+
 // --- LTP Fetching Logic ---
 let ltpIntervalId = null;
 
 async function fetchBatchLTP() {
   const rows = Array.from(document.querySelectorAll('#manualStocksList > div'));
   if (!rows.length) return;
-  
+
   const reqs = rows.map(r => ({
-    symbol: r.querySelector('.stock-sym').value.trim().toUpperCase(), // Send raw symbol
+    symbol: r.querySelector('.stock-sym').value.trim().toUpperCase(),
     exchange: r.dataset.exch
   })).filter(r => r.symbol);
-  
+
   try {
     const res = await fetch('/api/trade/ltp_batch', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ symbols: reqs })
     });
     const data = await res.json();
-    
+
     if (data.ok) {
       rows.forEach(r => {
         const rawSym = r.querySelector('.stock-sym').value.trim().toUpperCase();
-        const px = data.prices[rawSym]; // Match exactly what we sent
+        const px = data.prices[rawSym];
         const ltpEl = r.querySelector('.stock-ltp');
-        
+
         if (px != null) {
           ltpEl.textContent = fmtINR(px);
           ltpEl.style.color = 'var(--fg)';
@@ -1158,7 +1333,7 @@ function toggleAutoLtp(on) {
   if (ltpIntervalId) { clearInterval(ltpIntervalId); ltpIntervalId = null; }
   if (on) {
     fetchBatchLTP();
-    ltpIntervalId = setInterval(fetchBatchLTP, 60000); // 60 seconds is safer for yfinance
+    ltpIntervalId = setInterval(fetchBatchLTP, 60000);
   }
 }
 
@@ -1166,19 +1341,19 @@ function lockAllStocks() {
   const totalCap = parseFloat($('autoCapital').value) || 0;
   let currentTotal = 0;
   const rows = document.querySelectorAll('#manualStocksList > div');
-  
+
   rows.forEach(r => { currentTotal += parseFloat(r.querySelector('.stock-amt').value) || 0; });
-  
+
   if (currentTotal > totalCap) {
     alert(`Cannot lock all: Total allocated (₹${currentTotal.toLocaleString()}) exceeds capital (₹${totalCap.toLocaleString()}). Please adjust amounts first.`);
     return;
   }
-  
+
   rows.forEach(r => {
     r.dataset.locked = 'true';
     updateLockIcon(r);
   });
-  recalcEqualDistribution(); // <--- THIS was missing
+  recalcEqualDistribution();
   saveAutoState();
 }
 
@@ -1201,9 +1376,9 @@ function removeAllStocks() {
 function recalcEqualDistribution() {
   const totalCap = parseFloat($('autoCapital').value) || 0;
   const rows = Array.from(document.querySelectorAll('#manualStocksList > div'));
-  
+
   if ($('stockCount')) $('stockCount').textContent = rows.length;
-  
+
   let lockedTotal = 0;
   let unlockedRows = [];
 
@@ -1222,7 +1397,7 @@ function recalcEqualDistribution() {
 
   unlockedRows.forEach(r => {
     const amtInp = r.querySelector('.stock-amt');
-    if (amtInp.dataset.manual !== 'true') { 
+    if (amtInp.dataset.manual !== 'true') {
       amtInp.value = perUnlocked;
     }
   });
@@ -1230,12 +1405,11 @@ function recalcEqualDistribution() {
   updateAllocStatus();
 }
 
-// Extracted this so typing doesn't wipe out the input fields
 function updateAllocStatus() {
   const totalCap = parseFloat($('autoCapital').value) || 0;
   let lockedTotal = 0;
   let currentTotal = 0;
-  
+
   document.querySelectorAll('#manualStocksList > div').forEach(r => {
     const val = parseFloat(r.querySelector('.stock-amt').value) || 0;
     currentTotal += val;
@@ -1246,8 +1420,7 @@ function updateAllocStatus() {
 
   const remaining = totalCap - lockedTotal;
   const statusEl = $('allocStatus');
-  
-  // If total allocated > total capital, show red
+
   if (currentTotal > totalCap) {
     statusEl.textContent = `Over-allocated: ₹${Math.abs(totalCap - currentTotal).toLocaleString()}`;
     statusEl.style.color = '#f85149';
@@ -1293,41 +1466,43 @@ async function fetchAutoFnoTabs() {
   }
 }
 
-// Call this on boot so it's not empty
-setTimeout(() => {
-    fetchAutoSheetTabs();
-    fetchAutoFnoTabs();
-}, 500);
-
 async function loadSheetSymbols() {
   const book = $('autoSheetBook').value.trim();
   const tab = $('autoSheetTab').value;
   if (!book || !tab) return;
-  
+
   try {
     const res = await fetch(`/api/sheets/symbols?book=${encodeURIComponent(book)}&tab=${encodeURIComponent(tab)}`);
     const data = await res.json();
-    
+
     if (data.ok && data.symbols.length > 0) {
-      // Get existing symbols to prevent duplicates
       const existingSyms = new Set(
         Array.from(document.querySelectorAll('#manualStocksList .stock-sym'))
           .map(inp => inp.value.trim().toUpperCase())
       );
 
       let addedCount = 0;
-      const defaultExch = $('autoSheetExch').value; // <--- Grab the selected exchange
-      
+      const defaultExch = $('autoSheetExch').value;
+
       data.symbols.forEach(sym => {
-        if (!existingSyms.has(sym.toUpperCase())) {
-          addStockRow(sym, 0, false, false, defaultExch); // <--- Pass it to the row
+        // ✅ FIX: Strip .NS or .BO if the user selected Forex or US exchange
+        let cleanSym = sym;
+        if (defaultExch !== 'NSE' && cleanSym.toUpperCase().endsWith('.NS')) {
+            cleanSym = cleanSym.slice(0, -3);
+        }
+        if (defaultExch !== 'BSE' && cleanSym.toUpperCase().endsWith('.BO')) {
+            cleanSym = cleanSym.slice(0, -3);
+        }
+
+        if (!existingSyms.has(cleanSym.toUpperCase())) {
+          addStockRow(cleanSym, 0, false, false, defaultExch);
           addedCount++;
         }
       });
-      
-      recalcEqualDistribution(); 
+
+      recalcEqualDistribution();
       saveAutoState();
-      
+
       if (addedCount > 0) {
         alert(`Added ${addedCount} new symbols from sheet.`);
       } else {
@@ -1342,45 +1517,44 @@ async function loadSheetSymbols() {
 }
 
 $('startAutoBtn').addEventListener('click', async () => {
-  // 1. If already running, STOP it
   if (localStorage.getItem('active_auto_job')) {
     const jid = localStorage.getItem('active_auto_job');
     $('startAutoBtn').textContent = "⏳ Stopping...";
-    try {
-      await fetch('/api/trade/auto/stop', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ job_id: jid })
-      });
-    } catch(e) { console.error(e); }
+    
+    // ✅ FIX: Fire and forget. Don't wait for the backend download to cancel.
+    fetch('/api/trade/auto/stop', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ job_id: jid })
+    }).catch(e => console.error(e));
+    
     localStorage.removeItem('active_auto_job');
-    window.location.reload();
-    return; // Exit early, do not run the start logic below
+    setTimeout(() => window.location.reload(), 200);
+    return;
   }
 
-  // 2. Otherwise, START a new job
   let tasks = [];
-  
+
   document.querySelectorAll('#manualStocksList > div').forEach(r => {
-    // 1. ONLY PICK LOCKED STOCKS
     if (r.dataset.locked !== 'true') return;
 
-    const sym = r.querySelector('.stock-sym').value.trim().toUpperCase();
+    const sym = r.querySelector('.stock-sym').value.trim().toUpperCase().replace(/\s+/g, '');
     const amt = parseFloat(r.querySelector('.stock-amt').value) || 0;
     const tf  = r.querySelector('.stock-tf').value;
     const exch = r.dataset.exch || 'NSE';
-    
+
     if (sym) { tasks.push({ sym, amt, tf, exch }); }
   });
-  
+
   if (!tasks.length) return alert("Please lock at least one stock before starting.");
+  console.log(`Starting Auto-Trade with ${tasks.length} symbols:`, tasks.map(t => t.sym));
   if ($('allocStatus').style.color === 'rgb(248, 81, 73)') {
     return alert("You have over-allocated your capital. Please fix the amounts before starting.");
   }
-  
+
   const payload = {
     source: autoSourceMode,
     total_capital: parseFloat($('autoCapital').value) || 500000,
-    tasks: tasks, // Send the new array
+    tasks: tasks,
     global_tf: $('autoGlobalTf').value,
     strategy_mode: document.querySelector('input[name="auto_strat"]:checked').value,
     multiplier_type: document.querySelector('input[name="auto_mult"]:checked')?.value || 'martingale',
@@ -1392,8 +1566,8 @@ $('startAutoBtn').addEventListener('click', async () => {
     candles: $('autoCandles').value,
     buffer_pts: parseFloat($('autoBuffer').value),
     wait_bars: parseInt($('autoWait').value),
-    target_pct: parseFloat($('autoTarget').value),
-    stop_pct: parseFloat($('autoStop').value),
+    target_pct: parseFloat($('autoTarget').value) || 0,
+    stop_pct: parseFloat($('autoStop').value) || 0,
     exit_opp: $('autoOpp').checked,
     trailing_enabled: $('autoTrailOn').checked,
     trailing_start_pct: parseFloat($('autoTrailStart').value),
@@ -1407,26 +1581,31 @@ $('startAutoBtn').addEventListener('click', async () => {
     fno_mode: $('autoFno').value,
     fno_book: $('autoFnoBook').value,
     fno_sheet: $('autoFnoTab').value,
-    scan_interval: parseInt($('scanIntervalMins').value) || 1
+    scan_interval: parseInt($('scanIntervalMins').value) || 1,
+    allow_market_orders: $('allowMarketOrders').checked,
+    paper_trade: $('paperTradeToggle').checked,
+    live_trade: $('liveTradeToggle').checked
   };
-  
+
   $('startAutoBtn').disabled = true;
   $('startAutoBtn').textContent = "⏳ Starting...";
-  
+
   try {
     const res = await fetch('/api/trade/auto/start', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
     });
     const data = await res.json();
-    
+
     if (data.ok && data.job_id) {
       localStorage.setItem('active_auto_job', data.job_id);
       startMonitorPoll();
-      
+
       $('startAutoBtn').style.background = "#f85149";
       $('startAutoBtn').textContent = "🛑 Stop Auto-Trading";
       $('startAutoBtn').disabled = false;
+      $('applySettingsBtn').style.display = "block";
+      $('scanNowBtn').disabled = false;
       alert(`Auto-trader started for ${tasks.length} symbols.`);
     } else {
       throw new Error(data.error || "Backend failed to start");
@@ -1435,7 +1614,7 @@ $('startAutoBtn').addEventListener('click', async () => {
     alert("Failed to start auto-trader: " + e.message);
     $('startAutoBtn').disabled = false;
     $('startAutoBtn').textContent = "▶ Start Auto-Trading";
-    $('startAutoBtn').style.background = "#3fb950"; // Reset to green
+    $('startAutoBtn').style.background = "#3fb950";
   }
 });
 
@@ -1486,7 +1665,8 @@ function saveAutoState() {
       fnoBook: $('autoFnoBook').value,
       fnoTab: $('autoFnoTab').value,
       autoLtp: $('autoLtpRefresh').checked,
-      scanInterval: $('scanIntervalMins').value
+      scanInterval: $('scanIntervalMins').value,
+      writeToSheet: $('writeToGSheet').checked
     }
   };
   localStorage.setItem('trading_auto_state', JSON.stringify(state));
@@ -1499,7 +1679,7 @@ function restoreAutoState() {
     addStockRow('IRFC', 250000, false);
     return;
   }
-  
+
   isRestoringAutoState = true;
   try {
     const state = JSON.parse(saved);
@@ -1508,13 +1688,13 @@ function restoreAutoState() {
     if (state.globalTf) $('autoGlobalTf').value = state.globalTf;
     if (state.sheetBook) $('autoSheetBook').value = state.sheetBook;
     if (state.sheetExch) $('autoSheetExch').value = state.sheetExch;
-    
+
     if (state.settings) {
       const setRad = (name, val) => { const el = document.querySelector(`input[name="${name}"][value="${val}"]`); if (el) el.checked = true; };
       setRad('auto_strat', state.settings.strat);
       setRad('auto_mult', state.settings.mult);
       syncAutoStratMode();
-      
+
       $('autoMaxLevels').value = state.settings.maxLevels;
       $('autoSideMode').value = state.settings.side;
       $('autoTarget').value = state.settings.target;
@@ -1537,19 +1717,19 @@ function restoreAutoState() {
       $('autoRsiPeriod').value = state.settings.rsiPeriod;
       $('autoFno').value = state.settings.fno;
       $('autoFnoBook').value = state.settings.fnoBook;
-      
-      // Trigger FNO sheet row visibility
-      $('autoFno').dispatchEvent(new Event('change'));
-      
-      // Wait for tabs to load, THEN set the saved value
+
+      document.getElementById('autoFnoSheetRow').style.display = state.settings.fno === 'sheet' ? 'flex' : 'none';
+
       if (state.settings.fno === 'sheet') {
         fetchAutoFnoTabs().then(() => {
           if (state.settings.fnoTab) {
             $('autoFnoTab').value = state.settings.fnoTab;
           }
         });
+      } else {
+        fetchAutoFnoTabs();
       }
-      
+
       if (state.settings.autoLtp) {
         $('autoLtpRefresh').checked = true;
         toggleAutoLtp(true);
@@ -1557,14 +1737,15 @@ function restoreAutoState() {
       if (state.settings.scanInterval) {
         $('scanIntervalMins').value = state.settings.scanInterval;
       }
+      if (state.settings.writeToSheet) {
+        $('writeToGSheet').checked = true;
+      }
     }
-    
+
     $('manualStocksList').innerHTML = '';
     if (state.stocks && state.stocks.length > 0) {
-      // Restore stocks with their saved exchange
       state.stocks.forEach(s => {
-        addStockRow(s.sym, s.amt, s.locked, true); // <-- Pass true for isRestore
-        // Set the dropdowns correctly
+        addStockRow(s.sym, s.amt, s.locked, true);
         const lastRow = $('manualStocksList').lastElementChild;
         if (lastRow && s.exch) {
           lastRow.dataset.exch = s.exch;
@@ -1574,23 +1755,19 @@ function restoreAutoState() {
           lastRow.querySelector('.stock-tf').value = s.tf;
         }
       });
-      recalcEqualDistribution(); // <-- Recalculate once all are loaded
+      recalcEqualDistribution();
     } else if (state.stocks && state.stocks.length === 0) {
       // User explicitly deleted all stocks, leave list empty
     } else {
-      // First time load (no saved state)
       addStockRow('AMD', 250000, false);
       addStockRow('IRFC', 250000, false);
     }
-    
-    // Set the dropdown to the saved source mode
+
     $('autoSourceSelect').value = state.sourceMode || 'manual';
-    
+
     if (state.sourceMode === 'sheet') {
-      // Restore UI without triggering a fetch that wipes the list
       toggleAutoSource('sheet', true);
-      
-      // Populate dropdowns silently
+
       fetch(`/api/sheets/tabs?book=${encodeURIComponent(state.sheetBook)}`)
         .then(r => r.json())
         .then(d => {
@@ -1611,11 +1788,10 @@ function restoreAutoState() {
 function saveAutoPreset() {
   const name = $('autoPresetName').value.trim();
   if (!name) return alert("Enter a preset name.");
-  
-  saveAutoState(); // Ensure the latest UI state is saved first
+
+  saveAutoState();
   const state = JSON.parse(localStorage.getItem('trading_auto_state') || '{}');
-  
-  // CREATE A COPY AND REMOVE THE STOCKS/CAPITAL (Only save settings)
+
   const presetData = JSON.parse(JSON.stringify(state));
   delete presetData.stocks;
   delete presetData.totalCap;
@@ -1628,7 +1804,7 @@ function saveAutoPreset() {
   const presets = JSON.parse(localStorage.getItem('trading_auto_presets') || '{}');
   presets[name] = presetData;
   localStorage.setItem('trading_auto_presets', JSON.stringify(presets));
-  
+
   $('autoPresetName').value = '';
   renderAutoPresets();
   alert("Preset saved! (Only left panel settings were saved)");
@@ -1637,7 +1813,7 @@ function saveAutoPreset() {
 function renderAutoPresets() {
   const presets = JSON.parse(localStorage.getItem('trading_auto_presets') || '{}');
   const sel = $('autoPresetList');
-  sel.innerHTML = '<option value="">Load Preset</option>' + 
+  sel.innerHTML = '<option value="">Load Preset</option>' +
     Object.keys(presets).map(k => `<option value="${k}">${k}</option>`).join('');
 }
 
@@ -1645,125 +1821,219 @@ function loadAutoPreset(name) {
   if (!name) return;
   const presets = JSON.parse(localStorage.getItem('trading_auto_presets') || '{}');
   if (!presets[name]) return;
-  
-  // Get current state (to keep stocks)
+
   const currentState = JSON.parse(localStorage.getItem('trading_auto_state') || '{}');
-  
-  // Merge the preset settings into the current state
   currentState.settings = presets[name].settings;
-  
+
   localStorage.setItem('trading_auto_state', JSON.stringify(currentState));
-  restoreAutoState(); // Re-run the restore logic with the new state
-  // Removed the line that clears the dropdown here so you can delete it!
+  restoreAutoState();
 }
 
 function deleteAutoPreset() {
   const name = $('autoPresetList').value;
   if (!name) return alert("Select a preset to delete first.");
-  
+
   if (!confirm(`Are you sure you want to delete the preset "${name}"?`)) return;
-  
+
   const presets = JSON.parse(localStorage.getItem('trading_auto_presets') || '{}');
   delete presets[name];
   localStorage.setItem('trading_auto_presets', JSON.stringify(presets));
-  
+
   renderAutoPresets();
   $('autoPresetList').value = '';
 }
 
 // --- Monitor Polling Logic ---
+document.getElementById('autoScanEnabled').addEventListener('change', async (e) => {
+  const jid = localStorage.getItem('active_auto_job');
+  if (!jid) return;
+  await fetch('/api/trade/auto/update_config', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ job_id: jid, config: { paused: !e.target.checked } })
+  });
+});
+
 let monitorInterval = null;
+let scanStartTime = 0;
 
 function startMonitorPoll() {
-  $('autoMonitorPanel').hidden = false;
   if (monitorInterval) clearInterval(monitorInterval);
-  
+
   const poll = async () => {
     try {
       const res = await fetch('/api/trade/auto/status');
       const data = await res.json();
       if (data.ok && data.state) {
-        renderMonitor(data.state);
-        $('scanStatus').textContent = data.is_scanning ? "⏳ Downloading..." : "";
+        renderScannerMonitor(data.state);
+
+        // ✅ FIX: Update global state and disable Fetch button during scan
+        isAutoScanning = data.is_scanning;
+        const fetchBtn = document.getElementById('fetchLtpBtn');
+        
+        if (data.is_scanning && $('autoScanEnabled').checked) {
+          $('scanStatus').textContent = "⏳ Downloading...";
+          if (fetchBtn) {
+              fetchBtn.disabled = true; // Just disable it, don't change text
+          }
+        } else {
+          $('scanStatus').textContent = "";
+          if (fetchBtn) {
+              fetchBtn.disabled = false; // Re-enable it
+          }
+          if (data.last_scan_time) {
+            const d = new Date(data.last_scan_time * 1000);
+            $('lastScanTime').textContent = "Last: " + d.toLocaleTimeString('en-IN', { hour12: false });
+          }
+        }
       }
-      // Silently refresh the tables so they update when a trade is placed
       refreshPositions();
       refreshOrders();
       refreshSummary();
     } catch(e) {}
   };
-  
+
   poll();
   monitorInterval = setInterval(poll, 5000);
 }
 
-let monitorSort = { key: null, dir: null };
+let scannerLtpIntId = null;
+let isAutoScanning = false; // ✅ Track Auto-Scan state
+let isFetchingLtp = false;  // ✅ Track LTP fetching state to prevent overlap
 
-function renderMonitor(state) {
-  window._lastAutoState = state; // Cache for sorting
-  const tbody = $('autoMonitorBody');
-  let syms = Object.keys(state).map(k => state[k]);
-  
-  if (monitorSort.key) {
-    syms.sort((a, b) => {
-      let va = a[monitorSort.key];
-      let vb = b[monitorSort.key];
-      if (va == null) va = '';
-      if (vb == null) vb = '';
-      if (typeof va === 'string' && typeof vb === 'string') {
-        return monitorSort.dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
-      }
-      return monitorSort.dir === 'asc' ? (va - vb) : (vb - va);
-    });
-  }
-
-  if (!syms.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No symbols running...</td></tr>';
-    return;
-  }
-  
-  tbody.innerHTML = syms.map(s => {
-    // Determine dot color based on the last WT Cross
-    let dotColor = 'var(--muted)';
-    if (s.signal_color === 'buy') dotColor = '#58a6ff'; // Blue
-    if (s.signal_color === 'sell') dotColor = '#f0883e'; // Yellow/Orange
-
-    return `<tr>
-      <td><b>${s.sym}</b> <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-left:5px;"></span></td>
-      <td><span class="tag" style="background:var(--panel2);color:var(--fg);border:1px solid var(--border);font-size:10px;">${s.tf}</span></td>
-      <td><span class="tag ${s.status === 'In Position' ? 'warn' : 'ok'}">${s.status}</span></td>
-      <td class="buy">${fmtINR(s.ltp)}</td>
-      <td>
-        <div class="buy">${s.buy_trigger ? fmtINR(s.buy_trigger) : '—'}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px">${s.buy_time || ''}</div>
-        <div style="font-size:10px;color:var(--accent)">Val: ${s.buy_val || ''}</div>
-      </td>
-      <td>
-        <div class="sell">${s.sell_trigger ? fmtINR(s.sell_trigger) : '—'}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px">${s.sell_time || ''}</div>
-        <div style="font-size:10px;color:var(--accent)">Val: ${s.sell_val || ''}</div>
-      </td>
-    </tr>`;
-  }).join('');
+function toggleScannerLtp(on) {
+    if (scannerLtpIntId) { clearInterval(scannerLtpIntId); scannerLtpIntId = null; }
+    if (on) {
+        const secs = parseInt($('scannerLtpInterval').value) || 10;
+        if (!isAutoScanning && !isFetchingLtp) fetchScannerLtp();
+        scannerLtpIntId = setInterval(() => {
+            if (!isAutoScanning && !isFetchingLtp) fetchScannerLtp();
+        }, secs * 1000);
+    }
 }
 
-// Attach sorting listeners once on load
-setTimeout(() => {
-  document.querySelectorAll('#autoMonitorPanel th[data-msort]').forEach(th => {
-    th.addEventListener('click', () => {
-      const k = th.dataset.msort;
-      if (monitorSort.key === k) {
-        if (monitorSort.dir === 'asc') monitorSort.dir = 'desc';
-        else monitorSort = { key: null, dir: null };
-      } else {
-        monitorSort = { key: k, dir: 'asc' };
-      }
-      if (window._lastAutoState) renderMonitor(window._lastAutoState);
-    });
-  });
-}, 500);
+async function fetchScannerLtp() {
+    if (isAutoScanning || isFetchingLtp) return; // ✅ Skip if scanning or already fetching
 
-// Dedicated Stop Function
+    const btn = document.getElementById('fetchLtpBtn');
+    if (!btn) return;
+    
+    isFetchingLtp = true;
+    btn.innerHTML = '⏳ Fetching...';
+    btn.disabled = true;
+
+    try {
+        const r = await fetch('/api/trade/auto/fetch_ltp', { method: 'POST' });
+        const d = await r.json();
+        
+        if (d.ok) {
+            // Immediately refresh the UI without waiting for the 5-second poll
+            const res = await fetch('/api/trade/auto/status');
+            const data = await res.json();
+            if (data.ok && data.state) {
+                renderScannerMonitor(data.state);
+                refreshPositions(); 
+                refreshSummary();
+            }
+        }
+    } catch(e) { 
+        console.error('LTP fetch failed', e); 
+    } finally {
+        btn.innerHTML = '↻ Fetch'; // ✅ FIX: Hardcode original text to prevent stacking bug
+        btn.disabled = false;
+        isFetchingLtp = false;
+    }
+}
+
+function getCurrentAutoConfig() {
+  return {
+    source: autoSourceMode,
+    total_capital: parseFloat($('autoCapital').value) || 500000,
+    side_mode: $('autoSideMode').value,
+    wt_n1: parseFloat($('autoWtN1').value),
+    wt_n2: parseFloat($('autoWtN2').value),
+    wt_pending_rule: $('autoWtRule').value,
+    candles: $('autoCandles').value,
+    buffer_pts: parseFloat($('autoBuffer').value),
+    wait_bars: parseInt($('autoWait').value),
+    target_pct: parseFloat($('autoTarget').value) || 0,
+    stop_pct: parseFloat($('autoStop').value) || 0,
+    exit_opp: $('autoOpp').checked,
+    trailing_enabled: $('autoTrailOn').checked,
+    trailing_start_pct: parseFloat($('autoTrailStart').value),
+    trailing_step_pct: parseFloat($('autoTrailStep').value),
+    wt_filter_enabled: $('autoWtFilter').checked,
+    wt_buy_max: parseFloat($('autoWtMax').value),
+    wt_sell_min: parseFloat($('autoWtMin').value),
+    htf_filter_enabled: $('autoHtfFilter').checked,
+    rsi_filter_enabled: $('autoRsiFilter').checked,
+    rsi_period: parseInt($('autoRsiPeriod').value),
+    allow_market_orders: $('allowMarketOrders').checked,
+    paper_trade: $('paperTradeToggle').checked,
+    live_trade: $('liveTradeToggle').checked,
+    scan_interval: parseInt($('scanIntervalMins').value) || 1,
+    write_to_sheet: $('writeToGSheet').checked
+  };
+}
+
+async function triggerManualScan() {
+  const jid = localStorage.getItem('active_auto_job');
+  if (!jid) return alert("Auto-Trading is not running.");
+
+  $('scanStatus').textContent = "⏳ Updating settings & Forcing Scan...";
+
+  try {
+    await fetch('/api/trade/auto/update_config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ job_id: jid, config: getCurrentAutoConfig() })
+    });
+    await fetch('/api/trade/auto/trigger_scan', { method: 'POST' });
+  } catch(e) { console.error(e); }
+}
+
+document.getElementById('applySettingsBtn').addEventListener('click', async () => {
+  const jid = localStorage.getItem('active_auto_job');
+  if (!jid) return alert("Auto-Trading is not running.");
+
+  const btn = document.getElementById('applySettingsBtn');
+  const origText = btn.textContent;
+  btn.textContent = "⏳ Applying...";
+
+  try {
+    await fetch('/api/trade/auto/update_config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ job_id: jid, config: getCurrentAutoConfig() })
+    });
+    btn.textContent = "✓ Applied!";
+    setTimeout(() => { btn.textContent = origText; }, 2000);
+  } catch(e) {
+    alert("Failed to apply settings.");
+    btn.textContent = origText;
+  }
+});
+
+async function fetchJsonFiles() {
+  try {
+    const res = await fetch('/api/trade/auto/json_files');
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('jsonAllocations').textContent = JSON.stringify(data.allocations, null, 2);
+      document.getElementById('jsonPaperProcessed').textContent = JSON.stringify(data.paper_processed, null, 2);
+      document.getElementById('jsonZeProcessed').textContent = JSON.stringify(data.ze_processed, null, 2);
+      document.getElementById('jsonPaperQueue').textContent = JSON.stringify(data.paper_queue, null, 2);
+      document.getElementById('jsonZeQueue').textContent = JSON.stringify(data.ze_queue, null, 2);
+    }
+  } catch(e) { console.error(e); }
+}
+
+async function resetProcessedSignals() {
+  if (!confirm('Clear all processed signals? The bot will forget it already traded these candles.')) return;
+  try {
+    await fetch('/api/trade/auto/reset_signals', { method: 'POST' });
+    fetchJsonFiles();
+    alert("Processed signals cleared successfully!");
+  } catch(e) { alert("Failed to reset signals."); }
+}
+
 async function stopAutoTrading() {
   const jid = localStorage.getItem('active_auto_job');
   if (jid) {
@@ -1776,36 +2046,39 @@ async function stopAutoTrading() {
     } catch(e) { console.error(e); }
   }
   localStorage.removeItem('active_auto_job');
+  $('applySettingsBtn').style.display = "none";
+  $('scanNowBtn').disabled = true;
   window.location.reload();
 }
 
-// Check on page load if auto-trader is already running
 if (localStorage.getItem('active_auto_job')) {
   startMonitorPoll();
   $('startAutoBtn').style.background = "#f85149";
   $('startAutoBtn').textContent = "🛑 Stop Auto-Trading";
+  $('scanNowBtn').disabled = false;
+  $('applySettingsBtn').style.display = "block";
+} else {
+  $('scanNowBtn').disabled = true;
+  $('applySettingsBtn').style.display = "none";
 }
 
-// Attach global event listeners to save state on ANY change
 document.addEventListener('input', (e) => {
-  if (e.target.closest('#manualStocksList') || 
-      e.target.closest('.setTitle') || 
+  if (e.target.closest('#manualStocksList') ||
+      e.target.closest('.setTitle') ||
       ['autoCapital', 'autoSheetBook', 'autoSheetTab', 'autoSourceSelect', 'autoGlobalTf'].includes(e.target.id)) {
     saveAutoState();
   }
 });
 document.addEventListener('change', (e) => {
-  if (e.target.closest('#manualStocksList') || 
-      e.target.closest('.setTitle') || 
+  if (e.target.closest('#manualStocksList') ||
+      e.target.closest('.setTitle') ||
       ['autoCapital', 'autoSheetBook', 'autoSheetTab', 'autoSourceSelect', 'autoGlobalTf'].includes(e.target.id)) {
     saveAutoState();
   }
 });
 
-// Failsafe: save state before leaving page
 window.addEventListener('beforeunload', saveAutoState);
 
-// Initialize on boot
 restoreAutoState();
 renderAutoPresets();
 
@@ -1821,7 +2094,7 @@ $('mktIndia').addEventListener('click', () => {
   currentMarket = 'IN';
   $('mktIndia').classList.add('active');
   $('mktUS').classList.remove('active');
-  
+
   $('exch').innerHTML = `<option value="NSE">NSE</option><option value="BSE">BSE</option><option value="NFO">NFO</option>`;
   $('product').innerHTML = `<option value="CNC">CNC (delivery)</option><option value="MIS">MIS (intraday)</option><option value="NRML">NRML (F&O)</option>`;
   fetchLTP();
@@ -1831,19 +2104,165 @@ $('mktUS').addEventListener('click', () => {
   currentMarket = 'US';
   $('mktUS').classList.add('active');
   $('mktIndia').classList.remove('active');
-  
+
   $('exch').innerHTML = `<option value="NASDAQ">NASDAQ</option><option value="NYSE">NYSE</option><option value="AMEX">AMEX</option>`;
   $('product').innerHTML = `<option value="CNC">CASH</option><option value="MIS">MARGIN</option>`;
   fetchLTP();
 });
 
 /* boot */
+fetchJsonFiles();
 syncQtyUI();
 syncOrderType();
 updatePreview();
 syncAutoStratMode();
 fetchMode();
 refreshAll();
+
+// --- Save Allocations ---
+async function saveAllocations() {
+  let tasks = [];
+  document.querySelectorAll('#manualStocksList > div').forEach(r => {
+    if (r.dataset.locked !== 'true') return;
+    const sym = r.querySelector('.stock-sym').value.trim().toUpperCase().replace(/\s+/g, '');
+    const amt = parseFloat(r.querySelector('.stock-amt').value) || 0;
+    const tf  = r.querySelector('.stock-tf').value;
+    const exch = r.dataset.exch || 'NSE';
+    if (sym) { tasks.push({ sym, amt, tf, exch }); }
+  });
+
+  if (!tasks.length) return alert("Please lock at least one stock before saving.");
+
+  try {
+    const res = await fetch('/api/trade/auto/save_allocations', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ tasks })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert(`Saved ${data.count} allocations to JSON.`);
+      fetchJsonFiles();
+    }
+  } catch(e) { alert("Failed to save allocations."); }
+}
+
+// --- Scanner Replica Sorting ---
+function handleScanSort(key) {
+  handleSort(scanSort, key);
+  fetch('/api/trade/auto/status').then(r => r.json()).then(d => { if(d.ok) renderScannerMonitor(d.state); });
+}
+
+// --- Scanner Replica Rendering ---
+function renderScannerMonitor(state) {
+  const table = document.getElementById('scannerTable');
+  if (!table) return;
+
+  let syms = Object.keys(state).map(k => state[k]);
+  if (!syms.length) {
+    table.innerHTML = '<tr><td style="text-align:center;color:var(--muted)">No data yet.</td></tr>';
+    return;
+  }
+
+  syms = sortData(syms, scanSort);
+
+  const cols = [
+    { key: 'symbol', label: 'Symbol', align: 'left' },
+    { key: 'tf', label: 'TF', align: 'center' },
+    { key: 'ltp', label: 'LTP', align: 'right' },
+    { key: 'wt_trend', label: 'WT Trend', align: 'center' },
+    { key: 'wt_trigger_status', label: 'Trig Status', align: 'center' },
+    { key: 'recent_buy', label: 'Recent Buy', align: 'center' },
+    { key: 'recent_sell', label: 'Recent Sell', align: 'center' },
+    { key: 'valid_opp', label: 'Valid Opp Signal', align: 'center' },
+    { key: 'wt_action', label: 'WT Action', align: 'center' },
+    { key: 'sent_to', label: 'Sent To', align: 'center' },
+    { key: 'target_val', label: 'Target', align: 'center' },
+    { key: 'sl_val', label: 'Stop Loss', align: 'center' }
+  ];
+
+  let html = '<thead><tr>';
+  for (const c of cols) {
+    html += `<th style="text-align:${c.align}; cursor:pointer;" onclick="handleScanSort('${c.key}')">${c.label}${getSortIcon(scanSort, c.key)}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  for (const r of syms) {
+    if (r.status === 'No Data' || r.status === 'Error') continue;
+    html += '<tr>';
+    for (const c of cols) {
+      if (c.key === 'recent_buy') {
+        if (r.recent_buy_val) {
+          const wtTxt = r.recent_buy_wt !== undefined && r.recent_buy_wt !== ""
+                        ? `<div style="font-size:10px;color:#58a6ff;margin-top:2px;">Val: ${r.recent_buy_wt}</div>` : '';
+          html += `<td style="text-align:center; line-height:1.3;">
+            <div style="color:var(--good); font-weight:600;">${r.recent_buy_val}</div>
+            <div style="font-size:10px; color:var(--muted);">${r.recent_buy_time}</div>
+            ${wtTxt}
+          </td>`;
+        } else {
+          html += `<td style="text-align:center" class="mut">—</td>`;
+        }
+        continue;
+      }
+
+      if (c.key === 'recent_sell') {
+        if (r.recent_sell_val) {
+          const wtTxt = r.recent_sell_wt !== undefined && r.recent_sell_wt !== ""
+                        ? `<div style="font-size:10px;color:#58a6ff;margin-top:2px;">Val: ${r.recent_sell_wt}</div>` : '';
+          html += `<td style="text-align:center; line-height:1.3;">
+            <div style="color:var(--bad); font-weight:600;">${r.recent_sell_val}</div>
+            <div style="font-size:10px; color:var(--muted);">${r.recent_sell_time}</div>
+            ${wtTxt}
+          </td>`;
+        } else {
+          html += `<td style="text-align:center" class="mut">—</td>`;
+        }
+        continue;
+      }
+
+      if (c.key === 'valid_opp') {
+        if (r.valid_opp_val) {
+          const color = r.valid_opp_dir === 'buy' ? 'var(--good)' : 'var(--bad)';
+          html += `<td style="text-align:center; line-height:1.3;">
+            <div style="color:${color}; font-weight:600;">${r.valid_opp_val}</div>
+            <div style="font-size:10px; color:var(--muted);">${r.valid_opp_time}</div>
+          </td>`;
+        } else {
+          html += `<td style="text-align:center" class="mut">—</td>`;
+        }
+        continue;
+      }
+
+      if (c.key === 'sent_to') {
+        let v = r[c.key] || '—';
+        html += `<td style="text-align:${c.align}">${v}</td>`;
+        continue;
+      }
+
+      if (c.key === 'target_val' || c.key === 'sl_val') {
+        let val = r[c.key];
+        if (val == null) val = '—';
+        else val = fmtINR(val);
+        html += `<td style="text-align:${c.align}">${val}</td>`;
+        continue;
+      }
+
+      let v = r[c.key];
+      if (v === null || v === undefined || v === '') v = '—';
+
+      let cls = '';
+      if (c.key === 'wt_trend') cls = v === 'Buy Trend' ? 'buy' : v === 'Sell Trend' ? 'sell' : 'mut';
+      if (c.key === 'wt_cross') cls = v === 'Bull Cross' ? 'buy' : v === 'Bear Cross' ? 'sell' : 'mut';
+      if (c.key === 'wt_action' || c.key === 'wt_trigger_status') cls = v.includes('Buy') ? 'buy' : v.includes('Sell') ? 'sell' : 'mut';
+      if (c.key === 'wt_perfect') cls = v === 'Perfect' ? 'buy' : 'mut';
+
+      html += `<td style="text-align:${c.align}" class="${cls}">${v}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+}
 
 /* pre-fill from URL params: /trading?symbol=HAL&exchange=NSE */
 const qp = new URLSearchParams(location.search);
