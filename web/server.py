@@ -108,6 +108,10 @@ def backtest_page():
 def trading_page():
     return render_template("trading.html", active="trading")
 
+@app.route("/trade-setup")
+def trade_setup_page():
+    return render_template("trading_setup.html", active="trade-setup")
+
 @app.route("/settings")
 def settings_page():
     return render_template("settings.html", active="settings")
@@ -591,6 +595,18 @@ def api_trade_paper_fill():
 
 @app.route("/api/trade/paper/clear", methods=["POST"])
 def api_trade_paper_clear():
+    # ✅ KILL ALL RUNNING BOTS FIRST
+    import autotrader
+    import trading_setup_engine as setup_engine
+    for jid in list(autotrader.AUTO_JOBS.keys()): autotrader.stop_job(jid)
+    for jid in list(setup_engine.SETUP_JOBS.keys()): setup_engine.stop_job(jid)
+    
+    # ✅ REMOVE RESUME FILE
+    resume_file = Path(__file__).resolve().parent / "data" / "active_job_config.json"
+    if resume_file.exists(): resume_file.unlink()
+    setup_resume = Path(__file__).resolve().parent / "data" / "setup_active_job_config.json"
+    if setup_resume.exists(): setup_resume.unlink()
+
     paper_trades.clear_all()
     return jsonify({"ok": True})
 
@@ -661,15 +677,23 @@ def api_trade_auto_json_files():
 @app.route("/api/trade/auto/reset_signals", methods=["POST"])
 def api_trade_auto_reset_signals():
     import autotrader
+    import trading_setup_engine as setup_engine
     import paper_trades
     
-    # Wipe all 4 files to fully reset the state
+    # ✅ KILL ALL RUNNING BOTS FIRST
+    for jid in list(autotrader.AUTO_JOBS.keys()): autotrader.stop_job(jid)
+    for jid in list(setup_engine.SETUP_JOBS.keys()): setup_engine.stop_job(jid)
+    
+    # Wipe all files
     autotrader.PAPER_PROCESSED_FILE.unlink(missing_ok=True)
     autotrader.ZE_PROCESSED_FILE.unlink(missing_ok=True)
     autotrader.PAPER_QUEUE_FILE.unlink(missing_ok=True)
     autotrader.ZE_QUEUE_FILE.unlink(missing_ok=True)
     
-    # NEW: Cancel all open paper orders so the bot can re-evaluate immediately
+    setup_engine.SETUP_PROCESSED_FILE.unlink(missing_ok=True)
+    setup_engine.SETUP_QUEUE_FILE.unlink(missing_ok=True)
+    
+    # Cancel all open paper orders
     for o in paper_trades.list_orders():
         if o["status"] == "OPEN":
             paper_trades.cancel_order(o["id"])
@@ -794,6 +818,155 @@ def api_trade_auto_status():
         "is_scanning": autotrader.IS_SCANNING,
         "last_scan_time": autotrader.LAST_SCAN_TIME
     })
+
+# ✅ NEW ROUTES FOR TRADING SETUP ENGINE
+import trading_setup_engine as setup_engine
+
+@app.route("/api/trade/setup/start", methods=["POST"])
+def api_trade_setup_start():
+    body = request.get_json(silent=True) or {}
+    for jid in list(setup_engine.SETUP_JOBS.keys()):
+        setup_engine.stop_job(jid)
+    job_id = f"setup_{int(time.time()*1000)}"
+    setup_engine.start_job(job_id, body)
+    return jsonify({"ok": True, "job_id": job_id})
+
+@app.route("/api/trade/setup/stop", methods=["POST"])
+def api_trade_setup_stop():
+    body = request.get_json(silent=True) or {}
+    if body.get("job_id"): setup_engine.stop_job(body.get("job_id"))
+    return jsonify({"ok": True})
+
+@app.route("/api/trade/setup/status")
+@app.route("/api/trade/setup/status")
+def api_trade_setup_status():
+    return jsonify({
+        "ok": True, 
+        "state": setup_engine.SETUP_STATE,
+        "is_scanning": setup_engine.SETUP_IS_SCANNING,
+        "last_scan_time": setup_engine.SETUP_LAST_SCAN_TIME
+    })
+
+@app.route("/api/trade/setup/update_config", methods=["POST"])
+def api_trade_setup_update_config():
+    body = request.get_json(silent=True) or {}
+    job_id, new_cfg = body.get("job_id"), body.get("config")
+    if job_id in setup_engine.SETUP_JOBS and new_cfg:
+        setup_engine.SETUP_JOBS[job_id]["config"].update(new_cfg)
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "Job not found."})
+
+@app.route("/api/trade/setup/trigger_scan", methods=["POST"])
+def api_trade_setup_trigger_scan():
+    setup_engine.SETUP_FORCE_SCAN = True
+    return jsonify({"ok": True})
+
+@app.route("/api/trade/setup/fetch_ltp", methods=["POST"])
+def api_trade_setup_fetch_ltp():
+    from data import get_live_ltp
+    import yfinance as yf
+    
+    if getattr(setup_engine, "SETUP_IS_SCANNING", False):
+        return jsonify({"ok": False, "error": "Auto-Scan in progress"})
+
+    if not setup_engine.SETUP_STATE: return jsonify({"ok": True})
+    
+    yf_syms = []
+    for r in setup_engine.SETUP_STATE.values():
+        sym = r.get("yf_symbol")
+        if sym:
+            yf_syms.append(sym)
+            
+    if not yf_syms: return jsonify({"ok": True})
+    
+    try:
+        live_ltps = get_live_ltp(list(set(yf_syms)))
+    except Exception as e:
+        live_ltps = {}
+        
+    # ✅ FIX: Force accurate 1m fetch for Forex
+    for sym_yf in set(yf_syms):
+        if "=X" in sym_yf:
+            try:
+                ticker = yf.Ticker(sym_yf)
+                hist = ticker.history(period="1d", interval="1m")
+                if not hist.empty:
+                    live_ltps[sym_yf] = float(hist["Close"].iloc[-1])
+            except Exception:
+                pass
+    
+    updated = 0
+    for key, r in setup_engine.SETUP_STATE.items():
+        sym = r.get("yf_symbol")
+        if sym and live_ltps.get(sym):
+            px = live_ltps[sym]
+            new_ltp = round(px, 5) if abs(px) < 10 else round(px, 2)
+            r["ltp"] = new_ltp
+            updated += 1
+            
+    return jsonify({"ok": True, "updated": updated})
+
+@app.route("/api/trade/setup/json_files")
+def api_trade_setup_json_files():
+    def read_file(filename):
+        file_path = Path(__file__).resolve().parent / "data" / filename
+        if not file_path.exists(): return []
+        try: return json.loads(file_path.read_text())
+        except: return []
+        
+    return jsonify({
+        "ok": True,
+        "paper_processed": read_file("setup_paper_processed.json"),
+        "paper_queue": read_file("setup_paper_orders_queue.json"),
+        "allocations": read_file("setup_allocations.json")
+    })
+
+@app.route("/api/trade/setup/save_allocations", methods=["POST"])
+def api_trade_setup_save_allocations():
+    try:
+        body = request.get_json(silent=True) or {}
+        tasks = body.get("tasks", [])
+        
+        # Write directly to the data folder (100% safe)
+        file_path = Path(__file__).resolve().parent / "data" / "setup_allocations.json"
+        file_path.parent.mkdir(exist_ok=True)
+        with open(file_path, "w") as f:
+            json.dump(tasks, f, indent=2)
+            
+        # Update running jobs safely
+        try:
+            import trading_setup_engine as setup_engine
+            if hasattr(setup_engine, "SETUP_JOBS"):
+                for jid in setup_engine.SETUP_JOBS:
+                    setup_engine.SETUP_JOBS[jid]["config"]["tasks"] = tasks
+        except Exception:
+            pass # Ignore if engine is not running
+                
+        return jsonify({"ok": True, "count": len(tasks)})
+    except Exception as e:
+        print(f"❌ Save error: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/trade/setup/reset_signals", methods=["POST"])
+def api_trade_setup_reset_signals():
+    import paper_trades
+    
+    # ✅ Wipe memory and state completely
+    setup_engine.SETUP_STATE.clear()
+    if hasattr(setup_engine, 'TRIGGER_STATE'):
+        setup_engine.TRIGGER_STATE.clear()
+        
+    if hasattr(setup_engine, 'SETUP_STATE_FILE'):
+        setup_engine.SETUP_STATE_FILE.unlink(missing_ok=True)
+        
+    setup_engine.SETUP_PROCESSED_FILE.unlink(missing_ok=True)
+    setup_engine.SETUP_QUEUE_FILE.unlink(missing_ok=True)
+    
+    for o in paper_trades.list_orders():
+        if o["status"] == "OPEN":
+            paper_trades.cancel_order(o["id"])
+            
+    return jsonify({"ok": True})
 
 
 @app.route("/api/trade/live/place", methods=["POST"])
@@ -1722,17 +1895,7 @@ def api_test_indicators():
 
 
 if __name__ == "__main__":
-    # ✅ AUTO-RESUME JOB ON SERVER STARTUP
-    try:
-        resume_file = Path(__file__).resolve().parent / "data" / "active_job_config.json"
-        if resume_file.exists():
-            saved = json.loads(resume_file.read_text())
-            if saved.get("job_id") and saved.get("config"):
-                print(f"♻️ Resuming Auto-Trade job {saved['job_id']} from previous session...")
-                autotrader.start_job(saved["job_id"], saved["config"])
-    except Exception as e:
-        print(f"⚠️ Failed to auto-resume: {e}")
-
+    # ✅ AUTO-RESUME REMOVED (Prevents ghost trades)
     print(f"\n🚀 Scanner running at  http://localhost:{PORT}")
     print(f"   Service account: {sheets.service_account_email() or '(none)'}")
     if broker_zerodha is not None:

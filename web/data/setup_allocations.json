@@ -1,0 +1,44 @@
+[
+  {
+    "sym": "HAL",
+    "amt": 250000,
+    "tf": "1h",
+    "exch": "NSE"
+  },
+  {
+    "sym": "AMD",
+    "amt": 7812,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "EURUSD",
+    "amt": 7812,
+    "tf": "1h",
+    "exch": "FX"
+  },
+  {
+    "sym": "AAPL",
+    "amt": 7812,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "AMZN",
+    "amt": 7812,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "CTSH",
+    "amt": 7812,
+    "tf": "1h",
+    "exch": "US"
+  },
+  {
+    "sym": "GOOGL",
+    "amt": 7812,
+    "tf": "1h",
+    "exch": "US"
+  }
+]
