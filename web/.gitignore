@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+web/data/*.json
+web/access_token.txt

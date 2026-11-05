@@ -18,9 +18,15 @@ import sheets
 import backtest
 import batch_backtest
 
+# NEW: Separate Paper Trading module
+from paper_trading import paper_trading_bp
+
 load_dotenv()
 
 app = Flask(__name__)
+
+# NEW: Register Paper Trading routes
+app.register_blueprint(paper_trading_bp)
 PORT = int(os.getenv("PORT", "8000"))
 IST = pytz.timezone("Asia/Kolkata")
 CANCEL_FLAGS  = {}
@@ -532,10 +538,19 @@ def api_trade_paper_orders():
 def api_trade_paper_positions():
     pos = paper_trades.positions()
     import autotrader
+    orders = paper_trades.list_orders() # ✅ NEW: Fetch orders to get entry time
     for p in pos:
         p["ltp"] = None
         p["target"] = None
         p["sl"] = None
+        
+        # ✅ NEW: Find the most recent filled order for this symbol to get the entry time
+        p["entry_time"] = "—"
+        for o in reversed(orders):
+            if o["symbol"] == p["symbol"] and o["status"] == "FILLED":
+                p["entry_time"] = o["ts"]
+                break
+
         for state in autotrader.AUTO_STATE.values():
             if state.get("symbol") == p["symbol"]:
                 p["ltp"] = state.get("ltp")
@@ -591,6 +606,15 @@ def api_trade_auto_start():
         
     job_id = f"auto_{int(time.time()*1000)}"
     autotrader.start_job(job_id, body)
+    
+    # ✅ SAVE CONFIG TO DISK FOR AUTO-RESUME
+    try:
+        resume_file = Path(__file__).resolve().parent / "data" / "active_job_config.json"
+        resume_file.parent.mkdir(exist_ok=True)
+        resume_file.write_text(json.dumps({"job_id": job_id, "config": body}))
+    except Exception as e:
+        print(f"⚠️ Failed to save resume state: {e}")
+        
     return jsonify({"ok": True, "job_id": job_id})
 
 @app.route("/api/trade/auto/stop", methods=["POST"])
@@ -599,6 +623,15 @@ def api_trade_auto_stop():
     jid = body.get("job_id")
     if jid:
         autotrader.stop_job(jid)
+        
+    # ✅ REMOVE RESUME FILE ON STOP
+    try:
+        resume_file = Path(__file__).resolve().parent / "data" / "active_job_config.json"
+        if resume_file.exists():
+            resume_file.unlink()
+    except Exception:
+        pass
+        
     return jsonify({"ok": True})
 
 @app.route("/api/trade/auto/json_files")
@@ -653,7 +686,7 @@ def api_trade_auto_update_config():
     if job_id in autotrader.AUTO_JOBS and new_cfg:
         autotrader.AUTO_JOBS[job_id]["config"].update(new_cfg)
         return jsonify({"ok": True})
-    return jsonify({"ok": False})
+    return jsonify({"ok": False, "error": "Job not found. Please restart Auto-Trading."})
 
 @app.route("/api/trade/auto/trigger_scan", methods=["POST"])
 def api_trade_auto_trigger_scan():
@@ -719,10 +752,13 @@ def api_trade_auto_fetch_ltp():
                 
                 action = r.get("wt_action", "")
                 if "Position in progress" not in action:
+                    # ✅ FIX: Use the Trigger Level to calculate Target/SL, NOT the new LTP
+                    entry_level = float(r["trigger_lvl"]) if r.get("trigger_lvl") else new_ltp
+                    
                     if target_pct > 0:
-                        r["target_val"] = round(new_ltp * (1 + target_pct/100), 5) if "Buy" in action else round(new_ltp * (1 - target_pct/100), 5)
+                        r["target_val"] = round(entry_level * (1 + target_pct/100), 5) if "Buy" in action else round(entry_level * (1 - target_pct/100), 5)
                     if stop_pct > 0:
-                        r["sl_val"] = round(new_ltp * (1 - stop_pct/100), 5) if "Buy" in action else round(new_ltp * (1 + stop_pct/100), 5)
+                        r["sl_val"] = round(entry_level * (1 - stop_pct/100), 5) if "Buy" in action else round(entry_level * (1 + stop_pct/100), 5)
                     elif r.get("valid_opp_val"):
                         r["sl_val"] = r["valid_opp_val"]
 
@@ -1686,6 +1722,17 @@ def api_test_indicators():
 
 
 if __name__ == "__main__":
+    # ✅ AUTO-RESUME JOB ON SERVER STARTUP
+    try:
+        resume_file = Path(__file__).resolve().parent / "data" / "active_job_config.json"
+        if resume_file.exists():
+            saved = json.loads(resume_file.read_text())
+            if saved.get("job_id") and saved.get("config"):
+                print(f"♻️ Resuming Auto-Trade job {saved['job_id']} from previous session...")
+                autotrader.start_job(saved["job_id"], saved["config"])
+    except Exception as e:
+        print(f"⚠️ Failed to auto-resume: {e}")
+
     print(f"\n🚀 Scanner running at  http://localhost:{PORT}")
     print(f"   Service account: {sheets.service_account_email() or '(none)'}")
     if broker_zerodha is not None:

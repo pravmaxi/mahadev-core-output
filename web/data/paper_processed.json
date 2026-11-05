@@ -1,0 +1,227 @@
+[
+  {
+    "id": "ACC.NS_5m_BUY_2026-11-05 14:15:00",
+    "symbol": "ACC.NS",
+    "tf": "5m",
+    "side": "BUY",
+    "signal_level": 1233.4,
+    "signal_time": "2026-11-05 14:15:00",
+    "executed_time": "2026-11-05 14:24:04.938634+05:30"
+  },
+  {
+    "id": "BANKBEES.NS_5m_SELL_2026-11-05 14:20:00",
+    "symbol": "BANKBEES.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 596.9400024414062,
+    "signal_time": "2026-11-05 14:20:00",
+    "executed_time": "2026-11-05 14:24:37.124114+05:30"
+  },
+  {
+    "id": "CIPLA.NS_5m_SELL_2026-11-05 14:15:00",
+    "symbol": "CIPLA.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 1396.6,
+    "signal_time": "2026-11-05 14:15:00",
+    "executed_time": "2026-11-05 14:25:01.787149+05:30"
+  },
+  {
+    "id": "EQUITASBNK.NS_5m_SELL_2026-11-05 14:10:00",
+    "symbol": "EQUITASBNK.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 55.25,
+    "signal_time": "2026-11-05 14:10:00",
+    "executed_time": "2026-11-05 14:25:25.588989+05:30"
+  },
+  {
+    "id": "HDFCBANK.NS_5m_SELL_2026-11-05 14:15:00",
+    "symbol": "HDFCBANK.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 756.3,
+    "signal_time": "2026-11-05 14:15:00",
+    "executed_time": "2026-11-05 14:26:06.407747+05:30"
+  },
+  {
+    "id": "ICICIBANK.NS_5m_SELL_2026-11-05 14:05:00",
+    "symbol": "ICICIBANK.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 1495.79,
+    "signal_time": "2026-11-05 14:05:00",
+    "executed_time": "2026-11-05 14:26:12.598341+05:30"
+  },
+  {
+    "id": "IDFCFIRSTB.NS_5m_SELL_2026-11-05 14:00:00",
+    "symbol": "IDFCFIRSTB.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 77.53,
+    "signal_time": "2026-11-05 14:00:00",
+    "executed_time": "2026-11-05 14:26:21.326904+05:30"
+  },
+  {
+    "id": "INFY.NS_5m_SELL_2026-11-05 14:15:00",
+    "symbol": "INFY.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 1161.5,
+    "signal_time": "2026-11-05 14:15:00",
+    "executed_time": "2026-11-05 14:26:34.070121+05:30"
+  },
+  {
+    "id": "JKTYRE.NS_5m_BUY_2026-11-05 14:05:00",
+    "symbol": "JKTYRE.NS",
+    "tf": "5m",
+    "side": "BUY",
+    "signal_level": 362.1,
+    "signal_time": "2026-11-05 14:05:00",
+    "executed_time": "2026-11-05 14:27:03.834214+05:30"
+  },
+  {
+    "id": "KIRLOSBROS.NS_5m_SELL_2026-11-05 14:20:00",
+    "symbol": "KIRLOSBROS.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 1684.5,
+    "signal_time": "2026-11-05 14:20:00",
+    "executed_time": "2026-11-05 14:27:10.255073+05:30"
+  },
+  {
+    "id": "LICI.NS_5m_SELL_2026-11-05 14:15:00",
+    "symbol": "LICI.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 408.2,
+    "signal_time": "2026-11-05 14:15:00",
+    "executed_time": "2026-11-05 14:27:22.992091+05:30"
+  },
+  {
+    "id": "MSUMI.NS_5m_SELL_2026-11-05 14:20:00",
+    "symbol": "MSUMI.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 39.40999984741211,
+    "signal_time": "2026-11-05 14:20:00",
+    "executed_time": "2026-11-05 14:27:51.370672+05:30"
+  },
+  {
+    "id": "MUKANDLTD.NS_5m_BUY_2026-11-05 13:35:00",
+    "symbol": "MUKANDLTD.NS",
+    "tf": "5m",
+    "side": "BUY",
+    "signal_level": 150.0,
+    "signal_time": "2026-11-05 13:35:00",
+    "executed_time": "2026-11-05 14:27:54.349114+05:30"
+  },
+  {
+    "id": "NATCOPHARM.NS_5m_BUY_2026-11-05 14:15:00",
+    "symbol": "NATCOPHARM.NS",
+    "tf": "5m",
+    "side": "BUY",
+    "signal_level": 805.45,
+    "signal_time": "2026-11-05 14:15:00",
+    "executed_time": "2026-11-05 14:27:57.566052+05:30"
+  },
+  {
+    "id": "NUCLEUS.NS_5m_BUY_2026-11-05 14:15:00",
+    "symbol": "NUCLEUS.NS",
+    "tf": "5m",
+    "side": "BUY",
+    "signal_level": 636.45,
+    "signal_time": "2026-11-05 14:15:00",
+    "executed_time": "2026-11-05 14:28:07.072516+05:30"
+  },
+  {
+    "id": "NV20IETF.NS_5m_SELL_2026-11-05 14:05:00",
+    "symbol": "NV20IETF.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 13.82,
+    "signal_time": "2026-11-05 14:05:00",
+    "executed_time": "2026-11-05 14:28:10.259196+05:30"
+  },
+  {
+    "id": "RVNL.NS_5m_SELL_2026-11-05 14:20:00",
+    "symbol": "RVNL.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 193.2899932861328,
+    "signal_time": "2026-11-05 14:20:00",
+    "executed_time": "2026-11-05 14:28:41.557747+05:30"
+  },
+  {
+    "id": "SENSEXETF.NS_5m_SELL_2026-11-05 14:15:00",
+    "symbol": "SENSEXETF.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 81.94000244140625,
+    "signal_time": "2026-11-05 14:15:00",
+    "executed_time": "2026-11-05 14:28:53.137440+05:30"
+  },
+  {
+    "id": "SUNPHARMA.NS_5m_BUY_2026-11-05 14:05:00",
+    "symbol": "SUNPHARMA.NS",
+    "tf": "5m",
+    "side": "BUY",
+    "signal_level": 1839.6,
+    "signal_time": "2026-11-05 14:05:00",
+    "executed_time": "2026-11-05 14:29:05.974606+05:30"
+  },
+  {
+    "id": "SUNTV.NS_5m_SELL_2026-11-05 14:15:00",
+    "symbol": "SUNTV.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 597.4,
+    "signal_time": "2026-11-05 14:15:00",
+    "executed_time": "2026-11-05 14:29:09.259823+05:30"
+  },
+  {
+    "id": "TATACONSUM.NS_5m_BUY_2026-11-05 13:45:00",
+    "symbol": "TATACONSUM.NS",
+    "tf": "5m",
+    "side": "BUY",
+    "signal_level": 1079.5,
+    "signal_time": "2026-11-05 13:45:00",
+    "executed_time": "2026-11-05 14:29:15.786386+05:30"
+  },
+  {
+    "id": "TATAGOLD.NS_5m_BUY_2026-11-05 13:20:00",
+    "symbol": "TATAGOLD.NS",
+    "tf": "5m",
+    "side": "BUY",
+    "signal_level": 13.9,
+    "signal_time": "2026-11-05 13:20:00",
+    "executed_time": "2026-11-05 14:29:19.084388+05:30"
+  },
+  {
+    "id": "TIINDIA.NS_5m_BUY_2026-11-05 14:05:00",
+    "symbol": "TIINDIA.NS",
+    "tf": "5m",
+    "side": "BUY",
+    "signal_level": 2291.0,
+    "signal_time": "2026-11-05 14:05:00",
+    "executed_time": "2026-11-05 14:29:38.108914+05:30"
+  },
+  {
+    "id": "TIRUMALCHM.NS_5m_SELL_2026-11-05 14:20:00",
+    "symbol": "TIRUMALCHM.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 126.30999755859375,
+    "signal_time": "2026-11-05 14:20:00",
+    "executed_time": "2026-11-05 14:29:41.523672+05:30"
+  },
+  {
+    "id": "VSTIND.NS_5m_SELL_2026-11-05 13:35:00",
+    "symbol": "VSTIND.NS",
+    "tf": "5m",
+    "side": "SELL",
+    "signal_level": 192.26,
+    "signal_time": "2026-11-05 13:35:00",
+    "executed_time": "2026-11-05 14:30:09.138587+05:30"
+  }
+]

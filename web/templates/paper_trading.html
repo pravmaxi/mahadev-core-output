@@ -1,0 +1,382 @@
+
+{% extends "base.html" %}
+{% block title %}Paper Trading · Mahadev{% endblock %}
+
+{% block content %}
+<h1>Paper Trading</h1>
+<p class="sub">Independent paper trading using the Backtest WaveTrend event detector. No Zerodha live orders.</p>
+
+<style>
+.pt-panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px}
+.pt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.pt-field label{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}
+.pt-field input,.pt-field select{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:5px;padding:8px}
+.pt-btn{border:0;border-radius:5px;padding:9px 16px;font-weight:600;cursor:pointer}
+.pt-start{background:var(--good);color:#fff}
+.pt-stop{background:var(--bad);color:#fff}
+.pt-refresh{background:var(--panel2);color:var(--fg);border:1px solid var(--border)}
+.pt-table{width:100%;border-collapse:collapse;font-size:12px}
+.pt-table th,.pt-table td{padding:9px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.pt-table th{color:var(--muted)}
+.pt-stat{background:var(--panel2);padding:12px;border-radius:6px}
+.pt-stat small{display:block;color:var(--muted)}
+.pt-stat strong{font-size:19px}
+.pt-green{color:var(--good)}
+.pt-red{color:var(--bad)}
+@media(max-width:700px){.pt-table-wrap{overflow-x:auto}}
+</style>
+
+<div class="pt-panel">
+  <h3 style="margin-top:0">Trading Configuration</h3>
+
+  <div class="pt-grid">
+    <div class="pt-field">
+      <label>Symbol</label>
+      <input id="symbol" value="HAL" placeholder="HAL">
+    </div>
+
+    <div class="pt-field">
+      <label>Exchange</label>
+      <select id="exchange">
+        <option value="NSE">NSE</option>
+        <option value="BSE">BSE</option>
+        <option value="US">US</option>
+        <option value="FX">Forex / Commodity</option>
+      </select>
+    </div>
+
+    <div class="pt-field">
+      <label>Timeframe</label>
+      <select id="interval">
+        <option>5m</option>
+        <option>15m</option>
+        <option>30m</option>
+        <option>60m</option>
+        <option selected>1h</option>
+        <option>4h</option>
+        <option>1d</option>
+        <option>1wk</option>
+      </select>
+    </div>
+
+    <div class="pt-field">
+      <label>Historical Period</label>
+      <select id="period">
+        <option>1mo</option>
+        <option>3mo</option>
+        <option selected>6mo</option>
+        <option>1y</option>
+        <option>2y</option>
+      </select>
+    </div>
+
+    <div class="pt-field">
+      <label>Total Capital ₹</label>
+      <input id="capital" type="number" value="10000">
+    </div>
+
+    <div class="pt-field">
+      <label>Allocation Per Trade ₹</label>
+      <input id="allocation" type="number" value="5000">
+    </div>
+
+    <div class="pt-field">
+      <label>Order Side</label>
+      <select id="side_mode">
+        <option value="long" selected>Buy Only</option>
+        <option value="short">Sell Only</option>
+        <option value="both">Both</option>
+      </select>
+    </div>
+
+    <div class="pt-field">
+      <label>Profit Target %</label>
+      <input id="target_pct" type="number" value="10" step="0.1">
+    </div>
+
+    <div class="pt-field">
+      <label>Stop Loss % (0 = Off)</label>
+      <input id="stop_pct" type="number" value="0" step="0.1">
+    </div>
+
+    <div class="pt-field">
+      <label>Buffer Points</label>
+      <input id="buffer_pts" type="number" value="0.01" step="0.01">
+    </div>
+
+    <div class="pt-field">
+      <label>Maximum Wait Bars</label>
+      <input id="wait_bars" type="number" value="100">
+    </div>
+
+    <div class="pt-field">
+      <label>WT Pending Rule</label>
+      <select id="wt_pending_rule">
+        <option value="every">Every Cross</option>
+        <option value="same_dir" selected>Newest Same-Direction</option>
+        <option value="any_dir">Newest Any-Direction</option>
+      </select>
+    </div>
+
+    <div class="pt-field">
+      <label>WT N1</label>
+      <input id="wt_n1" type="number" value="15">
+    </div>
+
+    <div class="pt-field">
+      <label>WT N2</label>
+      <input id="wt_n2" type="number" value="27">
+    </div>
+
+    <div class="pt-field">
+      <label>Commission %</label>
+      <input id="commission_pct" type="number" value="0" step="0.01">
+    </div>
+
+    <div class="pt-field">
+      <label>Slippage %</label>
+      <input id="slippage_pct" type="number" value="0" step="0.01">
+    </div>
+  </div>
+
+  <div style="margin-top:14px;display:flex;gap:18px;flex-wrap:wrap">
+    <label><input type="checkbox" id="heikin_ashi" checked> Heikin Ashi candles</label>
+    <label><input type="checkbox" id="exit_on_opposite" checked> Exit on opposite signal</label>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+    <button class="pt-btn pt-start" onclick="startPaper()">▶ Start Paper Trading</button>
+    <button class="pt-btn pt-stop" onclick="stopPaper()">■ Stop</button>
+    <button class="pt-btn pt-refresh" onclick="refreshStatus()">↻ Refresh</button>
+    <button class="pt-btn pt-refresh" onclick="resetPaper()">Reset Paper Data</button>
+  </div>
+
+  <div id="message" style="margin-top:12px;color:var(--muted)">Idle</div>
+</div>
+
+<div class="pt-panel">
+  <h3 style="margin-top:0">Live Status</h3>
+  <div class="pt-grid">
+    <div class="pt-stat"><small>Status</small><strong id="status">Stopped</strong></div>
+    <div class="pt-stat"><small>Symbol</small><strong id="statSymbol">—</strong></div>
+    <div class="pt-stat"><small>Open Position</small><strong id="statPosition">None</strong></div>
+    <div class="pt-stat"><small>Unrealized P&amp;L</small><strong id="statPnl">₹0.00</strong></div>
+    <div class="pt-stat"><small>Completed Trades</small><strong id="statTrades">0</strong></div>
+    <div class="pt-stat"><small>Realized P&amp;L</small><strong id="statRealized">₹0.00</strong></div>
+  </div>
+  <div id="lastScan" style="margin-top:12px;color:var(--muted);font-size:11px"></div>
+</div>
+
+<div class="pt-panel">
+  <h3 style="margin-top:0">Open Position</h3>
+  <div class="pt-table-wrap">
+    <table class="pt-table">
+      <thead><tr>
+        <th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th>
+        <th>LTP</th><th>Target</th><th>Stop</th><th>Unrealized P&amp;L</th>
+      </tr></thead>
+      <tbody id="positionRows"><tr><td colspan="8">No open position</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="pt-panel">
+  <h3 style="margin-top:0">Trade History</h3>
+  <div class="pt-table-wrap">
+    <table class="pt-table">
+      <thead><tr>
+        <th>#</th><th>Symbol</th><th>Side</th><th>Qty</th>
+        <th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Reason</th>
+        <th>Entry Time</th><th>Exit Time</th>
+      </tr></thead>
+      <tbody id="tradeRows"><tr><td colspan="10">No completed trades</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+async function api(url, method="GET", body=null) {
+  const options = {method, headers:{"Content-Type":"application/json"}};
+  if (body !== null) options.body = JSON.stringify(body);
+
+  const response = await fetch(url, options);
+  const data = await response.json();
+
+  if (!response.ok || data.ok === false) {
+    throw new Error(data.error || "Request failed");
+  }
+
+  return data;
+}
+
+function config() {
+  return {
+    symbol: $("symbol").value.trim().toUpperCase(),
+    exchange: $("exchange").value,
+    interval: $("interval").value,
+    period: $("period").value,
+
+    capital: Number($("capital").value),
+    allocation: Number($("allocation").value),
+
+    side_mode: $("side_mode").value,
+
+    target_pct: Number($("target_pct").value),
+    stop_pct: Number($("stop_pct").value),
+
+    buffer_pts: Number($("buffer_pts").value),
+    wait_bars: Number($("wait_bars").value),
+
+    wt_pending_rule: $("wt_pending_rule").value,
+    wt_n1: Number($("wt_n1").value),
+    wt_n2: Number($("wt_n2").value),
+
+    commission_pct: Number($("commission_pct").value),
+    slippage_pct: Number($("slippage_pct").value),
+
+    heikin_ashi: $("heikin_ashi").checked,
+    exit_on_opposite: $("exit_on_opposite").checked
+  };
+}
+
+async function startPaper() {
+  try {
+    const result = await api("/api/paper-trading/start", "POST", config());
+    $("message").textContent = result.message;
+    await refreshStatus();
+  } catch (e) {
+    $("message").textContent = e.message;
+  }
+}
+
+async function stopPaper() {
+  try {
+    const result = await api("/api/paper-trading/stop", "POST", {});
+    $("message").textContent = result.message;
+    await refreshStatus();
+  } catch (e) {
+    $("message").textContent = e.message;
+  }
+}
+
+async function resetPaper() {
+  if (!confirm("Delete the separate Paper Trading positions and history?")) return;
+
+  try {
+    const result = await api("/api/paper-trading/reset", "POST", {});
+    $("message").textContent = result.message;
+    await refreshStatus();
+  } catch (e) {
+    $("message").textContent = e.message;
+  }
+}
+
+function money(value) {
+  return "₹" + Number(value || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function pnlClass(value) {
+  return Number(value || 0) >= 0 ? "pt-green" : "pt-red";
+}
+
+async function refreshStatus() {
+  try {
+    const data = await api("/api/paper-trading/status");
+    render(data);
+  } catch (e) {
+    $("message").textContent = e.message;
+  }
+}
+
+function render(data) {
+  $("status").textContent = data.running ? "Running" : "Stopped";
+  $("status").className = data.running ? "pt-green" : "pt-red";
+
+  $("statSymbol").textContent = data.config?.symbol || "—";
+
+  const p = data.position;
+  $("statPosition").textContent = p ? p.direction.toUpperCase() : "None";
+
+  const unrealized = p?.unrealized_pnl || 0;
+  $("statPnl").textContent = money(unrealized);
+  $("statPnl").className = pnlClass(unrealized);
+
+  const trades = data.trades || [];
+  const realized = trades.reduce((sum, t) => sum + Number(t.pnl || 0), 0);
+
+  $("statTrades").textContent = trades.length;
+  $("statRealized").textContent = money(realized);
+  $("statRealized").className = pnlClass(realized);
+
+  $("positionRows").innerHTML = p ? `
+    <tr>
+      <td>${p.symbol}</td>
+      <td>${p.direction.toUpperCase()}</td>
+      <td>${p.qty}</td>
+      <td>${p.entry_price}</td>
+      <td>${p.ltp ?? "—"}</td>
+      <td>${p.target}</td>
+      <td>${p.stop ?? "Off"}</td>
+      <td class="${pnlClass(p.unrealized_pnl)}">${money(p.unrealized_pnl)}</td>
+    </tr>` : `<tr><td colspan="8">No open position</td></tr>`;
+
+  $("tradeRows").innerHTML = trades.length ? trades.slice().reverse().map((t, i) => `
+    <tr>
+      <td>${trades.length - i}</td>
+      <td>${t.symbol}</td>
+      <td>${t.direction.toUpperCase()}</td>
+      <td>${t.qty}</td>
+      <td>${t.entry_price}</td>
+      <td>${t.exit_price}</td>
+      <td class="${pnlClass(t.pnl)}">${money(t.pnl)}</td>
+      <td>${t.reason}</td>
+      <td>${t.entry_time}</td>
+      <td>${t.exit_time}</td>
+    </tr>`).join("") : `<tr><td colspan="10">No completed trades</td></tr>`;
+
+  $("lastScan").textContent = data.last_scan
+    ? `Last scan: ${data.last_scan.time} | Last completed candle: ${data.last_scan.last_candle} | New events: ${data.last_scan.new_events}`
+    : "No scan yet";
+
+  if (data.error) $("message").textContent = data.error;
+}
+
+let scanBusy = false;
+
+async function scanOnce() {
+  if (scanBusy) return;
+
+  scanBusy = true;
+
+  try {
+    const data = await api("/api/paper-trading/scan", "POST", {});
+    render(data);
+  } catch (e) {
+    $("message").textContent = e.message;
+  } finally {
+    scanBusy = false;
+  }
+}
+
+refreshStatus();
+
+setInterval(async () => {
+  try {
+    const status = await api("/api/paper-trading/status");
+
+    if (status.running) {
+      await scanOnce();
+    } else {
+      render(status);
+    }
+  } catch (e) {
+    $("message").textContent = e.message;
+  }
+}, 15000);
+</script>
+{% endblock %}

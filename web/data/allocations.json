@@ -1,230 +1,716 @@
 [
   {
-    "sym": "AMD",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "^NSEI",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "AAPL",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "AARTIIND.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "ABBV",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "AARTIPHARM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "AMZN",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "ACC.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "AVGO",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "ALKEM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "COST",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "AMBUJACEM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "CTSH",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "APOLLOHOSP.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "GOOGL",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "APOLLOTYRE.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "HD",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "APTECHT.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "INTC",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "ASHOKLEY.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "JNJ",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "AURUM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "JPM",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "AXISBANK.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "KO",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "BANKBEES.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "LEVI",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "BEL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "LLY",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "BERGEPAINT.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "MA",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "BHARTIARTL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "META",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "BPCL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "MSFT",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "BUTTERFLY.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "NVDA",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "CDSL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "PEP",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "CHOLAFIN.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "PG",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "CIPLA.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "SHEL",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "COALINDIA.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "SPY",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "COCHINSHIP.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "TSLA",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "CYIENT.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "TSM",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "DABUR.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "UNH",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "DIAMONDYD.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "V",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "DIVISLAB.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "IBM",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "DOLLAR.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "NFLX",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "EQUITASBNK.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "QQQ",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "EXIDEIND.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "IWM",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "FEDERALBNK.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "XAUUSD",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "FX"
+    "sym": "GABRIEL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "XAGUSD",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "FX"
+    "sym": "GAIL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "EURUSD",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "FX"
+    "sym": "GIPCL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "GBPUSD",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "FX"
+    "sym": "GODREJCP.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "USDJPY",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "FX"
+    "sym": "GOLDBEES.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "USDCAD",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "FX"
+    "sym": "GRASIM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "USDCHF",
-    "amt": 125000,
-    "tf": "1h",
-    "exch": "FX"
+    "sym": "GSFC.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "HAL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "HAVELLS.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "HCLTECH.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "HDFCBANK.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "HINDUNILVR.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "ICICIBANK.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "ICICIGI.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "ICICIPRULI.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "IDFCFIRSTB.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "INDIGO.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "INDUSINDBK.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "INDUSTOWER.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "INFY.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "IOC.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "IRCTC.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "IRFC.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "ITBEES.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "ITC.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "ITCHOTELS.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "JAMNAAUTO.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "JIOFIN.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "JKTYRE.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "JUNIORBEES.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "KIRLOSBROS.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "KPITTECH.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "KPRMILL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "LAURUSLABS.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "LICI.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "LINCOLN.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "LT.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "LTF.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "MAHABANK.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "MANAPPURAM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "MARICO.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "MON100.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "MOTILALOFS.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "MSUMI.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "MUKANDLTD.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "NATCOPHARM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "NEWGEN.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "NIFTYBEES.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "NUCLEUS.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "NV20IETF.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "ONGC.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "PETRONET.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "PFC.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "PHARMABEES.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "POWERGRID.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "PTC.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "RAIN.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "RECLTD.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "RELIANCE.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "RVNL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "SAGCEM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "SBILIFE.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "SBIN.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "SENSEXETF.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "SHRIRAMFIN.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "SILVERBEES.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "SOUTHBANK.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "SUNPHARMA.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "SUNTV.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TATACHEM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TATACONSUM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TATAGOLD.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TATAINVEST.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TATAPOWER.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TATASTEEL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TCS.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TECHM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TIINDIA.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TIRUMALCHM.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TMB.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TMCV.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TMPV.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "TVSMOTOR.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "UBL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "UJJIVANSFB.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "UPL.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "VSTIND.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
+  },
+  {
+    "sym": "WIPRO.NS",
+    "amt": 42016,
+    "tf": "5m",
+    "exch": "NSE"
   }
 ]

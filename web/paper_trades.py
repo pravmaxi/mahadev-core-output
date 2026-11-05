@@ -93,12 +93,15 @@ def positions():
         if o["status"] != "FILLED":
             continue
         tag = o.get("tag", "")
-        key = (o["symbol"], o["exchange"], o["product"], tag)
+        
+        # ✅ FIX: Group by symbol/exchange/product ONLY. Ignore tag to properly net positions.
+        key = (o["symbol"], o["exchange"], o["product"])
+        
         a = acc[key]
         a["symbol"]   = o["symbol"]
         a["exchange"] = o["exchange"]
         a["product"]  = o["product"]
-        a["tag"]      = tag
+        if not a["tag"]: a["tag"] = tag # Keep the original entry tag
         fp = o.get("fill_price") or o.get("price") or 0
         if o["side"] == "BUY":
             a["net_qty"]    += o["qty"]
@@ -108,8 +111,9 @@ def positions():
             a["net_qty"]    -= o["qty"]
             a["sell_qty"]   += o["qty"]
             a["sell_value"] += fp * o["qty"]
+            
     out = []
-    for (sym, exch, prod, tag), a in acc.items():
+    for (sym, exch, prod), a in acc.items():
         if a["net_qty"] == 0:
             continue
         if a["net_qty"] > 0 and a["buy_qty"]:
