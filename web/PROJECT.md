@@ -1,6 +1,6 @@
 # Mahadev Trading Platform — PROJECT.md
 
-Last updated: October 2026 (Session 25)
+Last updated: November 2026 (Session 27)
 
 ---
 
@@ -22,31 +22,52 @@ The app runs at http://localhost:8000
 The app uses **Server-Sent Events (SSE)** and **localStorage** for long-running tasks. 
 If you start a Scanner run, Batch Backtest, or Auto-Test, you can navigate to other pages. The Python backend keeps running in a background thread, and the browser remembers the `job_id`. When you return, the frontend reconnects to the SSE stream, replays the history, and continues showing live progress.
 
-**Trading Page Auto-Trader (Session 25 Update):**
-- **Queue Architecture**: Auto-Trader does NOT place trades directly.
-  1. `autotrader.py` detects a signal and writes it to `data/paper_orders_queue.json`.
-  2. `_process_paper_queue()` runs in the loop, reads the queue, executes via `paper_trades.py`.
-  3. It moves the record to `data/paper_processed.json` with Signal Level, Signal Time, and Exec Time.
-  4. Prevents duplicate trades using a unique `sig_id`.
-- **Limit Order Logic**: Limit orders fill ONLY when `LTP > Limit` (for Buy) or `LTP < Limit` (for Sell). Market orders fill instantly.
-- **Price Fallback**: If queue `price` is missing/0, the bot falls back to `signal_level` or `ltp` to prevent empty orders.
-- **Duplicate Prevention**: If a position is already open for a symbol, `wt_action` becomes "Position in progress" and skips the queue. If a limit order is pending, it becomes "Pending LIMIT".
-- **Settings Sync**: "Apply Settings" pushes UI config directly to the running job thread.
-- **Auto-Scan Pause**: Unchecking "Auto-Scan" sends `{ paused: true }` to halt the `_worker` loop.
-- **Fetch LTP Button**: A lightweight `/api/trade/auto/fetch_ltp` endpoint updates the UI instantly without running a full scan. Disabled during Auto-Scan to prevent yfinance clashes.
-- **F&O Filter Optimization**: The F&O Google Sheet is ONLY read if `allocations.json` contains NSE/BSE stocks.
+**Auto-Trader State Persistence (Session 27 Update):**
+- **Server Restart Auto-Resume:** `server.py` and `autotrader.py` now save the job config to `active_job_config.json` and the last scan state to `auto_state_cache.json`. If the server restarts, it automatically reloads the state and resumes the auto-trader thread seamlessly.
+- **UI Polling:** The frontend polls `/api/trade/auto/status` every 5 seconds. The server responds with the cached `AUTO_STATE`.
 
 ---
 
-## Forex & Gold Support (Session 25 Update)
+## Trading Page & Auto-Trader Engine (Session 27 Update)
 
-Trading Forex (e.g., `EURUSD`, `XAUUSD`) required several fixes:
-- **Symbol Mapping**: `autotrader.py` and `server.py` use `_SYMBOL_MAP` from `data.py` to translate `EURUSD` → `EURUSD=X`, `XAUUSD` → `GC=F`, etc.
-- **5-Decimal Precision**: 
-  - Backend (`autotrader.py`): `_r()` helper rounds to 5 decimals if `abs(val) < 10`.
-  - Ledger (`paper_trades.py`): `positions()` rounds avg price to 5 decimals for Forex.
-  - Frontend (`trading.html`): `fmtINR()` dynamically shows 5 decimals for prices < 10.
-- **Yahoo Finance Limits**: `5m`, `15m`, `30m` data is limited to `60d`. `1h` is limited to `3mo`. `autotrader.py` and `data.py` now strictly enforce these periods to prevent batch download crashes.
+The Auto-Trader is now a direct port of the `backtest.py` logic, ensuring 1:1 parity with backtests.
+
+### 1. Signal Detection (Backtest Matching)
+- Scans only **CLOSED candles** (`df_ha.iloc[:-1]`) to prevent repainting.
+- Uses `get_active_pending_signals()` to find Pending and Triggered signals exactly like the backtest engine.
+- **Trigger Level:** The High (for Buy) or Low (for Sell) of the valid signal candle.
+- **Live Breakout:** If LTP crosses the Trigger Level *during* the scan, it triggers immediately.
+
+### 2. Market Order Bypass Logic
+- If `Allow Market Orders` is **UNCHECKED**:
+  - The bot saves the signal level to `last_ignored_sig`.
+  - Subsequent scans check `last_ignored_sig`:
+    - If the new signal is the **same** level, it ignores it.
+    - If the new signal is **different**, it bypasses the checkbox and executes a Market order (unless it's the very first scan).
+- Limit orders are **always** allowed, regardless of this checkbox.
+
+### 3. Queueing & Execution
+- **Instant Processing:** The queue is processed per-symbol immediately after a signal is found (not waiting for the full scan loop to finish).
+- **Queue Replacement:** If a new signal arrives for a symbol, existing pending limit orders are cancelled. Exception: The bot keeps `_exit` orders so it can close and flip positions simultaneously.
+- **Data Gap Protection:** If the Trigger Level is >20% away from LTP (e.g., due to a stock split or bad Yahoo data), the signal is ignored and marked "Ignored (Data Gap)".
+- **Averaging (`same_side`):** Tracks levels, allows new entries up to `max_levels`, and appends "(Level X)" to the status.
+
+### 4. Position & Exit Management
+- **EXIT Orders:** When a position closes (Target, Stop Loss, or Opp Signal), the order is tagged (e.g., `Exit (Target)`) and the UI shows **EXIT** in orange in the Side column.
+- **Net Positions:** `paper_trades.py` nets positions by `(symbol, exchange, product)` ignoring the tag, so a BUY and EXIT SELL properly cancel out to 0 qty.
+- **Target/SL Lock:** Targets are calculated using the locked Trigger Level, not the fluctuating live LTP.
+
+### 5. UI Columns (Scanner Replica)
+- **Symbol, TF, LTP:** Standard pricing.
+- **WT Trend:** Current trend.
+- **Valid Candle:** The timestamp of the signal candle.
+- **Trigger Lvl, WT Val:** The signal's breakout price and indicator value.
+- **WT Action:** Raw signal (e.g., "Buy Pending", "Sell Triggered").
+- **Overall Status:** Pending, Order Placed, Position Open, Ignored (Market Off), Ignored (Data Gap).
+- **Sent To:** Shows `pa (LIMIT)` or `pa (MARKET)`.
+- **Target, Stop Loss:** Locked to trigger level.
+- **Trigger Time:** When the breakout happened.
+- **Last Changes:** Persistent log of what changed (e.g., `Target: 100 -> 105`).
 
 ---
 
@@ -73,8 +94,11 @@ Trading Forex (e.g., `EURUSD`, `XAUUSD`) required several fixes:
     │   │   ├── trigger_state.json
     │   │   ├── watchlist.json
     │   │   ├── allocations.json      ← Saved symbols & TF for Auto-Trader
-    │   │   ├── paper_processed.json  ← Tracks executed paper signals (with times/levels)
+    │   │   ├── active_job_config.json← ✅ NEW: Auto-resume state for server restarts
+    │   │   ├── auto_state_cache.json ← ✅ NEW: UI cache for instant load
+    │   │   ├── paper_processed.json  ← Tracks executed paper signals
     │   │   ├── paper_orders_queue.json ← Signals waiting to be executed
+    │   │   ├── paper_trades.json     ← The actual paper ledger (orders + fills)
     │   │   ├── zerodha_processed.json
     │   │   └── zerodha_orders_queue.json
     │   ├── indicators/
@@ -119,48 +143,15 @@ Has 3 modes controlled by a dropdown (`cfg_fno_mode`):
 
 ---
 
-## Backtest Engine (`backtest.py`)
-
-### Strategy Modes
-- `simple`: Single position.
-- `same_side`: Averaging (requires multiplier: martingale/incremental/constant).
-- `alternate`: Flip sides on opposite signal.
-
-### Recovery Overlay
-*Not a strategy mode.* A flag (`recovery_enabled`) that overlays on simple/same_side/alternate.
-- Modes: `off`, `last`, `cumulative`.
-
----
-
-## Trading Page (`trading.html` & `autotrader.py`)
-
-1. **UI Layout (Session 25)**: 
-   - Start/Stop Auto-Trading and Apply Settings buttons are in the top header.
-   - Auto-Trading Setup, Scanner Replica, Paper Positions, and Paper Orders are all collapsible blocks.
-   - Removed "WT1", "WT2", "WT Cross" columns from Scanner Replica to reduce clutter.
-   - Added multi-level sorting (up to 5 levels) for all tables by clicking headers.
-2. **Scanner Replica (Live):**
-   - Added a "Fetch LTP" checkbox, interval input, and manual button. Disables during Auto-Scan to prevent clashes.
-   - Shows "Sent To", "Target", and "Stop Loss" columns.
-3. **Paper Positions:**
-   - Includes LTP, Target, and Stop columns synced from the scanner.
-   - P&L is calculated dynamically based on Scanner LTP.
-4. **Paper Orders:**
-   - Shows both Limit Price and actual Fill Price if they differ.
-   - Limit orders stay `OPEN` until triggered.
-5. **JSON Debug:** A panel to view `allocations.json` and the execution queue files.
-
----
-
 ## Known Issues & Gotchas
 
-1. **ST + F&O Filter = Broken Pivots.** Always turn the F&O filter OFF for ST.
-2. **Two backtest.py files.** Ensure you are editing `web/backtest.py`, not the root one.
-3. **SSE Replay Duplicates.** When reconnecting to a stream, the frontend must filter duplicates.
-4. **Google Sheet Book Name.** In single backtest, the F&O Book name must be typed manually if it differs from "Stock Price Scraper".
-5. **SessionStorage.** If the UI behaves weirdly after a code update, hard refresh (`Cmd+Shift+R`) and clear SessionStorage.
-6. **Heikin Ashi Warmup Period (Critical):** Always force downloads to use the maximum allowed period (e.g., `60d` for 15m, `3mo` for 1h) to match the Backtest.
-7. **Yahoo Finance Timeout/Limits:** `5m` data is strictly `60d`. `yfinance.download()` can hang. `autotrader.py` wraps downloads in a timeout.
+1. **Yahoo Finance Data Gaps:** If Yahoo returns a bad tick (e.g., pre-split price), the bot's 20% gap protection prevents it from placing a bad order.
+2. **ST + F&O Filter = Broken Pivots.** Always turn the F&O filter OFF for ST.
+3. **Two backtest.py files.** Ensure you are editing `web/backtest.py`, not the root one.
+4. **SSE Replay Duplicates.** When reconnecting to a stream, the frontend must filter duplicates.
+5. **Google Sheet Book Name.** In single backtest, the F&O Book name must be typed manually if it differs from "Stock Price Scraper".
+6. **SessionStorage/LocalStorage.** If the UI behaves weirdly after a code update, hard refresh (`Cmd+Shift+R`) and clear SessionStorage. 
+7. **Heikin Ashi Warmup Period (Critical):** Always force downloads to use the maximum allowed period (e.g., `60d` for 15m, `3mo` for 1h) to match the Backtest.
 8. **Python 3.8+ Syntax:** Never use `continue` or `break` inside a `finally:` block.
 9. **LTP Rate-Limiting:** Do not fetch LTP for paper positions on a continuous interval. Use the manual Fetch LTP button.
 10. **Terminal Log Spam:** `server.py` uses a `PollingFilter` to silence continuous 5-second polling logs (`/status`, `/positions`, `/orders`).

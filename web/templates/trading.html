@@ -201,7 +201,7 @@
              <div><label class="lbl">F&O Filter</label>
                <select id="autoFno" class="setInput" onchange="document.getElementById('autoFnoSheetRow').style.display = this.value === 'sheet' ? 'flex' : 'none'; if(this.value==='sheet') fetchAutoFnoTabs(); saveAutoState();">
                  <option value="all">All symbols</option>
-                 <option value="sheet">From sheet</option>
+                 <option value="sheet" selected>From sheet</option>
                  <option value="none">Off</option>
                </select>
              </div>
@@ -211,7 +211,7 @@
               <label class="lbl">F&O Book</label>
               <select id="autoFnoBook" class="setInput" onchange="fetchAutoFnoTabs(); saveAutoState();">
                 <option value="Stock Price Scraper">Stock Price Scraper</option>
-                <option value="Backtest scanner">Backtest scanner</option>
+                <option value="Backtest scanner" selected>Backtest scanner</option>
                 <option value="scanner output">scanner output</option>
               </select>
             </div>
@@ -425,6 +425,8 @@
   </div>
 </div>
 
+
+
 <!-- FULL WIDTH SCANNER REPLICA -->
 <details id="scannerMonitorPanel" style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:16px; width: 100%;">
   <summary class="secHead" style="margin-bottom:8px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; outline:none;">
@@ -432,9 +434,9 @@
       <span>📊 Scanner Replica (Live)</span>
       <span id="scanStatus" style="color:var(--accent);font-size:10px;margin-left:10px;"></span>
       <label class="chk" style="margin:0 0 0 10px; font-size:11px;">
-        <input type="checkbox" id="scannerFetchLtpToggle" onchange="toggleScannerLtp(this.checked)"> Fetch LTP
+        <input type="checkbox" id="scannerFetchLtpToggle" checked onchange="toggleScannerLtp(this.checked)"> Fetch LTP
       </label>
-      <input type="number" id="scannerLtpInterval" class="setInput" style="width:45px; padding:2px 4px; text-align:center;" value="10" min="1" title="LTP interval (sec)"> <span style="font-size:11px; color:var(--muted); margin-right:6px;">sec</span>
+      <input type="number" id="scannerLtpInterval" class="setInput" style="width:45px; padding:2px 4px; text-align:center;" value="30" min="1" title="LTP interval (sec)"> <span style="font-size:11px; color:var(--muted); margin-right:6px;">sec</span>
       <button type="button" id="fetchLtpBtn" class="ghostBtn" onclick="fetchScannerLtp()" style="padding:2px 8px; font-size:10px;">↻ Fetch</button>
     </div>
     <div style="display:flex; align-items:center; gap:12px;" onclick="event.stopPropagation()">
@@ -446,6 +448,9 @@
       </label>
       <label class="chk" style="margin:0; font-size:11px;">
         <input type="checkbox" id="allowMarketOrders"> Allow Market Orders
+      </label>
+      <label class="chk" style="margin:0; font-size:11px; color:#e3b341;" title="Always show both Buy/Sell signals, even if broken">
+        <input type="checkbox" id="showAllSignals" onchange="toggleShowAllSignals(this.checked)"> Show Both Signals
       </label>
       <label class="chk" style="margin:0; font-size:11px;">
         <input type="checkbox" id="autoScanEnabled" checked> Auto-Scan
@@ -877,13 +882,15 @@ function handleSort(sortState, key) {
 
 function getSortIcon(sortState, key) {
   const idx = sortState.findIndex(s => s.key === key);
-  if (idx === -1) return ' ↕';
-  return (sortState[idx].dir === 'asc' ? ' ▲' : ' ▼') + `<span style="font-size:9px; color:var(--accent)">${idx+1}</span>`;
-}
-
-function getSortIcon(sortState, key) {
-  if (sortState.key !== key) return ' ↕';
-  return sortState.dir === 'asc' ? ' ▲' : ' ▼';
+  if (idx === -1) return ' <span style="color:var(--muted); font-size:10px;">↕</span>';
+  
+  const arrow = sortState[idx].dir === 'asc' ? '▲' : '▼';
+  const num = idx + 1;
+  
+  // ✅ Creates the numbered badge exactly like the Scanner page
+  const badge = `<span style="display:inline-flex; align-items:center; justify-content:center; background:var(--accent); color:#000; border-radius:10px; width:14px; height:14px; font-size:9px; font-weight:bold; margin-left:4px;">${num}</span>`;
+  
+  return ` <span style="color:var(--accent); font-size:10px;">${arrow}</span>${badge}`;
 }
 
 async function refreshPositions(){
@@ -905,10 +912,13 @@ async function refreshPositions(){
       const stop = p.sl != null ? fmtINR(p.sl) : '—';
       const ltp = p.ltp != null ? fmtINR(p.ltp) : '—';
 
+      const entryT = p.entry_time ? p.entry_time.slice(11,19) : '—';
+
       return `<tr>
         <td><b>${p.symbol}</b><div style="color:var(--muted);font-size:10px">${p.exchange} · ${p.product} · ${p.tag || ''}</div></td>
         <td class="${p.qty >= 0 ? 'buy' : 'sell'}">${p.qty}</td>
         <td>${fmtINR(p.avg_price)}</td>
+        <td style="color:var(--muted); font-size:11px;">${entryT}</td>
         <td>${ltp}</td>
         <td class="buy">${target}</td>
         <td class="sell">${stop}</td>
@@ -924,6 +934,7 @@ async function refreshPositions(){
         <th style="cursor:pointer" data-psort="symbol">Symbol${getSortIcon(posSort, 'symbol')}</th>
         <th style="cursor:pointer" data-psort="qty">Qty${getSortIcon(posSort, 'qty')}</th>
         <th style="cursor:pointer" data-psort="avg_price">Avg${getSortIcon(posSort, 'avg_price')}</th>
+        <th>Entry Time</th>
         <th>LTP</th>
         <th>Target</th><th>Stop</th>
         <th style="cursor:pointer" data-psort="unrealized_pnl">P&amp;L ₹${getSortIcon(posSort, 'unrealized_pnl')}</th>
@@ -971,7 +982,16 @@ async function refreshOrders(){
 
     const sortedList = sortData(list, ordSort);
     const rows = sortedList.map(o => {
-      const clsSide = o.side === 'BUY' ? 'buy' : 'sell';
+      const isExit = (o.id && o.id.includes('_exit')) || (o.tag && o.tag.includes('Exit'));
+      
+      let displaySide = o.side;
+      let clsSide = o.side === 'BUY' ? 'buy' : 'sell';
+      
+      if (isExit) {
+          displaySide = 'EXIT';
+          clsSide = 'warn'; // Yellow/Orange color for Exit
+      }
+
       const statusCls = o.status === 'FILLED'  ? 'ok'
                       : o.status === 'CANCELLED' ? 'mut' : 'warn';
       // ✅ FIX: Show both Limit Price and Fill Price for clarity
@@ -991,13 +1011,21 @@ async function refreshOrders(){
            <button class="lil del" onclick="window._cancelOrder('${o.id}')">Cancel</button>`
         : '';
       const ltpVal = o.ltp != null ? fmtINR(o.ltp) : '—';
+      let typeLabel = o.order_type;
+      if (o.id && o.id.includes('_exit_')) {
+          const reason = o.id.split('_exit_')[1];
+          typeLabel += `<br><span style="font-size:9px; color:var(--warn); font-weight:bold;">Exit (${reason})</span>`;
+      } else if (o.tag) {
+          typeLabel += `<br><span style="font-size:9px; color:var(--warn); font-weight:bold;">${o.tag}</span>`;
+      }
+
       return `<tr>
         <td style="color:var(--muted);font-size:11px">${o.ts.slice(11,19)}</td>
         <td><b>${o.symbol}</b><div style="color:var(--muted);font-size:10px">${o.exchange} · ${o.product}</div></td>
-        <td class="${clsSide}">${o.side}</td>
-        <td>${o.order_type}</td>
+        <td class="${clsSide}"><b>${displaySide}</b></td>
+        <td>${typeLabel}</td>
         <td>${o.qty}</td>
-        <td>${px !== 'MKT' ? fmtINR(px) : 'MKT'}</td>
+        <td>${px !== 'MKT' ? px : 'MKT'}</td>
         <td>${ltpVal}</td>
         <td><span class="tag ${statusCls}">${o.status}</span></td>
         <td style="text-align:right;white-space:nowrap">${acts}</td>
@@ -1458,6 +1486,10 @@ async function fetchAutoFnoTabs() {
     const d = await r.json();
     if (d.ok && d.tabs.length) {
       sel.innerHTML = d.tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+      // ✅ FIX: Set F&O_input as default if it exists
+      if (d.tabs.includes('F&O_input')) {
+        sel.value = 'F&O_input';
+      }
     } else {
       sel.innerHTML = '<option value="">(no tabs found)</option>';
     }
@@ -1666,7 +1698,8 @@ function saveAutoState() {
       fnoTab: $('autoFnoTab').value,
       autoLtp: $('autoLtpRefresh').checked,
       scanInterval: $('scanIntervalMins').value,
-      writeToSheet: $('writeToGSheet').checked
+      writeToSheet: $('writeToGSheet').checked,
+      showAllSignals: $('showAllSignals').checked
     }
   };
   localStorage.setItem('trading_auto_state', JSON.stringify(state));
@@ -1739,6 +1772,10 @@ function restoreAutoState() {
       }
       if (state.settings.writeToSheet) {
         $('writeToGSheet').checked = true;
+      }
+      if (state.settings.showAllSignals) {
+        $('showAllSignals').checked = true;
+        showAllSignals = true;
       }
     }
 
@@ -1899,6 +1936,18 @@ function startMonitorPoll() {
 let scannerLtpIntId = null;
 let isAutoScanning = false; // ✅ Track Auto-Scan state
 let isFetchingLtp = false;  // ✅ Track LTP fetching state to prevent overlap
+let lastScannerState = null; // ✅ Cache for re-rendering on toggle
+let previousScanState = {}; 
+let persistentChanges = {}; // ✅ NEW: Keeps the last changes visible
+let showAllSignals = false;
+
+function toggleShowAllSignals(on) {
+    showAllSignals = on;
+    if (lastScannerState) {
+        renderScannerMonitor(lastScannerState, true);
+    }
+    saveAutoState();
+}
 
 function toggleScannerLtp(on) {
     if (scannerLtpIntId) { clearInterval(scannerLtpIntId); scannerLtpIntId = null; }
@@ -1999,14 +2048,17 @@ document.getElementById('applySettingsBtn').addEventListener('click', async () =
   btn.textContent = "⏳ Applying...";
 
   try {
-    await fetch('/api/trade/auto/update_config', {
+    const res = await fetch('/api/trade/auto/update_config', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ job_id: jid, config: getCurrentAutoConfig() })
     });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Backend rejected the settings update. Please restart Auto-Trading.");
+    
     btn.textContent = "✓ Applied!";
     setTimeout(() => { btn.textContent = origText; }, 2000);
   } catch(e) {
-    alert("Failed to apply settings.");
+    alert("Failed to apply settings: " + e.message);
     btn.textContent = origText;
   }
 });
@@ -2065,8 +2117,8 @@ if (localStorage.getItem('active_auto_job')) {
 document.addEventListener('input', (e) => {
   if (e.target.closest('#manualStocksList') ||
       e.target.closest('.setTitle') ||
-      ['autoCapital', 'autoSheetBook', 'autoSheetTab', 'autoSourceSelect', 'autoGlobalTf'].includes(e.target.id)) {
-    saveAutoState();
+      ['autoCapital', 'autoSheetBook', 'autoSheetTab', 'autoSourceSelect', 'autoGlobalTf', 'autoTarget', 'autoStop'].includes(e.target.id)) {
+    saveAutoState(); // ✅ Now saves Target/Stop to localStorage on change
   }
 });
 document.addEventListener('change', (e) => {
@@ -2118,6 +2170,7 @@ updatePreview();
 syncAutoStratMode();
 fetchMode();
 refreshAll();
+toggleScannerLtp(true); // ✅ Start the 30s fetch loop immediately
 
 // --- Save Allocations ---
 async function saveAllocations() {
@@ -2153,9 +2206,11 @@ function handleScanSort(key) {
 }
 
 // --- Scanner Replica Rendering ---
-function renderScannerMonitor(state) {
+function renderScannerMonitor(state, isForced = false) {
   const table = document.getElementById('scannerTable');
   if (!table) return;
+
+  if (!isForced) lastScannerState = state; // ✅ Cache the state
 
   let syms = Object.keys(state).map(k => state[k]);
   if (!syms.length) {
@@ -2165,77 +2220,110 @@ function renderScannerMonitor(state) {
 
   syms = sortData(syms, scanSort);
 
+  // ✅ NEW: Calculate changes compared to the previous scan
+  syms.forEach(r => {
+    const symKey = `${r.symbol}_${r.tf}`;
+    const prev = previousScanState[symKey];
+    let changeLog = [];
+
+    if (prev) {
+      const fieldsToCheck = [
+        { key: 'wt_trend', label: 'WT Trend' },
+        { key: 'valid_time', label: 'Valid Candle' },
+        { key: 'trigger_lvl', label: 'Trigger Lvl' },
+        { key: 'wt_val', label: 'WT Val' },
+        { key: 'wt_action', label: 'WT Action' },
+        { key: 'overall_status', label: 'Overall Status' },
+        { key: 'sent_to', label: 'Sent To' },
+        { key: 'target_val', label: 'Target' },
+        { key: 'sl_val', label: 'Stop Loss' },
+        { key: 'trigger_time', label: 'Trigger Time' }
+      ];
+
+      fieldsToCheck.forEach(f => {
+        let cur = r[f.key];
+        let old = prev[f.key];
+        
+        // Normalize null/undefined
+        if (cur == null || cur === '') cur = '—';
+        if (old == null || old === '') old = '—';
+
+        // If value changed, log it with the previous value
+        if (String(cur) !== String(old)) {
+          changeLog.push(
+            `<div style="margin-bottom:2px;"><b>${f.label}:</b> <span style="color:#f85149; text-decoration:line-through;">${old}</span> → <span style="color:#3fb950; font-weight:bold;">${cur}</span></div>`
+          );
+        }
+      });
+    }
+    
+    // ✅ NEW: If a change happened, update the persistent cache
+    if (changeLog.length > 0) {
+      persistentChanges[symKey] = changeLog.join('<br>');
+    }
+    
+    // ✅ NEW: Show the persistent change, or '—' if it has never changed since page load
+    r.changes = persistentChanges[symKey] || '—';
+  });
+
   const cols = [
     { key: 'symbol', label: 'Symbol', align: 'left' },
     { key: 'tf', label: 'TF', align: 'center' },
     { key: 'ltp', label: 'LTP', align: 'right' },
     { key: 'wt_trend', label: 'WT Trend', align: 'center' },
-    { key: 'wt_trigger_status', label: 'Trig Status', align: 'center' },
-    { key: 'recent_buy', label: 'Recent Buy', align: 'center' },
-    { key: 'recent_sell', label: 'Recent Sell', align: 'center' },
-    { key: 'valid_opp', label: 'Valid Opp Signal', align: 'center' },
+    { key: 'valid_time', label: 'Valid Candle', align: 'center' },
+    { key: 'trigger_lvl', label: 'Trigger Lvl', align: 'center' },
+    { key: 'wt_val', label: 'WT Val', align: 'center' },
     { key: 'wt_action', label: 'WT Action', align: 'center' },
+    { key: 'overall_status', label: 'Overall Status', align: 'center' },
     { key: 'sent_to', label: 'Sent To', align: 'center' },
     { key: 'target_val', label: 'Target', align: 'center' },
-    { key: 'sl_val', label: 'Stop Loss', align: 'center' }
+    { key: 'sl_val', label: 'Stop Loss', align: 'center' },
+    { key: 'trigger_time', label: 'Trigger Time', align: 'center' },
+    { key: 'changes', label: 'Last Changes', align: 'left' }
   ];
 
   let html = '<thead><tr>';
   for (const c of cols) {
-    html += `<th style="text-align:${c.align}; cursor:pointer;" onclick="handleScanSort('${c.key}')">${c.label}${getSortIcon(scanSort, c.key)}</th>`;
+    html += `<th style="text-align:${c.align}; cursor:pointer; user-select:none;" onclick="handleScanSort('${c.key}')">${c.label}${getSortIcon(scanSort, c.key)}</th>`;
   }
   html += '</tr></thead><tbody>';
 
   for (const r of syms) {
     if (r.status === 'No Data' || r.status === 'Error') continue;
+    
     html += '<tr>';
     for (const c of cols) {
-      if (c.key === 'recent_buy') {
-        if (r.recent_buy_val) {
-          const wtTxt = r.recent_buy_wt !== undefined && r.recent_buy_wt !== ""
-                        ? `<div style="font-size:10px;color:#58a6ff;margin-top:2px;">Val: ${r.recent_buy_wt}</div>` : '';
-          html += `<td style="text-align:center; line-height:1.3;">
-            <div style="color:var(--good); font-weight:600;">${r.recent_buy_val}</div>
-            <div style="font-size:10px; color:var(--muted);">${r.recent_buy_time}</div>
-            ${wtTxt}
-          </td>`;
-        } else {
-          html += `<td style="text-align:center" class="mut">—</td>`;
-        }
+      if (c.key === 'valid_time' || c.key === 'trigger_lvl' || c.key === 'wt_val' || c.key === 'trigger_time') {
+        let v = r[c.key];
+        if (v == null || v === '') v = '—';
+        else if (c.key === 'trigger_lvl') v = fmtINR(v);
+        html += `<td style="text-align:${c.align}">${v}</td>`;
         continue;
       }
-
-      if (c.key === 'recent_sell') {
-        if (r.recent_sell_val) {
-          const wtTxt = r.recent_sell_wt !== undefined && r.recent_sell_wt !== ""
-                        ? `<div style="font-size:10px;color:#58a6ff;margin-top:2px;">Val: ${r.recent_sell_wt}</div>` : '';
-          html += `<td style="text-align:center; line-height:1.3;">
-            <div style="color:var(--bad); font-weight:600;">${r.recent_sell_val}</div>
-            <div style="font-size:10px; color:var(--muted);">${r.recent_sell_time}</div>
-            ${wtTxt}
-          </td>`;
-        } else {
-          html += `<td style="text-align:center" class="mut">—</td>`;
-        }
-        continue;
-      }
-
-      if (c.key === 'valid_opp') {
-        if (r.valid_opp_val) {
-          const color = r.valid_opp_dir === 'buy' ? 'var(--good)' : 'var(--bad)';
-          html += `<td style="text-align:center; line-height:1.3;">
-            <div style="color:${color}; font-weight:600;">${r.valid_opp_val}</div>
-            <div style="font-size:10px; color:var(--muted);">${r.valid_opp_time}</div>
-          </td>`;
-        } else {
-          html += `<td style="text-align:center" class="mut">—</td>`;
-        }
-        continue;
-      }
-
+      
       if (c.key === 'sent_to') {
         let v = r[c.key] || '—';
         html += `<td style="text-align:${c.align}">${v}</td>`;
+        continue;
+      }
+
+      if (c.key === 'overall_status') {
+        let v = r[c.key] || '—';
+        let cls = 'mut';
+        if (v.includes('Position Open')) cls = 'buy';
+        else if (v.includes('Order Placed')) cls = 'buy';
+        else if (v.includes('Signal Pending')) cls = 'warn';
+        else if (v.includes('Triggered')) cls = 'sell';
+        html += `<td style="text-align:${c.align}" class="${cls}">${v}</td>`;
+        continue;
+      }
+
+      if (c.key === 'changes') {
+        let v = r[c.key] || '—';
+        html += `<td style="text-align:left; font-size:10px; line-height:1.4; color:var(--muted); max-width:200px; white-space:normal;">
+            ${v}
+        </td>`;
         continue;
       }
 
@@ -2252,9 +2340,7 @@ function renderScannerMonitor(state) {
 
       let cls = '';
       if (c.key === 'wt_trend') cls = v === 'Buy Trend' ? 'buy' : v === 'Sell Trend' ? 'sell' : 'mut';
-      if (c.key === 'wt_cross') cls = v === 'Bull Cross' ? 'buy' : v === 'Bear Cross' ? 'sell' : 'mut';
-      if (c.key === 'wt_action' || c.key === 'wt_trigger_status') cls = v.includes('Buy') ? 'buy' : v.includes('Sell') ? 'sell' : 'mut';
-      if (c.key === 'wt_perfect') cls = v === 'Perfect' ? 'buy' : 'mut';
+      if (c.key === 'wt_action') cls = v.includes('Buy') ? 'buy' : v.includes('Sell') ? 'sell' : 'mut';
 
       html += `<td style="text-align:${c.align}" class="${cls}">${v}</td>`;
     }
@@ -2262,6 +2348,13 @@ function renderScannerMonitor(state) {
   }
   html += '</tbody>';
   table.innerHTML = html;
+
+  // ✅ NEW: Save current state for the next scan comparison
+  previousScanState = {};
+  syms.forEach(r => {
+    const symKey = `${r.symbol}_${r.tf}`;
+    previousScanState[symKey] = { ...r };
+  });
 }
 
 /* pre-fill from URL params: /trading?symbol=HAL&exchange=NSE */
