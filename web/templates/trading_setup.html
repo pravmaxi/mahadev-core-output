@@ -1,0 +1,2272 @@
+{% extends "base.html" %}
+{% block title %}Trade Setup · Trading App{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+  <h1 style="margin:0">Trade Setup</h1>
+  <span id="modePill" class="tag warn">● PAPER</span>
+  <span id="modeHint" style="color:var(--muted);font-size:11.5px"></span>
+  <span style="flex:1"></span>
+  <button id="startAutoBtn" class="btnPrimary" style="background:#3fb950;color:#fff; padding:6px 12px; font-size:12px;">
+    ▶ Start Auto-Trading
+  </button>
+  <button id="applySettingsBtn" class="btnPrimary" style="background:var(--accent);color:#fff; display:none; padding:6px 12px; font-size:12px;">
+    ✓ Apply Settings
+  </button>
+  <button id="refreshAllBtn" class="ghostBtn">↻ Refresh</button>
+</div>
+<p class="sub" style="margin-top:-6px">Configure your Auto-Trader, allocations, and monitor signals.</p>
+
+<div style="display:grid;grid-template-columns:420px 1fr;gap:16px;align-items:start">
+
+  <!-- ═══════════ AUTO-TRADE & MANUAL FORM COLUMN ═══════════ -->
+  <div>
+
+    <!-- ═══════════ AUTO-TRADE PANEL ═══════════ -->
+    <details style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;" open>
+      <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">🤖 Auto-Trading Setup</summary>
+      <div style="padding-top:14px; max-height:80vh; overflow-y:auto">
+
+      <details style="margin-bottom:14px; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:8px;" open>
+        <summary style="cursor:pointer; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">
+          ⚙️ Source, Capital & Timeframe
+        </summary>
+
+        <div style="padding-top:12px;">
+          <div class="row2" style="margin-bottom:12px;">
+            <div>
+              <label class="lbl">Source</label>
+              <select id="autoSourceSelect" class="setInput" onchange="toggleAutoSource(this.value)">
+                <option value="manual">Manual Stocks</option>
+                <option value="sheet">Google Sheet</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Allocation Rule</label>
+              <select id="autoAllocMode" class="setInput" onchange="recalcEqualDistribution(); saveAutoState();">
+                <option value="equal">Equal Distribution</option>
+                <option value="manual">Manual Override</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row2" style="margin-bottom:12px;">
+            <div>
+              <label class="lbl">Total Capital (₹)</label>
+              <input id="autoCapital" class="setInput" type="number" value="500000" step="10000" oninput="recalcEqualDistribution(); saveAutoState();">
+            </div>
+            <div>
+              <label class="lbl">Global Timeframe</label>
+              <select id="autoGlobalTf" class="setInput" onchange="updateAllTimeframes(); saveAutoState();">
+                <option value="1m">1m</option><option value="2m">2m</option>
+                <option value="5m">5m</option><option value="15m">15m</option>
+                <option value="30m">30m</option><option value="60m">60m</option>
+                <option value="90m">90m</option><option value="1h" selected>1h</option>
+                <option value="4h">4h</option><option value="1d">1d</option>
+                <option value="1wk">1wk</option><option value="1mo">1mo</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="autoSourceManual"></div>
+
+          <div id="autoSourceSheet" hidden>
+            <div class="row2">
+              <div>
+                <label class="lbl">Book Name</label>
+                <select id="autoSheetBook" class="setInput" onchange="fetchAutoSheetTabs(); saveAutoState();">
+                  <option value="paper trading">paper trading</option>
+                  <option value="Backtest scanner">Backtest scanner</option>
+                  <option value="Stock Price Scraper">Stock Price Scraper</option>
+                  <option value="scanner output">scanner output</option>
+                </select>
+              </div>
+              <div>
+                <label class="lbl">Tab Name</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="autoSheetTab" class="setInput" style="flex:1;" onchange="saveAutoState();"></select>
+                  <button type="button" class="ghostBtn" style="padding:6px 12px; white-space:nowrap;" onclick="loadSheetSymbols()">⬇ Load</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row2">
+              <div>
+                <label class="lbl">Default Exchange for Imported Stocks</label>
+                <select id="autoSheetExch" class="setInput" onchange="saveAutoState();">
+                  <option value="NSE">India (NSE/BSE)</option>
+                  <option value="US">US (NASDAQ/NYSE)</option>
+                  <option value="FX">Forex / Commodity</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="color:var(--muted);font-size:10.5px;margin-bottom:12px;">Click Load to append symbols. They will use the default exchange selected above.</div>
+          </div>
+        </div>
+      </details>
+
+      <div style="display:flex; gap:6px; margin-bottom:14px;">
+        <input id="autoPresetName" class="setInput" placeholder="e.g. WT Scalp 15m" style="flex:1;">
+        <button type="button" class="ghostBtn" onclick="saveAutoPreset()">Save</button>
+        <select id="autoPresetList" class="setInput" style="width:100px;" onchange="loadAutoPreset(this.value)">
+          <option value="">Load Preset</option>
+        </select>
+        <button type="button" class="ghostBtn" style="padding:6px 10px; color:#f85149; border-color:#f85149;" onclick="deleteAutoPreset()" title="Delete selected preset">✕</button>
+      </div>
+
+      <details style="margin-bottom:10px; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:8px;">
+        <summary style="cursor:pointer; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Strategy & Sizing</summary>
+        <div style="padding-top:10px;">
+          <label class="chk"><input type="radio" name="auto_strat" value="simple" checked> Simple (single position)</label>
+          <label class="chk"><input type="radio" name="auto_strat" value="same_side"> Same-side averaging</label>
+          <label class="chk"><input type="radio" name="auto_strat" value="alternate"> Alternate (flip sides)</label>
+
+          <div id="autoMultBlock" hidden>
+            <div class="setHead" style="margin-top:14px">Multiplier</div>
+            <label class="chk"><input type="radio" name="auto_mult" value="martingale" checked> Martingale</label>
+            <label class="chk"><input type="radio" name="auto_mult" value="incremental"> Incremental</label>
+            <label class="chk"><input type="radio" name="auto_mult" value="constant"> Constant</label>
+            <div class="numRow" style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; color:var(--muted);">Max levels</span>
+              <input type="number" id="autoMaxLevels" class="setInput" value="5" step="1" style="width:80px;">
+            </div>
+          </div>
+
+          <div class="row2" style="margin-top:8px">
+            <div><label class="lbl">Order Side</label>
+              <select id="autoSideMode" class="setInput">
+                <option value="both">Both buy & sell</option><option value="long">Buy only</option><option value="short">Sell only</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details style="margin-bottom:10px; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:8px;">
+        <summary style="cursor:pointer; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Triggers & Exits</summary>
+        <div style="padding-top:10px;">
+          <div class="row2">
+            <div><label class="lbl">Profit Target %</label><input id="autoTarget" class="setInput" type="number" value="2" step="0.5"></div>
+            <div><label class="lbl">Stop Loss %</label><input id="autoStop" class="setInput" type="number" value="3" step="0.5"></div>
+          </div>
+          <div class="row2">
+            <div><label class="lbl">Buffer (points)</label><input id="autoBuffer" class="setInput" type="number" value="0" step="0.01"></div>
+            <div><label class="lbl">Wait max (bars)</label><input id="autoWait" class="setInput" type="number" value="100" step="1"></div>
+          </div>
+          <div class="row2">
+            <div><label class="lbl">Max Market Gap %</label><input id="autoMaxGap" class="setInput" type="number" value="2.0" step="0.5" title="If LTP is beyond this % from Trigger Level, mark VALID as NO"></div>
+          </div>
+          <label class="chk" style="margin-top:6px"><input type="checkbox" id="autoOpp" checked> Exit on opposite signal</label>
+
+          <div class="setHead" style="margin-top:14px">Trailing stop loss</div>
+          <label class="chk"><input type="checkbox" id="autoTrailOn"> Enable trailing SL</label>
+          <div class="row2"><div><label class="lbl">Start %</label><input id="autoTrailStart" class="setInput" type="number" value="3" step="0.5"></div>
+                          <div><label class="lbl">Step %</label><input id="autoTrailStep" class="setInput" type="number" value="2" step="0.5"></div></div>
+        </div>
+      </details>
+
+      <details style="margin-bottom:10px; background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:8px;">
+        <summary style="cursor:pointer; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">Indicator Settings</summary>
+        <div style="padding-top:10px;">
+          <div class="row2">
+            <div><label class="lbl">WT n1</label><input id="autoWtN1" class="setInput" type="number" value="15"></div>
+            <div><label class="lbl">WT n2</label><input id="autoWtN2" class="setInput" type="number" value="27"></div>
+          </div>
+          <div class="row2">
+            <div><label class="lbl">Pending Candle Rule</label>
+              <select id="autoWtRule" class="setInput">
+                <option value="every">Every Cross</option>
+                <option value="same_dir" selected>Newest Same-Direction</option>
+                <option value="any_dir">Newest Any-Direction</option>
+              </select>
+            </div>
+            <div><label class="lbl">Candle Source</label>
+              <select id="autoCandles" class="setInput"><option value="ha">Heikin Ashi</option><option value="real">Real</option></select>
+            </div>
+          </div>
+
+          <div class="setHead" style="margin-top:14px">Confirmation filters</div>
+          <label class="chk"><input type="checkbox" id="autoWtFilter"> WT extreme</label>
+          <div class="row2"><div><label class="lbl">Buy max</label><input id="autoWtMax" class="setInput" type="number" value="-40"></div>
+                          <div><label class="lbl">Sell min</label><input id="autoWtMin" class="setInput" type="number" value="40"></div></div>
+
+          <label class="chk" style="margin-top:8px"><input type="checkbox" id="autoHtfFilter"> HTF trend (auto)</label>
+          <label class="chk" style="margin-top:8px"><input type="checkbox" id="autoRsiFilter"> RSI rising/falling</label>
+          <div class="row2"><div><label class="lbl">RSI period</label><input id="autoRsiPeriod" class="setInput" type="number" value="14"></div></div>
+
+          <div class="row2" style="margin-top:14px">
+             <div><label class="lbl">F&O Filter</label>
+               <select id="autoFno" class="setInput" onchange="document.getElementById('autoFnoSheetRow').style.display = this.value === 'sheet' ? 'flex' : 'none'; if(this.value==='sheet') fetchAutoFnoTabs(); saveAutoState();">
+                 <option value="all">All symbols</option>
+                 <option value="sheet" selected>From sheet</option>
+                 <option value="none">Off</option>
+               </select>
+             </div>
+          </div>
+          <div class="row2" id="autoFnoSheetRow" style="display:none; margin-top:6px">
+            <div>
+              <label class="lbl">F&O Book</label>
+              <select id="autoFnoBook" class="setInput" onchange="fetchAutoFnoTabs(); saveAutoState();">
+                <option value="Stock Price Scraper">Stock Price Scraper</option>
+                <option value="Backtest scanner" selected>Backtest scanner</option>
+                <option value="scanner output">scanner output</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">F&O Tab</label>
+              <select id="autoFnoTab" class="setInput" onchange="saveAutoState();"></select>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      </div>
+    </details>
+
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="document.getElementById('manualFormWrap').hidden = !document.getElementById('manualFormWrap').hidden">
+        <div class="setTitle" style="margin:0">Manual Order</div>
+        <span style="color:var(--muted);font-size:12px">▼ Toggle</span>
+      </div>
+
+      <div id="manualFormWrap" hidden style="margin-top:16px">
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <button type="button" id="mktIndia" class="qtyTab active" style="flex:1">🇮🇳 Indian Market</button>
+          <button type="button" id="mktUS" class="qtyTab" style="flex:1">🇺🇸 US Market</button>
+        </div>
+
+    <div class="setTitle">New order</div>
+
+    <div class="row2">
+      <div>
+        <label class="lbl">Symbol</label>
+        <input id="sym" class="setInput" placeholder="IRFC">
+      </div>
+      <div>
+        <label class="lbl">Exchange</label>
+        <select id="exch" class="setInput">
+          <option>NSE</option><option>BSE</option>
+          <option>NFO</option><option>BFO</option>
+          <option>MCX</option><option>CDS</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label class="lbl">Side</label>
+        <div style="display:flex;gap:6px">
+          <button type="button" id="sideBuy"  class="sideBtn active-buy">BUY</button>
+          <button type="button" id="sideSell" class="sideBtn">SELL</button>
+        </div>
+      </div>
+      <div>
+        <label class="lbl">Product</label>
+        <select id="product" class="setInput">
+          <option value="CNC">CNC (delivery)</option>
+          <option value="MIS">MIS (intraday)</option>
+          <option value="NRML">NRML (F&O)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="setTitle" style="margin-top:14px">Quantity</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button type="button" class="qtyTab active" data-mode="qty">Fixed qty</button>
+      <button type="button" class="qtyTab" data-mode="amt">Fixed ₹</button>
+      <button type="button" class="qtyTab" data-mode="pct">% capital</button>
+    </div>
+    <div class="row2">
+      <div>
+        <label class="lbl" id="qtyLabel">Qty</label>
+        <input id="qty" class="setInput" type="number" step="1" value="1" min="1">
+      </div>
+      <div id="qtyExtraWrap" hidden>
+        <label class="lbl" id="qtyExtraLabel">₹ amount</label>
+        <input id="qtyExtra" class="setInput" type="number" step="500" value="5000">
+      </div>
+    </div>
+    <div style="color:var(--muted);font-size:11px;margin-top:4px">
+      <span id="qtyCalcHint"></span>
+      <button type="button" id="calcQtyBtn" class="ghostBtn"
+              style="padding:2px 8px;font-size:11px;margin-left:6px">Calculate</button>
+    </div>
+
+    <div class="setTitle" style="margin-top:14px">Order</div>
+    <div class="row2">
+      <div>
+        <label class="lbl">Order type</label>
+        <select id="ordType" class="setInput">
+          <option value="MARKET">MARKET</option>
+          <option value="LIMIT">LIMIT</option>
+          <option value="SL">SL</option>
+          <option value="SL-M">SL-M</option>
+        </select>
+      </div>
+      <div>
+        <label class="lbl">Validity</label>
+        <select id="validity" class="setInput">
+          <option value="DAY">DAY</option>
+          <option value="IOC">IOC</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row2" id="priceRow" hidden>
+      <div>
+        <label class="lbl">Price</label>
+        <input id="price" class="setInput" type="number" step="0.05">
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button type="button" id="fillLtpBtn" class="ghostBtn" style="width:100%">
+          ↡ Use current LTP
+        </button>
+      </div>
+    </div>
+
+    <div class="row2" id="triggerRow" hidden>
+      <div>
+        <label class="lbl">Trigger price</label>
+        <input id="triggerPrice" class="setInput" type="number" step="0.05">
+      </div>
+    </div>
+
+    <div id="ltpLine" style="color:var(--muted);font-size:11.5px;margin-top:8px">
+      LTP: <b id="ltpVal">—</b> <span id="ltpSrc" style="font-size:10px"></span>
+    </div>
+
+    <div id="previewBox"
+         style="background:var(--panel2);border:1px solid var(--border);
+                border-radius:6px;padding:10px 12px;font-size:11px;
+                font-family:ui-monospace,monospace;color:var(--muted);
+                white-space:pre-wrap;word-break:break-all;margin-top:10px"></div>
+
+    <div id="orderErr" hidden
+         style="background:#2a1414;border:1px solid #f85149;border-radius:6px;
+                padding:10px 12px;color:#f85149;font-size:12px;margin-top:10px"></div>
+
+    <button id="placeBtn" class="btnPrimary" style="width:100%;margin-top:14px">
+      Place order
+    </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ RIGHT SIDE ═══════════ -->
+  <div>
+
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;" open>
+      <summary style="cursor:pointer; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;">
+        <span>Symbols & Allocation</span>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button type="button" class="ghostBtn" onclick="saveAllocations()" style="padding:2px 8px; font-size:10px; color:#58a6ff; border-color:#58a6ff;">💾 Save Allocations</button>
+          <span id="allocStatus" style="color:var(--good); font-size:11px;">Unallocated: ₹0</span>
+          <span style="font-size:10px; color:var(--accent);">▼ Toggle View</span>
+        </div>
+      </summary>
+
+      <div style="padding-top:12px;">
+        <div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
+          <button type="button" class="ghostBtn" onclick="lockAllStocks()">🔒 Lock All</button>
+          <button type="button" class="ghostBtn" onclick="unlockAllStocks()">🔓 Unlock All</button>
+          <button type="button" class="ghostBtn" style="color:#e3b341; border-color:#e3b341" onclick="removeUnlockedStocks()">🗑 Remove Unlocked</button>
+          <button type="button" class="ghostBtn" style="color:#f85149; border-color:#f85149" onclick="removeAllStocks()">🗑 Remove All</button>
+          <span style="flex:1"></span>
+
+          <select id="bulkTfSelector" class="setInput" style="width:100px; padding:4px; font-size:11px;" onchange="applyBulkTf(this.value)">
+            <option value="">Set All TF...</option>
+            <option value="1m">1m</option>
+            <option value="2m">2m</option>
+            <option value="5m">5m</option>
+            <option value="15m">15m</option>
+            <option value="30m">30m</option>
+            <option value="60m">60m</option>
+            <option value="90m">90m</option>
+            <option value="1h">1h</option>
+            <option value="4h">4h</option>
+            <option value="1d">1d</option>
+            <option value="1wk">1wk</option>
+            <option value="1mo">1mo</option>
+          </select>
+
+          <label class="chk" style="margin:0; font-size:11px;">
+            <input type="checkbox" id="autoLtpRefresh" onchange="toggleAutoLtp(this.checked)"> Auto-Refresh LTP (60s)
+          </label>
+          <button type="button" class="ghostBtn" onclick="fetchBatchLTP()">↻ Fetch LTP</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 80px 100px 80px 40px 40px; gap:8px; padding:0 4px 6px 4px; font-size:10.5px; color:var(--muted); border-bottom:1px solid var(--border); margin-bottom:6px;">
+          <div>SYMBOL & EXCHANGE (<span id="stockCount">0</span>)</div>
+          <div style="text-align:center">TF</div>
+          <div style="text-align:right">ALLOCATION (₹)</div>
+          <div style="text-align:right">LTP</div>
+          <div style="text-align:center">LOCK (<span id="lockedCount">0</span>)</div>
+          <div style="text-align:center">DEL</div>
+        </div>
+
+        <div id="manualStocksList" style="margin-bottom:10px; display:flex; flex-direction:column; gap:6px; max-height: 350px; overflow-y: auto;"></div>
+
+        <button id="addStockBtn" class="ghostBtn" style="width:100%; border-style:dashed;" onclick="addStockRow()">+ Add Stock</button>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+<!-- FULL WIDTH TRADING PANEL (NEW) -->
+<details id="tradingPanelMonitor" style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:16px; width: 100%;" open>
+  <summary class="secHead" style="margin-bottom:8px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; outline:none;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span>📊 Trading Panel (Live)</span>
+      <span id="tpScanStatus" style="color:var(--accent);font-size:10px;margin-left:10px;"></span>
+      <label class="chk" style="margin:0 0 0 10px; font-size:11px;">
+        <input type="checkbox" id="tpFetchLtpToggle" checked onchange="toggleScannerLtp(this.checked)"> Fetch LTP
+      </label>
+      <input type="number" id="tpLtpInterval" class="setInput" style="width:45px; padding:2px 4px; text-align:center;" value="30" min="1" title="LTP interval (sec)"> <span style="font-size:11px; color:var(--muted); margin-right:6px;">sec</span>
+      <button type="button" id="tpFetchLtpBtn" class="ghostBtn" onclick="fetchScannerLtp()" style="padding:2px 8px; font-size:10px;">↻ Fetch</button>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;" onclick="event.stopPropagation()">
+      <label class="chk" style="margin:0; font-size:11px;">
+        <input type="checkbox" id="tpPaperTradeToggle" checked> Paper Trade
+      </label>
+      <label class="chk" style="margin:0; font-size:11px; color:var(--accent);">
+        <input type="checkbox" id="tpLiveTradeToggle"> Live Trade
+      </label>
+      <label class="chk" style="margin:0; font-size:11px;">
+        <input type="checkbox" id="tpAllowMarketOrders"> Allow Market Orders
+      </label>
+      <label class="chk" style="margin:0; font-size:11px; color:#e3b341;" title="Always show both Buy/Sell signals, even if broken">
+        <input type="checkbox" id="tpShowAllSignals" onclick="toggleShowAllSignals(this.checked)"> Show Both Signals
+      </label>
+      <label class="chk" style="margin:0; font-size:11px;">
+        <input type="checkbox" id="tpAutoScanEnabled" checked> Auto-Scan
+      </label>
+      <label class="chk" style="margin:0; font-size:11px; color:#e3b341;">
+        <input type="checkbox" id="tpWriteToGSheet"> Write GSheet
+      </label>
+      <span style="color:var(--muted);font-size:11px;">Interval:</span>
+      <input type="number" id="tpScanIntervalMins" class="setInput" style="width:50px; padding:2px 4px; text-align:center;" value="1" min="1">
+      <span id="tpLastScanTime" style="color:var(--muted);font-size:11px; margin-right: 10px;">Last: —</span>
+      <button type="button" id="tpScanNowBtn" class="ghostBtn" onclick="triggerManualScan()" style="padding:2px 8px; font-size:10px; color:#e3b341; border-color:#e3b341;" disabled>⚡ Scan Now</button>
+      <button type="button" class="ghostBtn" onclick="resetProcessedSignals()" style="padding:2px 8px; font-size:10px; color:#f85149; border-color:#f85149;">Reset Signals</button>
+    </div>
+  </summary>
+  <div class="tblwrap" style="max-height: 500px;">
+    <table class="tb" id="tradingTable" style="width: 100%;">
+    </table>
+  </div>
+</details>
+
+
+
+<div style="margin-bottom:16px;">
+    <div style="display:flex;gap:10px;align-items:stretch;margin-bottom:12px">
+      <div id="tradeSummary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;flex:1"></div>
+      <button id="resetPaperBtn" class="ghostBtn" style="color:#f85149;border-color:#f85149;padding:0 16px;font-weight:600">
+        Reset All
+      </button>
+    </div>
+
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;" open>
+      <summary style="cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; outline:none; margin-bottom:8px;">
+        <span>Paper positions</span>
+        <span style="flex:1"></span>
+        <span id="posCount" style="color:var(--muted);font-size:11px"></span>
+      </summary>
+      <div id="posWrap" class="tblwrap" style="margin-top:8px;"></div>
+    </details>
+
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;" open>
+      <summary style="cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; outline:none; margin-bottom:8px;">
+        <span>Paper orders</span>
+        <span style="flex:1"></span>
+      </summary>
+      <div id="ordWrap" class="tblwrap" style="margin-top:8px;"></div>
+      <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+        <button id="clearPaperBtn" class="ghostBtn" style="padding:3px 10px;font-size:11px">Clear all</button>
+      </div>
+    </details>
+
+    <details style="margin-top:20px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
+      <summary style="cursor:pointer; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">
+        📁 Debug: JSON Files
+      </summary>
+      <div style="padding-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div>
+          <div class="setHead" style="margin-top:0">Allocations</div>
+          <pre id="jsonAllocations" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Paper Processed</div>
+          <pre id="jsonPaperProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Paper Queue</div>
+          <pre id="jsonPaperQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+      </div>
+      <button class="ghostBtn" style="margin-top:10px" onclick="fetchJsonFiles()">↻ Refresh JSON View</button>
+    </details>
+</div>
+
+<div id="confirmModal"
+     style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;
+            display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--panel);border:2px solid #f85149;border-radius:10px;
+              width:min(480px,100%);padding:20px">
+    <div style="font-size:22px;margin-bottom:6px">⚠️</div>
+    <div id="confirmTitle" style="font-weight:700;font-size:15px;margin-bottom:10px">
+      Confirm order
+    </div>
+    <div id="confirmBody" style="font-size:12.5px;color:var(--muted);
+         font-family:ui-monospace,monospace;white-space:pre-wrap;
+         background:var(--panel2);padding:12px;border-radius:6px;
+         word-break:break-all;margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" id="confirmNo" class="ghostBtn">Cancel</button>
+      <button type="button" id="confirmYes"
+              style="background:#f85149;border:none;color:#fff;border-radius:6px;
+                     padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px">
+        Yes, place order
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .setTitle{color:var(--muted);font-size:11px;font-weight:700;
+            letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+  .setHead{color:var(--muted);font-size:10.5px;font-weight:700;
+           letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;margin-top:14px}
+  .secHead{display:flex;align-items:center;gap:8px;color:var(--muted);
+           font-size:11px;font-weight:700;letter-spacing:.06em;
+           text-transform:uppercase;margin-bottom:8px}
+  .setInput{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+            border-radius:6px;padding:6px 10px;font-size:12.5px;width:100%;
+            font-family:ui-monospace,monospace}
+  .setInput:focus{outline:none;border-color:var(--accent)}
+  .lbl{color:var(--muted);font-size:11px;display:block;margin-bottom:4px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .ghostBtn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+            border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer}
+  .ghostBtn:hover{color:var(--fg);border-color:var(--accent)}
+  .btnPrimary{background:var(--accent);border:none;color:#04121f;border-radius:6px;
+              padding:10px 22px;font-weight:600;cursor:pointer;font-size:13px}
+  .btnPrimary:disabled{opacity:.5;cursor:wait}
+  .sideBtn{flex:1;background:var(--panel2);border:1px solid var(--border);
+           color:var(--muted);border-radius:6px;padding:8px;font-size:12px;
+           font-weight:700;cursor:pointer;letter-spacing:.05em}
+  .sideBtn.active-buy{background:#1e4620;border-color:#3fb950;color:#7ee787}
+  .sideBtn.active-sell{background:#5c1e1e;border-color:#f85149;color:#f85149}
+  .qtyTab{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+          border-radius:6px;padding:5px 12px;font-size:11.5px;cursor:pointer}
+  .qtyTab.active{background:var(--accent);border-color:var(--accent);color:#04121f;
+                 font-weight:600}
+  .tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;
+       font-weight:700;letter-spacing:.04em}
+  .tag.ok{background:#1e4620;color:#7ee787}
+  .tag.err{background:#5c1e1e;color:#f85149}
+  .tag.warn{background:#3d3d1e;color:#e3b341}
+  table.tb{width:100%;border-collapse:collapse;font-size:12px;
+           font-variant-numeric:tabular-nums}
+  table.tb th, table.tb td{padding:7px 10px;border-bottom:1px solid var(--border);
+           text-align:right;white-space:nowrap}
+  table.tb th{color:var(--muted);font-weight:600;font-size:10.5px;
+           text-transform:uppercase;letter-spacing:.05em;
+           position:sticky;top:0;background:var(--bg);z-index:1}
+  table.tb th:first-child, table.tb td:first-child{text-align:left}
+  table.tb tr:hover{background:#141c28}
+  .buy{color:var(--good)} .sell{color:var(--bad)} .mut{color:var(--muted)}
+  .tblwrap{border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:340px}
+  .empty{padding:34px;text-align:center;color:var(--muted);font-size:12px}
+  .lil{background:transparent;border:1px solid var(--border);color:var(--muted);
+       border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:3px}
+  .lil:hover{color:var(--fg);border-color:var(--accent)}
+  .lil.del:hover{color:var(--bad);border-color:var(--bad)}
+  .card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;
+        padding:10px 12px}
+  .card .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;
+           letter-spacing:.05em}
+  .card .v{font-size:16px;font-weight:600;margin-top:3px;
+           font-variant-numeric:tabular-nums}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const $ = id => document.getElementById(id);
+
+let liveEnabled = false;
+let side = 'BUY';
+let qtyMode = 'qty';
+let currentMarket = 'IN';
+
+function fmtINR(v, dec=null){
+  if (v == null || v === '' || isNaN(v)) return '—';
+  const n = Number(v);
+  
+  if (dec === null) {
+    dec = Math.abs(n) < 10 ? 5 : 2;
+  }
+  
+  const s = n < 0 ? '-' : '';
+  const a = Math.abs(n);
+  const parts = a.toFixed(dec).split('.');
+  let intPart = parts[0], decPart = parts[1] || '';
+  let lastThree = intPart.slice(-3);
+  const rest = intPart.slice(0, -3);
+  if (rest) lastThree = ',' + lastThree;
+  return s + rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree +
+         (decPart ? '.' + decPart : '');
+}
+function cls(v){ return v > 0 ? 'buy' : v < 0 ? 'sell' : 'mut'; }
+function sign(v){ return v > 0 ? '+' : ''; }
+
+async function fetchMode(){
+  try {
+    const r = await fetch('/api/trade/mode');
+    const d = await r.json();
+    liveEnabled = !!d.live_enabled;
+  } catch { liveEnabled = false; }
+  const pill = $('modePill'), hint = $('modeHint');
+  if (liveEnabled){
+    pill.className = 'tag err';
+    pill.textContent = '● LIVE';
+    hint.textContent = 'Orders will be sent to Zerodha. Use with extreme care.';
+  } else {
+    pill.className = 'tag warn';
+    pill.textContent = '● PAPER';
+    hint.textContent = 'Orders recorded locally. No live trades. Enable LIVE in Settings to trade real.';
+  }
+}
+
+$('sideBuy').addEventListener('click',  () => setSide('BUY'));
+$('sideSell').addEventListener('click', () => setSide('SELL'));
+function setSide(s){
+  side = s;
+  $('sideBuy').className  = 'sideBtn' + (s === 'BUY'  ? ' active-buy'  : '');
+  $('sideSell').className = 'sideBtn' + (s === 'SELL' ? ' active-sell' : '');
+  updatePreview();
+}
+
+document.querySelectorAll('.qtyTab').forEach(b => {
+  if (!b.dataset.mode) return;
+  b.addEventListener('click', () => {
+    qtyMode = b.dataset.mode;
+    document.querySelectorAll('.qtyTab[data-mode]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    syncQtyUI();
+  });
+});
+function syncQtyUI(){
+  const extra = $('qtyExtraWrap');
+  const ql = $('qtyLabel'), el = $('qtyExtraLabel');
+  if (qtyMode === 'qty'){
+    extra.hidden = true; ql.textContent = 'Qty'; $('qty').value = $('qty').value || 1;
+  } else if (qtyMode === 'amt'){
+    extra.hidden = false; ql.textContent = 'Qty (auto)'; el.textContent = '₹ amount';
+    $('qtyExtra').value = $('qtyExtra').value || 5000;
+  } else {
+    extra.hidden = false; ql.textContent = 'Qty (auto)'; el.textContent = '% of capital';
+    $('qtyExtra').value = $('qtyExtra').value || 10;
+  }
+  updatePreview();
+}
+
+function syncOrderType(){
+  const t = $('ordType').value;
+  $('priceRow').hidden   = (t === 'MARKET' || t === 'SL-M');
+  $('triggerRow').hidden = !(t === 'SL' || t === 'SL-M');
+  updatePreview();
+}
+$('ordType').addEventListener('change', syncOrderType);
+
+async function fetchLTP(){
+  const sym = $('sym').value.trim().toUpperCase();
+  const ex  = $('exch').value;
+  if (!sym) return null;
+  try {
+    const r = await fetch(`/api/trade/ltp?exchange=${ex}&symbol=${sym}`);
+    const d = await r.json();
+    if (!d.ok){
+      $('ltpVal').textContent = '—';
+      $('ltpSrc').textContent = '(' + (d.error || 'unavailable') + ')';
+      return null;
+    }
+    $('ltpVal').textContent = fmtINR(d.last_price);
+    $('ltpSrc').textContent = '(' + d.source + ')';
+    return d.last_price;
+  } catch { return null; }
+}
+
+$('fillLtpBtn').addEventListener('click', async () => {
+  const ltp = await fetchLTP();
+  if (ltp != null) $('price').value = ltp;
+  updatePreview();
+});
+
+$('calcQtyBtn').addEventListener('click', async () => {
+  if (qtyMode === 'qty') return;
+  const ltp = await fetchLTP();
+  if (ltp == null){ $('qtyCalcHint').textContent = 'no LTP for calc'; return; }
+  const ex = $('qtyExtra');
+  const v  = parseFloat(ex.value) || 0;
+  let qty;
+  if (qtyMode === 'amt') qty = Math.floor(v / ltp);
+  else                   qty = Math.floor((100000 * v / 100) / ltp);
+  qty = Math.max(1, qty);
+  $('qty').value = qty;
+  $('qtyCalcHint').textContent = `${fmtINR(ltp)} × ${qty} = ${fmtINR(ltp * qty)}`;
+  updatePreview();
+});
+
+$('sym').addEventListener('blur', () => fetchLTP());
+$('exch').addEventListener('change', () => fetchLTP());
+
+function orderPayload(){
+  const t = $('ordType').value;
+  const o = {
+    symbol:   $('sym').value.trim().toUpperCase(),
+    exchange: $('exch').value,
+    side:     side,
+    qty:      parseInt($('qty').value, 10) || 1,
+    order_type: t,
+    product:  $('product').value,
+    validity: $('validity').value,
+  };
+  if (t === 'LIMIT' || t === 'SL') o.price = parseFloat($('price').value) || null;
+  if (t === 'SL' || t === 'SL-M')  o.trigger_price = parseFloat($('triggerPrice').value) || null;
+  return o;
+}
+function updatePreview(){
+  $('previewBox').textContent = JSON.stringify(orderPayload(), null, 2);
+}
+['sym','exch','qty','price','triggerPrice','product','validity']
+  .forEach(id => $(id).addEventListener('input', updatePreview));
+$('product').addEventListener('change', updatePreview);
+$('validity').addEventListener('change', updatePreview);
+
+let confirmResolve = null;
+function askConfirm(title, payload){
+  return new Promise(res => {
+    confirmResolve = res;
+    $('confirmTitle').textContent = title;
+    $('confirmBody').textContent = JSON.stringify(payload, null, 2);
+    $('confirmModal').style.display = 'flex';
+  });
+}
+$('confirmNo').addEventListener('click', () => {
+  $('confirmModal').style.display = 'none';
+  if (confirmResolve) confirmResolve(false);
+  confirmResolve = null;
+});
+$('confirmYes').addEventListener('click', () => {
+  $('confirmModal').style.display = 'none';
+  if (confirmResolve) confirmResolve(true);
+  confirmResolve = null;
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && $('confirmModal').style.display === 'flex'){
+    $('confirmModal').style.display = 'none';
+    if (confirmResolve) confirmResolve(false);
+    confirmResolve = null;
+  }
+});
+
+$('placeBtn').addEventListener('click', async () => {
+  $('orderErr').hidden = true;
+  const p = orderPayload();
+  if (!p.symbol) return showErr('Enter a symbol');
+  if (!p.qty || p.qty < 1) return showErr('Qty must be ≥ 1');
+  if ((p.order_type === 'LIMIT' || p.order_type === 'SL') && !p.price)
+    return showErr('Price required for ' + p.order_type);
+  if ((p.order_type === 'SL' || p.order_type === 'SL-M') && !p.trigger_price)
+    return showErr('Trigger price required for ' + p.order_type);
+
+  if (liveEnabled){
+    const ok = await askConfirm('Place LIVE order on Zerodha', p);
+    if (!ok) return;
+  }
+
+  $('placeBtn').disabled = true;
+  try {
+    const url = liveEnabled ? '/api/trade/live/place' : '/api/trade/paper/place';
+    const r = await fetch(url, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(p)
+    });
+    const d = await r.json();
+    if (!d.ok){ showErr(d.error || 'failed'); return; }
+    await refreshAll();
+  } catch (e){ showErr('request failed: ' + e.message); }
+  finally { $('placeBtn').disabled = false; }
+});
+
+function showErr(msg){
+  $('orderErr').hidden = false;
+  $('orderErr').textContent = '⚠️ ' + msg;
+}
+
+let posSort = []; 
+let ordSort = [];
+let scanSort = [];
+
+function sortData(data, sortState) {
+  if (!sortState.length) return data;
+  return data.sort((a, b) => {
+    for (let i = 0; i < sortState.length; i++) {
+      const { key, dir } = sortState[i];
+      let va = a[key], vb = b[key];
+      if (va == null) va = ''; if (vb == null) vb = '';
+      let cmp = 0;
+      if (typeof va === 'string') cmp = va.localeCompare(vb);
+      else cmp = va - vb;
+      if (cmp !== 0) return dir === 'asc' ? cmp : -cmp;
+    }
+    return 0;
+  });
+}
+
+function handleSort(sortState, key) {
+  const existingIdx = sortState.findIndex(s => s.key === key);
+  if (existingIdx !== -1) {
+    if (sortState[existingIdx].dir === 'asc') {
+      sortState[existingIdx].dir = 'desc';
+    } else {
+      sortState.splice(existingIdx, 1); 
+    }
+  } else {
+    if (sortState.length >= 5) sortState.pop();
+    sortState.push({ key, dir: 'asc' });
+  }
+}
+
+function getSortIcon(sortState, key) {
+  const idx = sortState.findIndex(s => s.key === key);
+  if (idx === -1) return ' <span style="color:var(--muted); font-size:10px;">↕</span>';
+  
+  const arrow = sortState[idx].dir === 'asc' ? '▲' : '▼';
+  const num = idx + 1;
+  
+  const badge = `<span style="display:inline-flex; align-items:center; justify-content:center; background:var(--accent); color:#000; border-radius:10px; width:14px; height:14px; font-size:9px; font-weight:bold; margin-left:4px;">${num}</span>`;
+  
+  return ` <span style="color:var(--accent); font-size:10px;">${arrow}</span>${badge}`;
+}
+
+async function refreshPositions(){
+  const el = $('posWrap');
+  try {
+    const r = await fetch('/api/trade/paper/positions');
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'failed');
+    const list = d.positions || [];
+    $('posCount').textContent = `${list.length} position(s)`;
+    if (!list.length){ el.innerHTML = '<div class="empty">No paper positions yet.</div>'; return; }
+
+    const sortedList = sortData(list, posSort);
+    const rows = sortedList.map(p => {
+      const pnl = p.unrealized_pnl;
+      const pct = p.unrealized_pct;
+
+      const target = p.target != null ? fmtINR(p.target) : '—';
+      const stop = p.sl != null ? fmtINR(p.sl) : '—';
+      const ltp = p.ltp != null ? fmtINR(p.ltp) : '—';
+
+      const entryT = p.entry_time ? p.entry_time.slice(11,19) : '—';
+
+      return `<tr>
+        <td><b>${p.symbol}</b><div style="color:var(--muted);font-size:10px">${p.exchange} · ${p.product} · ${p.tag || ''}</div></td>
+        <td class="${p.qty >= 0 ? 'buy' : 'sell'}">${p.qty}</td>
+        <td>${fmtINR(p.avg_price)}</td>
+        <td style="color:var(--muted); font-size:11px;">${entryT}</td>
+        <td>${ltp}</td>
+        <td class="buy">${target}</td>
+        <td class="sell">${stop}</td>
+        <td class="${cls(pnl)}">${pnl == null ? '—' : sign(pnl) + fmtINR(pnl)}</td>
+        <td class="${cls(pct)}">${pct == null ? '—' : sign(pct) + pct.toFixed(2) + '%'}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="lil" onclick="window._closePosition('${p.symbol}','${p.exchange}','${p.product}',${p.qty})">Close</button>
+        </td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<table class="tb">
+      <thead><tr>
+        <th style="cursor:pointer" data-psort="symbol">Symbol${getSortIcon(posSort, 'symbol')}</th>
+        <th style="cursor:pointer" data-psort="qty">Qty${getSortIcon(posSort, 'qty')}</th>
+        <th style="cursor:pointer" data-psort="avg_price">Avg${getSortIcon(posSort, 'avg_price')}</th>
+        <th>Entry Time</th>
+        <th>LTP</th>
+        <th>Target</th><th>Stop</th>
+        <th style="cursor:pointer" data-psort="unrealized_pnl">P&amp;L ₹${getSortIcon(posSort, 'unrealized_pnl')}</th>
+        <th style="cursor:pointer" data-psort="unrealized_pct">P&amp;L %${getSortIcon(posSort, 'unrealized_pct')}</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+    el.querySelectorAll('[data-psort]').forEach(th => {
+      th.addEventListener('click', () => {
+        handleSort(posSort, th.dataset.psort);
+        refreshPositions();
+      });
+    });
+  } catch (e){
+    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+window._closePosition = async function(symbol, exchange, product, qty){
+  const closeSide = qty > 0 ? 'SELL' : 'BUY';
+  const closeQty  = Math.abs(qty);
+  const p = { symbol, exchange, side: closeSide, qty: closeQty,
+              order_type: 'MARKET', product, validity: 'DAY' };
+  if (liveEnabled){
+    const ok = await askConfirm(`Close LIVE position: ${closeSide} ${closeQty} ${symbol} (market)`, p);
+    if (!ok) return;
+  }
+  try {
+    const url = liveEnabled ? '/api/trade/live/place' : '/api/trade/paper/place';
+    await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'},
+                       body: JSON.stringify(p) });
+    await refreshAll();
+  } catch (e){ console.error(e); }
+};
+
+async function refreshOrders(){
+  const el = $('ordWrap');
+  try {
+    const r = await fetch('/api/trade/paper/orders');
+    const d = await r.json();
+    const list = (d.orders || []).slice().reverse();
+    if (!list.length){ el.innerHTML = '<div class="empty">No paper orders yet.</div>'; return; }
+
+    const sortedList = sortData(list, ordSort);
+    const rows = sortedList.map(o => {
+      const isExit = (o.id && o.id.includes('_exit')) || (o.tag && o.tag.includes('Exit'));
+      
+      let displaySide = o.side;
+      let clsSide = o.side === 'BUY' ? 'buy' : 'sell';
+      
+      if (isExit) {
+          displaySide = 'EXIT';
+          clsSide = 'warn'; 
+      }
+
+      const statusCls = o.status === 'FILLED'  ? 'ok'
+                      : o.status === 'CANCELLED' ? 'mut' : 'warn';
+      let px = 'MKT';
+      if (o.order_type === 'LIMIT') {
+          if (o.status === 'FILLED') {
+              px = `${fmtINR(o.price)} (Filled @ ${fmtINR(o.fill_price)})`;
+          } else {
+              px = fmtINR(o.price);
+          }
+      } else if (o.fill_price) {
+          px = fmtINR(o.fill_price);
+      }
+      
+      const acts = o.status === 'OPEN'
+        ? `<button class="lil" onclick="window._fillOrder('${o.id}')">Fill</button>
+           <button class="lil del" onclick="window._cancelOrder('${o.id}')">Cancel</button>`
+        : '';
+      const ltpVal = o.ltp != null ? fmtINR(o.ltp) : '—';
+      let typeLabel = o.order_type;
+      if (o.id && o.id.includes('_exit_')) {
+          const reason = o.id.split('_exit_')[1];
+          typeLabel += `<br><span style="font-size:9px; color:var(--warn); font-weight:bold;">Exit (${reason})</span>`;
+      } else if (o.tag) {
+          typeLabel += `<br><span style="font-size:9px; color:var(--warn); font-weight:bold;">${o.tag}</span>`;
+      }
+
+      return `<tr>
+        <td style="color:var(--muted);font-size:11px">${o.ts.slice(11,19)}</td>
+        <td><b>${o.symbol}</b><div style="color:var(--muted);font-size:10px">${o.exchange} · ${o.product}</div></td>
+        <td class="${clsSide}"><b>${displaySide}</b></td>
+        <td>${typeLabel}</td>
+        <td>${o.qty}</td>
+        <td>${px !== 'MKT' ? px : 'MKT'}</td>
+        <td>${ltpVal}</td>
+        <td><span class="tag ${statusCls}">${o.status}</span></td>
+        <td style="text-align:right;white-space:nowrap">${acts}</td>
+      </tr>`;
+    }).join('');
+    el.innerHTML = `<table class="tb">
+      <thead><tr>
+        <th style="cursor:pointer" data-osort="ts">Time${getSortIcon(ordSort, 'ts')}</th>
+        <th style="cursor:pointer" data-osort="symbol">Symbol${getSortIcon(ordSort, 'symbol')}</th>
+        <th style="cursor:pointer" data-osort="side">Side${getSortIcon(ordSort, 'side')}</th>
+        <th style="cursor:pointer" data-osort="order_type">Type${getSortIcon(ordSort, 'order_type')}</th>
+        <th style="cursor:pointer" data-osort="qty">Qty${getSortIcon(ordSort, 'qty')}</th>
+        <th style="cursor:pointer" data-osort="price">Price${getSortIcon(ordSort, 'price')}</th>
+        <th>LTP</th>
+        <th style="cursor:pointer" data-osort="status">Status${getSortIcon(ordSort, 'status')}</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+    el.querySelectorAll('[data-osort]').forEach(th => {
+      th.addEventListener('click', () => {
+        handleSort(ordSort, th.dataset.osort);
+        refreshOrders();
+      });
+    });
+  } catch (e){
+    el.innerHTML = `<div class="empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+window._fillOrder = async function(id){
+  const pxStr = prompt('Fill price?');
+  const px = parseFloat(pxStr);
+  if (isNaN(px)) return;
+  await fetch('/api/trade/paper/fill', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ order_id: id, fill_price: px })
+  });
+  await refreshAll();
+};
+
+window._cancelOrder = async function(id){
+  await fetch('/api/trade/paper/cancel', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ order_id: id })
+  });
+  await refreshAll();
+};
+
+async function refreshSummary(){
+  try {
+    const [posR, ordR] = await Promise.all([
+      fetch('/api/trade/paper/positions').then(r => r.json()),
+      fetch('/api/trade/paper/orders').then(r => r.json()),
+    ]);
+    const pos = posR.positions || [];
+    const ord = ordR.orders || [];
+    const openPos = pos.filter(p => p.qty !== 0);
+    const unreal  = openPos.reduce((s, p) => s + (p.unrealized_pnl || 0), 0);
+    const filled  = ord.filter(o => o.status === 'FILLED');
+    const openOrd = ord.filter(o => o.status === 'OPEN');
+
+    let realizedPnl = 0;
+    const posTracker = {};
+    filled.sort((a, b) => a.ts.localeCompare(b.ts)).forEach(o => {
+      const key = `${o.symbol}|${o.exchange}|${o.product}`;
+      if (!posTracker[key]) posTracker[key] = { qty: 0, avg: 0 };
+      const p = posTracker[key];
+      const px = o.fill_price || o.price || 0;
+      if (o.side === 'BUY') {
+        const totalCost = (p.qty * p.avg) + (o.qty * px);
+        p.qty += o.qty;
+        p.avg = totalCost / p.qty;
+      } else {
+        const matchQty = Math.min(o.qty, p.qty);
+        if (matchQty > 0) {
+          realizedPnl += (px - p.avg) * matchQty;
+          p.qty -= matchQty;
+        }
+      }
+    });
+
+    const cards = [
+      ['Open positions', openPos.length, ''],
+      ['Unrealized P&L', (unreal >= 0 ? '+' : '') + fmtINR(unreal), cls(unreal)],
+      ['Realized P&L',   (realizedPnl >= 0 ? '+' : '') + fmtINR(realizedPnl), cls(realizedPnl)],
+      ['Filled orders',  filled.length, ''],
+      ['Open orders',    openOrd.length, ''],
+    ];
+    $('tradeSummary').innerHTML = cards.map(([k,v,c]) =>
+      `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+  } catch {}
+}
+
+async function clearPaperData() {
+  if (!confirm('Clear all paper orders and positions? This cannot be undone.')) return;
+  await fetch('/api/trade/paper/clear', { method: 'POST' });
+  await refreshAll();
+}
+
+$('clearPaperBtn').addEventListener('click', clearPaperData);
+$('resetPaperBtn').addEventListener('click', clearPaperData);
+
+let autoSourceMode = 'manual';
+
+function toggleAutoSource(mode, preventFetch = false) {
+  autoSourceMode = mode;
+  $('autoSourceSelect').value = mode;
+
+  if (mode === 'manual') {
+    $('autoSourceManual').hidden = false; $('autoSourceSheet').hidden = true;
+  } else {
+    $('autoSourceManual').hidden = true; $('autoSourceSheet').hidden = false;
+    if (!preventFetch) {
+      fetchAutoSheetTabs();
+    }
+  }
+  saveAutoState();
+}
+
+function updateAllTimeframes() {
+  const globalTf = $('autoGlobalTf').value;
+  document.querySelectorAll('.stock-tf').forEach(sel => {
+    sel.value = globalTf;
+  });
+  saveAutoState();
+}
+
+function syncAutoStratMode() {
+  const mode = document.querySelector('input[name="auto_strat"]:checked').value;
+  $('autoMultBlock').hidden = (mode === "simple");
+}
+document.querySelectorAll('input[name="auto_strat"]').forEach(el =>
+  el.addEventListener('change', syncAutoStratMode));
+
+function updateLockIcon(row) {
+  const btn = row.querySelector('.lock-btn');
+  const isLocked = row.dataset.locked === 'true';
+  btn.textContent = isLocked ? '🔒' : '🔓';
+  btn.style.color = isLocked ? '#3fb950' : 'var(--muted)';
+  btn.style.borderColor = isLocked ? '#3fb950' : 'var(--border)';
+}
+
+function toggleLock(row) {
+  const isCurrentlyLocked = row.dataset.locked === 'true';
+
+  if (!isCurrentlyLocked) {
+    row.querySelector('.stock-amt').dataset.manual = '';
+
+    const totalCap = parseFloat($('autoCapital').value) || 0;
+    const thisAmt = parseFloat(row.querySelector('.stock-amt').value) || 0;
+
+    let otherLockedTotal = 0;
+    document.querySelectorAll('#manualStocksList > div').forEach(r => {
+      if (r !== row && r.dataset.locked === 'true') {
+        otherLockedTotal += parseFloat(r.querySelector('.stock-amt').value) || 0;
+      }
+    });
+
+    if (otherLockedTotal + thisAmt > totalCap) {
+      alert(`Cannot lock: Total locked (₹${(otherLockedTotal + thisAmt).toLocaleString()}) exceeds capital (₹${totalCap.toLocaleString()}).`);
+      return;
+    }
+  }
+
+  row.dataset.locked = !isCurrentlyLocked ? 'true' : 'false';
+  updateLockIcon(row);
+  recalcEqualDistribution();
+  saveAutoState();
+}
+
+function addStockRow(symbol = '', amount = '', isLocked = false, isRestore = false, forcedExch = null) {
+  const list = $('manualStocksList');
+  const rowId = 'stock_row_' + Date.now() + Math.floor(Math.random()*1000);
+
+  const div = document.createElement('div');
+  div.id = rowId;
+  div.dataset.locked = isLocked ? 'true' : 'false';
+
+  let exVal = 'NSE';
+  if (forcedExch) {
+    exVal = forcedExch;
+  } else if (symbol.includes('.NS')) {
+    exVal = 'NSE';
+  } else if (symbol.includes('.BO')) {
+    exVal = 'BSE';
+  } else if (symbol === 'XAUUSD' || symbol === 'XAGUSD' || symbol.endsWith('=X')) {
+    exVal = 'FX';
+  } else if (currentMarket === 'US') {
+    exVal = 'US';
+  }
+  div.dataset.exch = exVal;
+
+  div.style = "display:grid; grid-template-columns: 1fr 80px 100px 80px 40px 40px; gap:8px; align-items:center;";
+
+  const globalTf = $('autoGlobalTf') ? $('autoGlobalTf').value : '1h';
+
+  div.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:4px;">
+      <input type="text" class="setInput stock-sym" placeholder="Symbol" value="${symbol}" style="width:100%;">
+      <select class="setInput stock-exch-select" style="font-size:11px; padding:2px 4px; height:auto; color:var(--muted);">
+        <option value="NSE" ${exVal==='NSE'?'selected':''}>India (NSE/BSE)</option>
+        <option value="US" ${exVal==='US'?'selected':''}>US (NASDAQ/NYSE)</option>
+        <option value="FX" ${exVal==='FX'?'selected':''}>Forex / Commodity</option>
+      </select>
+    </div>
+    <select class="setInput stock-tf" style="font-size:11px; padding:4px;" onchange="saveAutoState()">
+      <option value="1m" ${globalTf==='1m'?'selected':''}>1m</option>
+      <option value="2m" ${globalTf==='2m'?'selected':''}>2m</option>
+      <option value="5m" ${globalTf==='5m'?'selected':''}>5m</option>
+      <option value="15m" ${globalTf==='15m'?'selected':''}>15m</option>
+      <option value="30m" ${globalTf==='30m'?'selected':''}>30m</option>
+      <option value="60m" ${globalTf==='60m'?'selected':''}>60m</option>
+      <option value="90m" ${globalTf==='90m'?'selected':''}>90m</option>
+      <option value="1h" ${globalTf==='1h'?'selected':''}>1h</option>
+      <option value="4h" ${globalTf==='4h'?'selected':''}>4h</option>
+      <option value="1d" ${globalTf==='1d'?'selected':''}>1d</option>
+      <option value="1wk" ${globalTf==='1wk'?'selected':''}>1wk</option>
+      <option value="1mo" ${globalTf==='1mo'?'selected':''}>1mo</option>
+    </select>
+    <input type="number" class="setInput stock-amt" placeholder="₹ Amount" value="${amount}" style="width:100%; text-align:right;">
+    <div class="stock-ltp" style="text-align:right; font-size:12px; color:var(--muted); padding-right:4px;">—</div>
+    <button class="ghostBtn lock-btn" style="padding:6px; width:100%; display:flex; justify-content:center;" onclick="toggleLock(this.parentElement)">🔓</button>
+    <button class="ghostBtn" style="color:#f85149; border-color:#f85149; padding:6px; width:100%; display:flex; justify-content:center;" onclick="this.parentElement.remove(); recalcEqualDistribution(); saveAutoState();">✕</button>
+  `;
+  list.appendChild(div);
+
+  if (isRestore) {
+    div.querySelector('.stock-amt').dataset.manual = 'true';
+  } else {
+    document.querySelectorAll('#manualStocksList > div').forEach(r => {
+      if (r.dataset.locked !== 'true') {
+        r.querySelector('.stock-amt').dataset.manual = '';
+      }
+    });
+  }
+
+  div.querySelector('.stock-exch-select').addEventListener('change', (e) => {
+    div.dataset.exch = e.target.value;
+    saveAutoState();
+  });
+
+  div.querySelector('.stock-sym').addEventListener('blur', (e) => {
+    let v = e.target.value.toUpperCase().replace(/\s+/g, '');
+    e.target.value = v;
+    let sel = div.querySelector('.stock-exch-select');
+    if (v.endsWith('.NS')) sel.value = 'NSE';
+    else if (v.endsWith('.BO')) sel.value = 'BSE';
+    else if (v === 'XAUUSD' || v === 'XAGUSD' || v.endsWith('=X')) sel.value = 'FX';
+    else if (currentMarket === 'US') sel.value = 'US';
+
+    div.dataset.exch = sel.value;
+    saveAutoState(); // ✅ Force save on typing symbol
+  });
+
+  div.querySelector('.stock-amt').addEventListener('input', (e) => {
+    e.target.dataset.manual = 'true';
+    if (div.dataset.locked === 'true') {
+      div.dataset.locked = 'false';
+      updateLockIcon(div);
+    }
+    updateAllocStatus();
+    saveAutoState();
+  });
+
+  updateLockIcon(div);
+  if (!isRestore) {
+    recalcEqualDistribution();
+    saveAutoState(); // ✅ Save state instantly when a new row is added
+  }
+}
+
+function removeUnlockedStocks() {
+  if (!confirm('Remove all UNLOCKED stocks from the list?')) return;
+  document.querySelectorAll('#manualStocksList > div').forEach(r => {
+    if (r.dataset.locked !== 'true') {
+      r.remove();
+    }
+  });
+  recalcEqualDistribution();
+  saveAutoState();
+}
+
+function applyBulkTf(selectedTf) {
+  if (!selectedTf) return;
+
+  document.querySelectorAll('.stock-tf').forEach(sel => {
+    sel.value = selectedTf;
+  });
+
+  saveAutoState();
+  $('bulkTfSelector').value = '';
+}
+
+let ltpIntervalId = null;
+
+async function fetchBatchLTP() {
+  const rows = Array.from(document.querySelectorAll('#manualStocksList > div'));
+  if (!rows.length) return;
+
+  const reqs = rows.map(r => ({
+    symbol: r.querySelector('.stock-sym').value.trim().toUpperCase(),
+    exchange: r.dataset.exch
+  })).filter(r => r.symbol);
+
+  try {
+    const res = await fetch('/api/trade/ltp_batch', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ symbols: reqs })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      rows.forEach(r => {
+        const rawSym = r.querySelector('.stock-sym').value.trim().toUpperCase();
+        const px = data.prices[rawSym];
+        const ltpEl = r.querySelector('.stock-ltp');
+
+        if (px != null) {
+          ltpEl.textContent = fmtINR(px);
+          ltpEl.style.color = 'var(--fg)';
+        } else {
+          ltpEl.textContent = '—';
+          ltpEl.style.color = 'var(--muted)';
+        }
+      });
+    }
+  } catch(e) { console.error('LTP batch fetch failed', e); }
+}
+
+function toggleAutoLtp(on) {
+  if (ltpIntervalId) { clearInterval(ltpIntervalId); ltpIntervalId = null; }
+  if (on) {
+    fetchBatchLTP();
+    ltpIntervalId = setInterval(fetchBatchLTP, 60000);
+  }
+}
+
+function lockAllStocks() {
+  const totalCap = parseFloat($('autoCapital').value) || 0;
+  let currentTotal = 0;
+  const rows = document.querySelectorAll('#manualStocksList > div');
+
+  rows.forEach(r => { currentTotal += parseFloat(r.querySelector('.stock-amt').value) || 0; });
+
+  if (currentTotal > totalCap) {
+    alert(`Cannot lock all: Total allocated (₹${currentTotal.toLocaleString()}) exceeds capital (₹${totalCap.toLocaleString()}). Please adjust amounts first.`);
+    return;
+  }
+
+  rows.forEach(r => {
+    r.dataset.locked = 'true';
+    updateLockIcon(r);
+  });
+  recalcEqualDistribution();
+  saveAutoState();
+}
+
+function unlockAllStocks() {
+  document.querySelectorAll('#manualStocksList > div').forEach(r => {
+    r.dataset.locked = 'false';
+    updateLockIcon(r);
+  });
+  recalcEqualDistribution();
+  saveAutoState();
+}
+
+function removeAllStocks() {
+  if (!confirm('Are you sure you want to remove all stocks from the list?')) return;
+  $('manualStocksList').innerHTML = '';
+  recalcEqualDistribution();
+  saveAutoState();
+}
+
+function recalcEqualDistribution() {
+  const totalCap = parseFloat($('autoCapital').value) || 0;
+  const rows = Array.from(document.querySelectorAll('#manualStocksList > div'));
+
+  if ($('stockCount')) $('stockCount').textContent = rows.length;
+
+  let lockedTotal = 0;
+  let unlockedRows = [];
+
+  rows.forEach(r => {
+    if (r.dataset.locked === 'true') {
+      lockedTotal += parseFloat(r.querySelector('.stock-amt').value) || 0;
+    } else {
+      unlockedRows.push(r);
+    }
+  });
+
+  if ($('lockedCount')) $('lockedCount').textContent = rows.length - unlockedRows.length;
+
+  const remaining = totalCap - lockedTotal;
+  const perUnlocked = unlockedRows.length > 0 ? Math.floor(remaining / unlockedRows.length) : 0;
+
+  unlockedRows.forEach(r => {
+    const amtInp = r.querySelector('.stock-amt');
+    if (amtInp.dataset.manual !== 'true') {
+      amtInp.value = perUnlocked;
+    }
+  });
+
+  updateAllocStatus();
+}
+
+function updateAllocStatus() {
+  const totalCap = parseFloat($('autoCapital').value) || 0;
+  let lockedTotal = 0;
+  let currentTotal = 0;
+
+  document.querySelectorAll('#manualStocksList > div').forEach(r => {
+    const val = parseFloat(r.querySelector('.stock-amt').value) || 0;
+    currentTotal += val;
+    if (r.dataset.locked === 'true') {
+      lockedTotal += val;
+    }
+  });
+
+  const remaining = totalCap - lockedTotal;
+  const statusEl = $('allocStatus');
+
+  if (currentTotal > totalCap) {
+    statusEl.textContent = `Over-allocated: ₹${Math.abs(totalCap - currentTotal).toLocaleString()}`;
+    statusEl.style.color = '#f85149';
+  } else {
+    statusEl.textContent = `Unallocated: ₹${remaining.toLocaleString()}`;
+    statusEl.style.color = remaining === 0 ? 'var(--good)' : 'var(--muted)';
+  }
+}
+
+async function fetchAutoSheetTabs() {
+  const book = $('autoSheetBook').value.trim();
+  const sel = $('autoSheetTab');
+  if (!book) return;
+  sel.innerHTML = '<option>Loading...</option>';
+  try {
+    const r = await fetch(`/api/sheets/tabs?book=${encodeURIComponent(book)}`);
+    const d = await r.json();
+    if (d.ok && d.tabs.length) {
+      sel.innerHTML = d.tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+    } else {
+      sel.innerHTML = '<option value="">(no tabs found)</option>';
+    }
+  } catch {
+    sel.innerHTML = '<option value="">(error)</option>';
+  }
+}
+
+async function fetchAutoFnoTabs() {
+  const book = $('autoFnoBook').value.trim();
+  const sel = $('autoFnoTab');
+  if (!book) return;
+  sel.innerHTML = '<option>Loading...</option>';
+  try {
+    const r = await fetch(`/api/sheets/tabs?book=${encodeURIComponent(book)}`);
+    const d = await r.json();
+    if (d.ok && d.tabs.length) {
+      sel.innerHTML = d.tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+      if (d.tabs.includes('F&O_input')) {
+        sel.value = 'F&O_input';
+      }
+    } else {
+      sel.innerHTML = '<option value="">(no tabs found)</option>';
+    }
+  } catch {
+    sel.innerHTML = '<option value="">(error)</option>';
+  }
+}
+
+async function loadSheetSymbols() {
+  const book = $('autoSheetBook').value.trim();
+  const tab = $('autoSheetTab').value;
+  if (!book || !tab) return;
+
+  try {
+    const res = await fetch(`/api/sheets/symbols?book=${encodeURIComponent(book)}&tab=${encodeURIComponent(tab)}`);
+    const data = await res.json();
+
+    if (data.ok && data.symbols.length > 0) {
+      const existingSyms = new Set(
+        Array.from(document.querySelectorAll('#manualStocksList .stock-sym'))
+          .map(inp => inp.value.trim().toUpperCase())
+      );
+
+      let addedCount = 0;
+      const defaultExch = $('autoSheetExch').value;
+
+      data.symbols.forEach(sym => {
+        let cleanSym = sym;
+        if (defaultExch !== 'NSE' && cleanSym.toUpperCase().endsWith('.NS')) {
+            cleanSym = cleanSym.slice(0, -3);
+        }
+        if (defaultExch !== 'BSE' && cleanSym.toUpperCase().endsWith('.BO')) {
+            cleanSym = cleanSym.slice(0, -3);
+        }
+
+        if (!existingSyms.has(cleanSym.toUpperCase())) {
+          addStockRow(cleanSym, 0, false, false, defaultExch);
+          addedCount++;
+        }
+      });
+
+      recalcEqualDistribution();
+      saveAutoState();
+
+      if (addedCount > 0) {
+        alert(`Added ${addedCount} new symbols from sheet.`);
+      } else {
+        alert(`All symbols in "${tab}" are already in your list.`);
+      }
+    } else {
+      alert("No symbols found in this tab.");
+    }
+  } catch (e) {
+    alert(`Error loading symbols: ${e.message}`);
+  }
+}
+
+$('startAutoBtn').addEventListener('click', async () => {
+  if (localStorage.getItem('active_setup_job')) {
+    const jid = localStorage.getItem('active_setup_job');
+    $('startAutoBtn').textContent = "⏳ Stopping...";
+    
+    fetch('/api/trade/setup/stop', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ job_id: jid })
+    }).catch(e => console.error(e));
+    
+    localStorage.removeItem('active_setup_job');
+    
+    if (monitorInterval) clearInterval(monitorInterval);
+    $('startAutoBtn').textContent = "▶ Start Auto-Trading";
+    $('startAutoBtn').style.background = "#3fb950";
+    $('startAutoBtn').disabled = false;
+    $('applySettingsBtn').style.display = "none";
+    $('tpScanNowBtn').disabled = true;
+    
+    return;
+  }
+
+  let tasks = [];
+
+  document.querySelectorAll('#manualStocksList > div').forEach(r => {
+    if (r.dataset.locked !== 'true') return;
+
+    const sym = r.querySelector('.stock-sym').value.trim().toUpperCase().replace(/\s+/g, '');
+    const amt = parseFloat(r.querySelector('.stock-amt').value) || 0;
+    const tf  = r.querySelector('.stock-tf').value;
+    const exch = r.dataset.exch || 'NSE';
+
+    if (sym) { tasks.push({ sym, amt, tf, exch }); }
+  });
+
+  if (!tasks.length) return alert("Please lock at least one stock before starting.");
+  if ($('allocStatus').style.color === 'rgb(248, 81, 73)') {
+    return alert("You have over-allocated your capital. Please fix the amounts before starting.");
+  }
+
+  const payload = {
+    source: autoSourceMode,
+    total_capital: parseFloat($('autoCapital')?.value) || 500000,
+    tasks: tasks,
+    global_tf: $('autoGlobalTf')?.value,
+    strategy_mode: document.querySelector('input[name="auto_strat"]:checked')?.value || 'simple',
+    multiplier_type: document.querySelector('input[name="auto_mult"]:checked')?.value || 'martingale',
+    max_levels: parseInt($('autoMaxLevels')?.value) || 5,
+    side_mode: $('autoSideMode')?.value || 'both',
+    wt_n1: parseFloat($('autoWtN1')?.value) || 15,
+    wt_n2: parseFloat($('autoWtN2')?.value) || 27,
+    wt_pending_rule: $('autoWtRule')?.value || 'same_dir',
+    candles: $('autoCandles')?.value || 'ha',
+    buffer_pts: parseFloat($('autoBuffer')?.value) || 0,
+    wait_bars: parseInt($('autoWait')?.value) || 100,
+    max_gap_pct: parseFloat($('autoMaxGap')?.value) || 2.0,
+    target_pct: parseFloat($('autoTarget')?.value) || 0,
+    stop_pct: parseFloat($('autoStop')?.value) || 0,
+    exit_opp: $('autoOpp')?.checked || false,
+    trailing_enabled: $('autoTrailOn')?.checked || false,
+    trailing_start_pct: parseFloat($('autoTrailStart')?.value) || 3,
+    trailing_step_pct: parseFloat($('autoTrailStep')?.value) || 2,
+    wt_filter_enabled: $('autoWtFilter')?.checked || false,
+    wt_buy_max: parseFloat($('autoWtMax')?.value) || -40,
+    wt_sell_min: parseFloat($('autoWtMin')?.value) || 40,
+    htf_filter_enabled: $('autoHtfFilter')?.checked || false,
+    rsi_filter_enabled: $('autoRsiFilter')?.checked || false,
+    rsi_period: parseInt($('autoRsiPeriod')?.value) || 14,
+    fno_mode: $('autoFno')?.value || 'none',
+    fno_book: $('autoFnoBook')?.value || '',
+    fno_sheet: $('autoFnoTab')?.value || '',
+    scan_interval: parseInt($('tpScanIntervalMins')?.value) || 1,
+    allow_market_orders: $('tpAllowMarketOrders')?.checked || false,
+    paper_trade: $('tpPaperTradeToggle')?.checked || false,
+    live_trade: $('tpLiveTradeToggle')?.checked || false
+  };
+
+  $('startAutoBtn').disabled = true;
+  $('startAutoBtn').textContent = "⏳ Starting...";
+
+  try {
+    const res = await fetch('/api/trade/setup/start', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.ok && data.job_id) {
+      localStorage.setItem('active_setup_job', data.job_id);
+      startMonitorPoll();
+
+      $('startAutoBtn').style.background = "#f85149";
+      $('startAutoBtn').textContent = "🛑 Stop Auto-Trading";
+      $('startAutoBtn').disabled = false;
+      $('applySettingsBtn').style.display = "block";
+      $('tpScanNowBtn').disabled = false;
+      alert(`Auto-trader started for ${tasks.length} symbols.`);
+    } else {
+      throw new Error(data.error || "Backend failed to start");
+    }
+  } catch(e) {
+    alert("Failed to start auto-trader: " + e.message);
+    $('startAutoBtn').disabled = false;
+    $('startAutoBtn').textContent = "▶ Start Auto-Trading";
+    $('startAutoBtn').style.background = "#3fb950";
+  }
+});
+
+let isRestoringAutoState = false;
+
+function saveAutoState() {
+  if (isRestoringAutoState) return;
+  try {
+    const state = {
+      totalCap: parseFloat($('autoCapital')?.value) || 500000,
+      allocMode: $('autoAllocMode')?.value,
+      sourceMode: autoSourceMode,
+      sheetBook: $('autoSheetBook')?.value,
+      sheetTab: $('autoSheetTab')?.value,
+      sheetExch: $('autoSheetExch')?.value,
+      globalTf: $('autoGlobalTf')?.value,
+      stocks: Array.from(document.querySelectorAll('#manualStocksList > div')).map(r => ({
+        sym: r.querySelector('.stock-sym')?.value || '',
+        amt: parseFloat(r.querySelector('.stock-amt')?.value) || 0,
+        locked: r.dataset.locked === 'true',
+        exch: r.dataset.exch || 'NSE',
+        tf: r.querySelector('.stock-tf')?.value || '1h'
+      })),
+      settings: {
+        strat: document.querySelector('input[name="auto_strat"]:checked')?.value || 'simple',
+        mult: document.querySelector('input[name="auto_mult"]:checked')?.value || 'martingale',
+        maxLevels: $('autoMaxLevels')?.value,
+        side: $('autoSideMode')?.value,
+        target: $('autoTarget')?.value,
+        stop: $('autoStop')?.value,
+        buffer: $('autoBuffer')?.value,
+        wait: $('autoWait')?.value,
+        maxGap: $('autoMaxGap')?.value || '2.0',
+        opp: $('autoOpp')?.checked,
+        trailOn: $('autoTrailOn')?.checked,
+        trailStart: $('autoTrailStart')?.value,
+        trailStep: $('autoTrailStep')?.value,
+        wtN1: $('autoWtN1')?.value,
+        wtN2: $('autoWtN2')?.value,
+        wtRule: $('autoWtRule')?.value,
+        candles: $('autoCandles')?.value,
+        wtFilter: $('autoWtFilter')?.checked,
+        wtMax: $('autoWtMax')?.value,
+        wtMin: $('autoWtMin')?.value,
+        htfFilter: $('autoHtfFilter')?.checked,
+        rsiFilter: $('autoRsiFilter')?.checked,
+        rsiPeriod: $('autoRsiPeriod')?.value,
+        fno: $('autoFno')?.value,
+        fnoBook: $('autoFnoBook')?.value,
+        fnoTab: $('autoFnoTab')?.value,
+        autoLtp: $('autoLtpRefresh')?.checked,
+        scanInterval: $('tpScanIntervalMins')?.value || 1,
+        writeToSheet: $('tpWriteToGSheet')?.checked,
+        showAllSignals: $('tpShowAllSignals')?.checked
+      }
+    };
+    localStorage.setItem('trading_setup_state', JSON.stringify(state));
+  } catch (e) {
+    console.error("Failed to save auto state:", e);
+  }
+}
+
+function restoreAutoState() {
+  const saved = localStorage.getItem('trading_setup_state');
+  if (!saved) {
+    addStockRow('AMD', 250000, false);
+    addStockRow('IRFC', 250000, false);
+    return;
+  }
+
+  isRestoringAutoState = true;
+  try {
+    const state = JSON.parse(saved);
+    $('autoCapital').value = state.totalCap;
+    $('autoAllocMode').value = state.allocMode;
+    if (state.globalTf) $('autoGlobalTf').value = state.globalTf;
+    if (state.sheetBook) $('autoSheetBook').value = state.sheetBook;
+    if (state.sheetExch) $('autoSheetExch').value = state.sheetExch;
+
+    if (state.settings) {
+      const setRad = (name, val) => { const el = document.querySelector(`input[name="${name}"][value="${val}"]`); if (el) el.checked = true; };
+      setRad('auto_strat', state.settings.strat);
+      setRad('auto_mult', state.settings.mult);
+      syncAutoStratMode();
+
+      $('autoMaxLevels').value = state.settings.maxLevels;
+      $('autoSideMode').value = state.settings.side;
+      $('autoTarget').value = state.settings.target;
+      $('autoStop').value = state.settings.stop;
+      $('autoBuffer').value = state.settings.buffer;
+      $('autoWait').value = state.settings.wait;
+      if (state.settings.maxGap && $('autoMaxGap')) $('autoMaxGap').value = state.settings.maxGap;
+      $('autoOpp').checked = state.settings.opp;
+      $('autoTrailOn').checked = state.settings.trailOn;
+      $('autoTrailStart').value = state.settings.trailStart;
+      $('autoTrailStep').value = state.settings.trailStep;
+      $('autoWtN1').value = state.settings.wtN1;
+      $('autoWtN2').value = state.settings.wtN2;
+      $('autoWtRule').value = state.settings.wtRule;
+      $('autoCandles').value = state.settings.candles;
+      $('autoWtFilter').checked = state.settings.wtFilter;
+      $('autoWtMax').value = state.settings.wtMax;
+      $('autoWtMin').value = state.settings.wtMin;
+      $('autoHtfFilter').checked = state.settings.htfFilter;
+      $('autoRsiFilter').checked = state.settings.rsiFilter;
+      $('autoRsiPeriod').value = state.settings.rsiPeriod;
+      $('autoFno').value = state.settings.fno;
+      $('autoFnoBook').value = state.settings.fnoBook;
+
+      document.getElementById('autoFnoSheetRow').style.display = state.settings.fno === 'sheet' ? 'flex' : 'none';
+
+      if (state.settings.fno === 'sheet') {
+        fetchAutoFnoTabs().then(() => {
+          if (state.settings.fnoTab) {
+            $('autoFnoTab').value = state.settings.fnoTab;
+          }
+        });
+      } else {
+        fetchAutoFnoTabs();
+      }
+
+      if (state.settings.autoLtp) {
+        $('autoLtpRefresh').checked = true;
+        toggleAutoLtp(true);
+      }
+      if (state.settings.scanInterval) {
+        if ($('tpScanIntervalMins')) $('tpScanIntervalMins').value = state.settings.scanInterval;
+      }
+      if (state.settings.writeToSheet) {
+        if ($('tpWriteToGSheet')) $('tpWriteToGSheet').checked = true;
+      }
+      if (state.settings.showAllSignals) {
+        if ($('tpShowAllSignals')) $('tpShowAllSignals').checked = true;
+        showAllSignals = true;
+      }
+    }
+
+    $('manualStocksList').innerHTML = '';
+    if (state.stocks && state.stocks.length > 0) {
+      state.stocks.forEach(s => {
+        try {
+          if (!s || !s.sym) return;
+          addStockRow(s.sym, s.amt, s.locked, true);
+          const lastRow = $('manualStocksList').lastElementChild;
+          if (lastRow && s.exch) {
+            lastRow.dataset.exch = s.exch;
+            lastRow.querySelector('.stock-exch-select').value = s.exch;
+          }
+          if (lastRow && s.tf) {
+            lastRow.querySelector('.stock-tf').value = s.tf;
+          }
+        } catch(e) { console.error("Failed to restore row", s, e); }
+      });
+      recalcEqualDistribution();
+    } else {
+      if (!state.stocks) {
+        addStockRow('AMD', 250000, false);
+        addStockRow('IRFC', 250000, false);
+      }
+    }
+
+    $('autoSourceSelect').value = state.sourceMode || 'manual';
+
+    if (state.sourceMode === 'sheet') {
+      toggleAutoSource('sheet', true);
+
+      fetch(`/api/sheets/tabs?book=${encodeURIComponent(state.sheetBook)}`)
+        .then(r => r.json())
+        .then(d => {
+            if(d.ok && d.tabs) {
+                $('autoSheetTab').innerHTML = d.tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+                if(state.sheetTab) $('autoSheetTab').value = state.sheetTab;
+            }
+        });
+    } else {
+      toggleAutoSource('manual', true);
+    }
+    recalcEqualDistribution();
+  } catch(e) { console.error("State restore failed", e); }
+  isRestoringAutoState = false;
+}
+
+function saveAutoPreset() {
+  const name = $('autoPresetName').value.trim();
+  if (!name) return alert("Enter a preset name.");
+
+  saveAutoState();
+  const state = JSON.parse(localStorage.getItem('trading_setup_state') || '{}');
+
+  const presetData = JSON.parse(JSON.stringify(state));
+  delete presetData.stocks;
+  delete presetData.totalCap;
+  delete presetData.allocMode;
+  delete presetData.globalTf;
+  delete presetData.sheetBook;
+  delete presetData.sheetTab;
+  delete presetData.sourceMode;
+
+  const presets = JSON.parse(localStorage.getItem('trading_setup_presets') || '{}');
+  presets[name] = presetData;
+  localStorage.setItem('trading_setup_presets', JSON.stringify(presets));
+
+  $('autoPresetName').value = '';
+  renderAutoPresets();
+  alert("Preset saved! (Only left panel settings were saved)");
+}
+
+function renderAutoPresets() {
+  const presets = JSON.parse(localStorage.getItem('trading_setup_presets') || '{}');
+  const sel = $('autoPresetList');
+  sel.innerHTML = '<option value="">Load Preset</option>' +
+    Object.keys(presets).map(k => `<option value="${k}">${k}</option>`).join('');
+}
+
+function loadAutoPreset(name) {
+  if (!name) return;
+  const presets = JSON.parse(localStorage.getItem('trading_setup_presets') || '{}');
+  if (!presets[name]) return;
+
+  const currentState = JSON.parse(localStorage.getItem('trading_setup_state') || '{}');
+  currentState.settings = presets[name].settings;
+
+  localStorage.setItem('trading_setup_state', JSON.stringify(currentState));
+  restoreAutoState();
+}
+
+function deleteAutoPreset() {
+  const name = $('autoPresetList').value;
+  if (!name) return alert("Select a preset to delete first.");
+
+  if (!confirm(`Are you sure you want to delete the preset "${name}"?`)) return;
+
+  const presets = JSON.parse(localStorage.getItem('trading_setup_presets') || '{}');
+  delete presets[name];
+  localStorage.setItem('trading_setup_presets', JSON.stringify(presets));
+
+  renderAutoPresets();
+  $('autoPresetList').value = '';
+}
+
+document.getElementById('tpAutoScanEnabled').addEventListener('change', async (e) => {
+  const jid = localStorage.getItem('active_setup_job');
+  if (!jid) return;
+  await fetch('/api/trade/setup/update_config', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ job_id: jid, config: { paused: !e.target.checked } })
+  });
+});
+
+let monitorInterval = null;
+let scanStartTime = 0;
+
+function startMonitorPoll() {
+  if (monitorInterval) clearInterval(monitorInterval);
+
+  const poll = async () => {
+    try {
+      const res = await fetch('/api/trade/setup/status');
+      const data = await res.json();
+      if (data.ok && data.state) {
+        renderScannerMonitor(data.state);
+
+        isAutoScanning = data.is_scanning;
+        const fetchBtn = document.getElementById('tpFetchLtpBtn');
+        
+        if (data.is_scanning && $('tpAutoScanEnabled').checked) {
+          $('tpScanStatus').textContent = "⏳ Downloading...";
+          if (fetchBtn) fetchBtn.disabled = true;
+        } else {
+          $('tpScanStatus').textContent = "";
+          if (fetchBtn) fetchBtn.disabled = false;
+          if (data.last_scan_time) {
+            const d = new Date(data.last_scan_time * 1000);
+            $('tpLastScanTime').textContent = "Last: " + d.toLocaleTimeString('en-IN', { hour12: false });
+          }
+        }
+      }
+      refreshPositions();
+      refreshOrders();
+      refreshSummary();
+    } catch(e) {}
+  };
+
+  poll();
+  monitorInterval = setInterval(poll, 5000);
+}
+
+let scannerLtpIntId = null;
+let isAutoScanning = false; 
+let isFetchingLtp = false;  
+let lastScannerState = null; 
+let previousScanState = {}; 
+let persistentChanges = {}; 
+let showAllSignals = false;
+
+function toggleShowAllSignals(on) {
+    showAllSignals = on;
+    if (lastScannerState) {
+        renderScannerMonitor(lastScannerState, true);
+    }
+    saveAutoState();
+}
+
+function toggleScannerLtp(on) {
+    if (scannerLtpIntId) { clearInterval(scannerLtpIntId); scannerLtpIntId = null; }
+    if (on) {
+        const secs = parseInt($('tpLtpInterval')?.value) || 10;
+        if (!isAutoScanning && !isFetchingLtp) fetchScannerLtp();
+        scannerLtpIntId = setInterval(() => {
+            if (!isAutoScanning && !isFetchingLtp) fetchScannerLtp();
+        }, secs * 1000);
+    }
+}
+
+async function fetchScannerLtp() {
+    if (isAutoScanning || isFetchingLtp) return; 
+
+    const btn = document.getElementById('tpFetchLtpBtn');
+    if (!btn) return;
+    
+    isFetchingLtp = true;
+    btn.innerHTML = '⏳ Fetching...';
+    btn.disabled = true;
+
+    try {
+        const r = await fetch('/api/trade/setup/fetch_ltp', { method: 'POST' });
+        const d = await r.json();
+        
+        if (d.ok) {
+            const res = await fetch('/api/trade/setup/status');
+            const data = await res.json();
+            if (data.ok && data.state) {
+                renderScannerMonitor(data.state);
+                refreshPositions(); 
+                refreshSummary();
+            }
+        }
+    } catch(e) { 
+        console.error('LTP fetch failed', e); 
+    } finally {
+        btn.innerHTML = '↻ Fetch'; 
+        btn.disabled = false;
+        isFetchingLtp = false;
+    }
+}
+
+function getCurrentAutoConfig() {
+  return {
+    source: autoSourceMode,
+    total_capital: parseFloat($('autoCapital').value) || 500000,
+    side_mode: $('autoSideMode').value,
+    wt_n1: parseFloat($('autoWtN1').value),
+    wt_n2: parseFloat($('autoWtN2').value),
+    wt_pending_rule: $('autoWtRule').value,
+    candles: $('autoCandles').value,
+    buffer_pts: parseFloat($('autoBuffer').value),
+    wait_bars: parseInt($('autoWait').value),
+    max_gap_pct: parseFloat($('autoMaxGap').value) || 2.0,
+    target_pct: parseFloat($('autoTarget').value) || 0,
+    stop_pct: parseFloat($('autoStop').value) || 0,
+    exit_opp: $('autoOpp').checked,
+    trailing_enabled: $('autoTrailOn').checked,
+    trailing_start_pct: parseFloat($('autoTrailStart').value),
+    trailing_step_pct: parseFloat($('autoTrailStep').value),
+    wt_filter_enabled: $('autoWtFilter').checked,
+    wt_buy_max: parseFloat($('autoWtMax').value),
+    wt_sell_min: parseFloat($('autoWtMin').value),
+    htf_filter_enabled: $('autoHtfFilter').checked,
+    rsi_filter_enabled: $('autoRsiFilter').checked,
+    rsi_period: parseInt($('autoRsiPeriod').value),
+    allow_market_orders: $('tpAllowMarketOrders')?.checked || false,
+    paper_trade: $('tpPaperTradeToggle')?.checked || false,
+    live_trade: $('tpLiveTradeToggle')?.checked || false,
+    scan_interval: parseInt($('tpScanIntervalMins')?.value) || 1,
+    write_to_sheet: $('tpWriteToGSheet')?.checked || false
+  };
+}
+
+async function triggerManualScan() {
+  const jid = localStorage.getItem('active_setup_job');
+  if (!jid) return alert("Auto-Trading is not running.");
+
+  $('tpScanStatus').textContent = "⏳ Updating settings & Forcing Scan...";
+
+  try {
+    await fetch('/api/trade/setup/update_config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ job_id: jid, config: getCurrentAutoConfig() })
+    });
+    await fetch('/api/trade/setup/trigger_scan', { method: 'POST' });
+  } catch(e) { console.error(e); }
+}
+
+document.getElementById('applySettingsBtn').addEventListener('click', async () => {
+  const jid = localStorage.getItem('active_setup_job');
+  if (!jid) return alert("Auto-Trading is not running.");
+
+  const btn = document.getElementById('applySettingsBtn');
+  const origText = btn.textContent;
+  btn.textContent = "⏳ Applying...";
+
+  try {
+    const res = await fetch('/api/trade/setup/update_config', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ job_id: jid, config: getCurrentAutoConfig() })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Backend rejected the settings update. Please restart Auto-Trading.");
+    
+    btn.textContent = "✓ Applied!";
+    setTimeout(() => { btn.textContent = origText; }, 2000);
+  } catch(e) {
+    alert("Failed to apply settings: " + e.message);
+    btn.textContent = origText;
+  }
+});
+
+async function fetchJsonFiles() {
+  try {
+    const res = await fetch('/api/trade/setup/json_files');
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('jsonAllocations').textContent = JSON.stringify(data.allocations, null, 2);
+      document.getElementById('jsonPaperProcessed').textContent = JSON.stringify(data.paper_processed, null, 2);
+      document.getElementById('jsonPaperQueue').textContent = JSON.stringify(data.paper_queue, null, 2);
+    }
+  } catch(e) { console.error(e); }
+}
+
+async function resetProcessedSignals() {
+  if (!confirm('Clear all processed signals? The bot will forget it already traded these candles.')) return;
+  try {
+    await fetch('/api/trade/setup/reset_signals', { method: 'POST' });
+    
+    // ✅ Clear the UI table instantly
+    const table = document.getElementById('tradingTable');
+    if (table) table.innerHTML = '<tr><td style="text-align:center;color:var(--muted)">No data yet.</td></tr>';
+    previousScanState = {};
+    lastScannerState = null;
+    
+    fetchJsonFiles();
+    alert("Processed signals cleared successfully!");
+  } catch(e) { alert("Failed to reset signals."); }
+}
+
+async function stopAutoTrading() {
+  const jid = localStorage.getItem('active_setup_job');
+  if (jid) {
+    $('startAutoBtn').textContent = "⏳ Stopping...";
+    try {
+      await fetch('/api/trade/setup/stop', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ job_id: jid })
+      });
+    } catch(e) { console.error(e); }
+  }
+  localStorage.removeItem('active_setup_job');
+  $('applySettingsBtn').style.display = "none";
+  $('tpScanNowBtn').disabled = true;
+  window.location.reload();
+}
+
+if (localStorage.getItem('active_setup_job')) {
+  startMonitorPoll();
+  $('startAutoBtn').style.background = "#f85149";
+  $('startAutoBtn').textContent = "🛑 Stop Auto-Trading";
+  $('tpScanNowBtn').disabled = false;
+  $('applySettingsBtn').style.display = "block";
+} else {
+  $('tpScanNowBtn').disabled = true;
+  $('applySettingsBtn').style.display = "none";
+}
+
+document.addEventListener('input', (e) => {
+  if (e.target.closest('#manualStocksList') ||
+      e.target.closest('.setTitle') ||
+      ['autoCapital', 'autoSheetBook', 'autoSheetTab', 'autoSourceSelect', 'autoGlobalTf', 'autoTarget', 'autoStop'].includes(e.target.id)) {
+    saveAutoState(); 
+  }
+});
+document.addEventListener('change', (e) => {
+  if (e.target.closest('#manualStocksList') ||
+      e.target.closest('.setTitle') ||
+      ['autoCapital', 'autoSheetBook', 'autoSheetTab', 'autoSourceSelect', 'autoGlobalTf'].includes(e.target.id)) {
+    saveAutoState();
+  }
+});
+
+// window.addEventListener('beforeunload', saveAutoState); // Removed to prevent wiping state on unload
+
+restoreAutoState();
+renderAutoPresets();
+
+$('refreshAllBtn').addEventListener('click', refreshAll);
+
+async function refreshAll(){
+  await fetchMode();
+  await Promise.all([refreshPositions(), refreshOrders(), refreshSummary()]);
+}
+
+$('mktIndia').addEventListener('click', () => {
+  currentMarket = 'IN';
+  $('mktIndia').classList.add('active');
+  $('mktUS').classList.remove('active');
+
+  $('exch').innerHTML = `<option value="NSE">NSE</option><option value="BSE">BSE</option><option value="NFO">NFO</option>`;
+  $('product').innerHTML = `<option value="CNC">CNC (delivery)</option><option value="MIS">MIS (intraday)</option><option value="NRML">NRML (F&O)</option>`;
+  fetchLTP();
+});
+
+$('mktUS').addEventListener('click', () => {
+  currentMarket = 'US';
+  $('mktUS').classList.add('active');
+  $('mktIndia').classList.remove('active');
+
+  $('exch').innerHTML = `<option value="NASDAQ">NASDAQ</option><option value="NYSE">NYSE</option><option value="AMEX">AMEX</option>`;
+  $('product').innerHTML = `<option value="CNC">CASH</option><option value="MIS">MARGIN</option>`;
+  fetchLTP();
+});
+
+/* boot */
+fetchJsonFiles();
+syncQtyUI();
+syncOrderType();
+updatePreview();
+syncAutoStratMode();
+fetchMode();
+refreshAll();
+toggleScannerLtp(true); 
+
+async function saveAllocations() {
+  let tasks = [];
+  document.querySelectorAll('#manualStocksList > div').forEach(r => {
+    if (r.dataset.locked !== 'true') return;
+    const sym = r.querySelector('.stock-sym').value.trim().toUpperCase().replace(/\s+/g, '');
+    const amt = parseFloat(r.querySelector('.stock-amt').value) || 0;
+    const tf  = r.querySelector('.stock-tf').value;
+    const exch = r.dataset.exch || 'NSE';
+    if (sym) { tasks.push({ sym, amt, tf, exch }); }
+  });
+
+  if (!tasks.length) return alert("Please lock at least one stock before saving.");
+
+  try {
+    const res = await fetch('/api/trade/setup/save_allocations', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ tasks })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert(`Saved ${data.count} allocations to JSON.`);
+      saveAutoState(); // ✅ Force local storage save
+      fetchJsonFiles();
+    } else {
+      alert("Failed: " + (data.error || "Unknown error"));
+    }
+  } catch(e) { alert("Failed to save allocations (Network or Server error)."); }
+}
+
+function handleScanSort(key) {
+  handleSort(scanSort, key);
+  fetch('/api/trade/setup/status').then(r => r.json()).then(d => { if(d.ok) renderScannerMonitor(d.state); });
+}
+
+function renderScannerMonitor(state, isForced = false) {
+  const table = document.getElementById('tradingTable'); 
+  
+  if (!table) return;
+  if (!isForced) lastScannerState = state; 
+
+  let syms = Object.keys(state).map(k => state[k]);
+  if (!syms.length) {
+    table.innerHTML = '<tr><td style="text-align:center;color:var(--muted)">No data yet.</td></tr>';
+    return;
+  }
+
+  syms = sortData(syms, scanSort);
+
+  const cols = [
+    { key: 'symbol', label: 'SYMBOL', align: 'left' },
+    { key: 'ltp', label: 'LTP', align: 'right' },
+    { key: 'wt_cross', label: 'WT CROSS', align: 'center' },
+    { key: 'wt_trend', label: 'WT TREND', align: 'center' },
+    { key: 'trigger_lvl', label: 'TRIGGER LVL', align: 'center' },
+    { key: 'wt_valid_dt', label: 'VALID DT', align: 'center' },
+    { key: 'wt_valid_wt_value', label: 'VALID WT VAL', align: 'center' },
+    { key: 'wt_trigger_status', label: 'TRIG STATUS', align: 'center' },
+    { key: 'wt_trigger_dt', label: 'TRIG DT', align: 'center' },
+    { key: 'wt_action', label: 'WT ACTION', align: 'center' },
+    { key: 'valid', label: 'VALID', align: 'center' }, // ✅ NEW COLUMN
+    { key: 'wt_trigger_candle_date', label: 'TRIG DATE', align: 'center' },
+    { key: 'wt_trigger_candle_time', label: 'TRIG TIME', align: 'center' }
+  ];
+
+  let html = '<thead><tr>';
+  for (const c of cols) {
+    html += `<th style="text-align:${c.align}; cursor:pointer; user-select:none;" onclick="handleScanSort('${c.key}')">${c.label}${getSortIcon(scanSort, c.key)}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  for (const r of syms) {
+    if (r.status === 'No Data' || r.status === 'Error') continue;
+    
+    html += '<tr>';
+    for (const c of cols) {
+      let v = r[c.key];
+      if (v === null || v === undefined || v === '') v = '—';
+      
+// Number Formatting
+      if (['ltp', 'wt1', 'wt2', 'wt_diff', 'wt_valid_open', 'wt_valid_high', 'wt_valid_low', 'wt_valid_close', 'wt_valid_diff', 'wt_valid_wt_value', 'wt_ltp', 'wt_trigger_diff', 'wt_diff_pct', 'wt_profit', 'wt_max_profit_pct', 'wt_max_profit_value', 'trigger_lvl'].includes(c.key)) {
+        if (v !== '—' && !isNaN(v)) v = fmtINR(v);
+      }
+
+      if (['wt_rsi', 'wt_trigger_diff', 'wt_diff_pct'].includes(c.key)) {
+        if (v !== '—' && !isNaN(v)) v = Number(v).toFixed(2);
+      }
+
+      if (c.key === 'is_new') v = r.is_new ? '<span class="bell">🔔</span>' : '';
+      if (c.key === 'ms') v = v !== '—' ? `${v} ms` : '—';
+
+      let cls = '';
+      if (c.key === 'wt_trend') cls = v === 'Buy Trend' ? 'buy' : v === 'Sell Trend' ? 'sell' : 'mut';
+      if (c.key === 'wt_cross') cls = v.includes('Bull') ? 'buy' : v.includes('Bear') ? 'sell' : 'mut';
+      if (c.key === 'wt_rsi_dir') cls = v === 'rising' ? 'buy' : v === 'falling' ? 'sell' : 'mut';
+      if (c.key === 'wt_perfect') cls = v === 'Perfect' ? 'buy' : 'mut';
+      if (c.key === 'wt_action') cls = v.includes('Buy') ? 'buy' : v.includes('Sell') ? 'sell' : 'mut';
+      
+      if (c.key === 'wt_trigger_status') {
+        if (v === 'New Trigger') cls = 'buy';
+        else if (v.includes('Triggered')) cls = 'sell';
+      }
+      
+      if (c.key === 'valid') {
+        if (v === 'YES') cls = 'buy';
+        else if (v.startsWith('NO')) cls = 'sell';
+        else cls = 'mut';
+      }
+
+      html += `<td style="text-align:${c.align}" class="${cls}">${v}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+
+  table.innerHTML = html;
+
+  previousScanState = {};
+  syms.forEach(r => {
+    const symKey = `${r.symbol}_${r.tf}`;
+    previousScanState[symKey] = { ...r };
+  });
+}
+
+const qp = new URLSearchParams(location.search);
+if (qp.get('symbol'))   $('sym').value  = qp.get('symbol').toUpperCase();
+if (qp.get('exchange')) $('exch').value = qp.get('exchange').toUpperCase();
+if (qp.get('symbol'))   fetchLTP();
+</script>
+{% endblock %}
