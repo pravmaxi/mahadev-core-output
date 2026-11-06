@@ -1,44 +1,32 @@
 [
   {
-    "sym": "HAL",
-    "amt": 250000,
-    "tf": "1h",
+    "sym": "AARTIIND.NS",
+    "amt": 4201,
+    "tf": "5m",
     "exch": "NSE"
   },
   {
-    "sym": "AMD",
-    "amt": 7812,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "ACC.NS",
+    "amt": 4201,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "EURUSD",
-    "amt": 7812,
-    "tf": "1h",
-    "exch": "FX"
+    "sym": "CHOLAFIN.NS",
+    "amt": 4201,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "AAPL",
-    "amt": 7812,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "HAL.NS",
+    "amt": 4201,
+    "tf": "5m",
+    "exch": "NSE"
   },
   {
-    "sym": "AMZN",
-    "amt": 7812,
-    "tf": "1h",
-    "exch": "US"
-  },
-  {
-    "sym": "CTSH",
-    "amt": 7812,
-    "tf": "1h",
-    "exch": "US"
-  },
-  {
-    "sym": "GOOGL",
-    "amt": 7812,
-    "tf": "1h",
-    "exch": "US"
+    "sym": "HCLTECH.NS",
+    "amt": 4201,
+    "tf": "5m",
+    "exch": "NSE"
   }
 ]

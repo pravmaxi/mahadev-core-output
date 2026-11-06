@@ -1,0 +1,80 @@
+[
+  {
+    "id": "HAL_1h_SELL_2026-11-05 14:15:00+05:30",
+    "symbol": "HAL",
+    "exchange": "NSE",
+    "side": "SELL",
+    "qty": 49,
+    "price": 5033.1,
+    "tf": "1h",
+    "order_type": "LIMIT",
+    "signal_level": 5033.1,
+    "signal_time": "2026-11-05 14:15:00+05:30",
+    "ltp": 5043.0
+  },
+  {
+    "id": "EURUSD_1h_BUY_2026-11-06 00:30:00+05:30",
+    "symbol": "EURUSD",
+    "exchange": "FX",
+    "side": "BUY",
+    "qty": 6954,
+    "price": 1.1233429908752441,
+    "tf": "1h",
+    "order_type": "MARKET",
+    "signal_level": 1.1233429908752441,
+    "signal_time": "2026-11-06 00:30:00+05:30",
+    "ltp": 1.1233429908752441
+  },
+  {
+    "id": "AAPL_1h_SELL_2026-11-06 00:00:00+05:30",
+    "symbol": "AAPL",
+    "exchange": "US",
+    "side": "SELL",
+    "qty": 22,
+    "price": 342.59,
+    "tf": "1h",
+    "order_type": "LIMIT",
+    "signal_level": 342.59,
+    "signal_time": "2026-11-06 00:00:00+05:30",
+    "ltp": 343.18
+  },
+  {
+    "id": "AMZN_1h_SELL_2026-11-06 00:00:00+05:30",
+    "symbol": "AMZN",
+    "exchange": "US",
+    "side": "SELL",
+    "qty": 30,
+    "price": 258.87,
+    "tf": "1h",
+    "order_type": "MARKET",
+    "signal_level": 258.87,
+    "signal_time": "2026-11-06 00:00:00+05:30",
+    "ltp": 258.87
+  },
+  {
+    "id": "CTSH_1h_BUY_2026-11-06 00:00:00+05:30",
+    "symbol": "CTSH",
+    "exchange": "US",
+    "side": "BUY",
+    "qty": 117,
+    "price": 66.22,
+    "tf": "1h",
+    "order_type": "MARKET",
+    "signal_level": 66.22,
+    "signal_time": "2026-11-06 00:00:00+05:30",
+    "ltp": 66.22
+  },
+  {
+    "id": "GOOGL_1h_SELL_2026-11-06 00:00:00+05:30",
+    "symbol": "GOOGL",
+    "exchange": "US",
+    "side": "SELL",
+    "qty": 28,
+    "price": 277.07,
+    "tf": "1h",
+    "order_type": "LIMIT",
+    "signal_level": 277.07,
+    "signal_time": "2026-11-06 00:00:00+05:30",
+    "ltp": 283.12
+  }
+]

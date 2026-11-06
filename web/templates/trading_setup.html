@@ -449,6 +449,7 @@
       <input type="number" id="tpScanIntervalMins" class="setInput" style="width:50px; padding:2px 4px; text-align:center;" value="1" min="1">
       <span id="tpLastScanTime" style="color:var(--muted);font-size:11px; margin-right: 10px;">Last: —</span>
       <button type="button" id="tpScanNowBtn" class="ghostBtn" onclick="triggerManualScan()" style="padding:2px 8px; font-size:10px; color:#e3b341; border-color:#e3b341;" disabled>⚡ Scan Now</button>
+      <button type="button" id="executeQueueBtn" class="ghostBtn" onclick="executeQueue()" style="padding:2px 8px; font-size:10px; color:#3fb950; border-color:#3fb950;">▶ Execute Queue</button>
       <button type="button" class="ghostBtn" onclick="resetProcessedSignals()" style="padding:2px 8px; font-size:10px; color:#f85149; border-color:#f85149;">Reset Signals</button>
     </div>
   </summary>
@@ -502,8 +503,24 @@
           <pre id="jsonPaperProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
         </div>
         <div>
-          <div class="setHead" style="margin-top:0">Paper Queue</div>
-          <pre id="jsonPaperQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+          <div class="setHead" style="margin-top:0">Live Order Queue</div>
+          <pre id="jsonLiveQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Live Processed</div>
+          <pre id="jsonLiveProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Live Order Queue</div>
+          <pre id="jsonLiveQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Live Processed</div>
+          <pre id="jsonLiveProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        </div>
+        <div>
+          <div class="setHead" style="margin-top:0">Order Queue (Pending Execution)</div>
+          <pre id="jsonOrderQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
         </div>
       </div>
       <button class="ghostBtn" style="margin-top:10px" onclick="fetchJsonFiles()">↻ Refresh JSON View</button>
@@ -2020,6 +2037,12 @@ document.getElementById('applySettingsBtn').addEventListener('click', async () =
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Backend rejected the settings update. Please restart Auto-Trading.");
     
+    // ✅ INSTANT UI REFRESH
+    await fetch('/api/trade/setup/status').then(r => r.json()).then(d => {
+        if (d.ok) renderScannerMonitor(d.state);
+    });
+    await Promise.all([refreshPositions(), refreshOrders(), refreshSummary()]);
+    
     btn.textContent = "✓ Applied!";
     setTimeout(() => { btn.textContent = origText; }, 2000);
   } catch(e) {
@@ -2035,7 +2058,21 @@ async function fetchJsonFiles() {
     if (data.ok) {
       document.getElementById('jsonAllocations').textContent = JSON.stringify(data.allocations, null, 2);
       document.getElementById('jsonPaperProcessed').textContent = JSON.stringify(data.paper_processed, null, 2);
-      document.getElementById('jsonPaperQueue').textContent = JSON.stringify(data.paper_queue, null, 2);
+      if (document.getElementById('jsonOrderQueue')) {
+        document.getElementById('jsonOrderQueue').textContent = JSON.stringify(data.paper_queue, null, 2);
+      }
+      if (document.getElementById('jsonLiveQueue')) {
+        document.getElementById('jsonLiveQueue').textContent = JSON.stringify(data.live_queue, null, 2);
+      }
+      if (document.getElementById('jsonLiveProcessed')) {
+        document.getElementById('jsonLiveProcessed').textContent = JSON.stringify(data.live_processed, null, 2);
+      }
+      if (document.getElementById('jsonLiveQueue')) {
+        document.getElementById('jsonLiveQueue').textContent = JSON.stringify(data.live_queue, null, 2);
+      }
+      if (document.getElementById('jsonLiveProcessed')) {
+        document.getElementById('jsonLiveProcessed').textContent = JSON.stringify(data.live_processed, null, 2);
+      }
     }
   } catch(e) { console.error(e); }
 }
@@ -2175,6 +2212,30 @@ function handleScanSort(key) {
   fetch('/api/trade/setup/status').then(r => r.json()).then(d => { if(d.ok) renderScannerMonitor(d.state); });
 }
 
+async function updatePanelValue(symbol, tf, field, value) {
+  try {
+    await fetch('/api/trade/setup/update_value', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ symbol, tf, field, value: parseFloat(value) })
+    });
+  } catch(e) { console.error(e); }
+}
+
+async function updatePanelValue(symbol, tf, field, value) {
+  try {
+    const paperEnabled = $('tpPaperTradeToggle')?.checked || false;
+    const liveEnabled = $('tpLiveTradeToggle')?.checked || false;
+    await fetch('/api/trade/setup/update_value', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ 
+        symbol, tf, field, value: parseFloat(value), 
+        paper_trade: paperEnabled, 
+        live_trade: liveEnabled 
+      })
+    });
+  } catch(e) { console.error(e); }
+}
+
 function renderScannerMonitor(state, isForced = false) {
   const table = document.getElementById('tradingTable'); 
   
@@ -2200,7 +2261,10 @@ function renderScannerMonitor(state, isForced = false) {
     { key: 'wt_trigger_status', label: 'TRIG STATUS', align: 'center' },
     { key: 'wt_trigger_dt', label: 'TRIG DT', align: 'center' },
     { key: 'wt_action', label: 'WT ACTION', align: 'center' },
-    { key: 'valid', label: 'VALID', align: 'center' }, // ✅ NEW COLUMN
+    { key: 'valid', label: 'VALID', align: 'center' },
+    { key: 'target_val', label: 'TARGET (EDIT)', align: 'center' },      // ✅ NEW
+    { key: 'sl_val', label: 'STOP LOSS (EDIT)', align: 'center' },       // ✅ NEW
+    { key: 'opp_sig', label: 'OPP SIGNAL', align: 'center' },     // ✅ NEW
     { key: 'wt_trigger_candle_date', label: 'TRIG DATE', align: 'center' },
     { key: 'wt_trigger_candle_time', label: 'TRIG TIME', align: 'center' }
   ];
@@ -2247,6 +2311,24 @@ function renderScannerMonitor(state, isForced = false) {
         if (v === 'YES') cls = 'buy';
         else if (v.startsWith('NO')) cls = 'sell';
         else cls = 'mut';
+      }
+
+      // ✅ NEW: Make Target and SL editable
+      if (c.key === 'target_val' || c.key === 'sl_val') {
+          let numVal = v !== '—' && !isNaN(v) ? parseFloat(v) : '';
+          let sym = r.symbol;
+          let tf = r.tf;
+          html += `<td style="text-align:center; padding:2px;">
+            <input type="number" class="setInput editable-val" 
+                   style="width:80px; padding:2px; text-align:center; font-size:12px;"
+                   value="${numVal}" 
+                   onchange="updatePanelValue('${sym}', '${tf}', '${c.key}', this.value)">
+          </td>`;
+          continue; // ✅ ADDED: This skips the rest of the loop for this cell, instead of returning the whole function
+      }
+
+      if (c.key === 'opp_sig') {
+        if (v !== '—' && !isNaN(v)) v = fmtINR(v);
       }
 
       html += `<td style="text-align:${c.align}" class="${cls}">${v}</td>`;
