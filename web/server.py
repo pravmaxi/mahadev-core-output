@@ -528,12 +528,18 @@ def api_trade_paper_place():
 @app.route("/api/trade/paper/orders")
 def api_trade_paper_orders():
     orders = paper_trades.list_orders()
-    import autotrader
+    import trading_setup_engine as setup_engine
     for o in orders:
         o["ltp"] = None
-        for state in autotrader.AUTO_STATE.values():
+        o["target_val"] = None
+        o["sl_val"] = None
+        o["opp_sig"] = None
+        for state in setup_engine.SETUP_STATE.values():
             if state.get("symbol") == o["symbol"]:
                 o["ltp"] = state.get("ltp")
+                o["target_val"] = state.get("target_val")
+                o["sl_val"] = state.get("sl_val")
+                o["opp_sig"] = state.get("opp_sig")
                 break
     return jsonify({"ok": True, "orders": orders})
 
@@ -541,21 +547,20 @@ def api_trade_paper_orders():
 @app.route("/api/trade/paper/positions")
 def api_trade_paper_positions():
     pos = paper_trades.positions()
-    import autotrader
-    orders = paper_trades.list_orders() # ✅ NEW: Fetch orders to get entry time
+    import trading_setup_engine as setup_engine
+    orders = paper_trades.list_orders()
     for p in pos:
         p["ltp"] = None
         p["target"] = None
         p["sl"] = None
         
-        # ✅ NEW: Find the most recent filled order for this symbol to get the entry time
         p["entry_time"] = "—"
         for o in reversed(orders):
             if o["symbol"] == p["symbol"] and o["status"] == "FILLED":
                 p["entry_time"] = o["ts"]
                 break
 
-        for state in autotrader.AUTO_STATE.values():
+        for state in setup_engine.SETUP_STATE.values():
             if state.get("symbol") == p["symbol"]:
                 p["ltp"] = state.get("ltp")
                 p["target"] = state.get("target_val")
@@ -824,12 +829,21 @@ import trading_setup_engine as setup_engine
 
 @app.route("/api/trade/setup/start", methods=["POST"])
 def api_trade_setup_start():
-    body = request.get_json(silent=True) or {}
-    for jid in list(setup_engine.SETUP_JOBS.keys()):
-        setup_engine.stop_job(jid)
-    job_id = f"setup_{int(time.time()*1000)}"
-    setup_engine.start_job(job_id, body)
-    return jsonify({"ok": True, "job_id": job_id})
+    try:
+        body = request.get_json(silent=True) or {}
+        if not isinstance(body, dict):
+            return jsonify({"ok": False, "error": "Invalid payload format"}), 400
+            
+        for jid in list(setup_engine.SETUP_JOBS.keys()):
+            setup_engine.stop_job(jid)
+            
+        job_id = f"setup_{int(time.time()*1000)}"
+        setup_engine.start_job(job_id, body)
+        return jsonify({"ok": True, "job_id": job_id})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route("/api/trade/setup/stop", methods=["POST"])
 def api_trade_setup_stop():
@@ -851,8 +865,33 @@ def api_trade_setup_status():
 def api_trade_setup_update_config():
     body = request.get_json(silent=True) or {}
     job_id, new_cfg = body.get("job_id"), body.get("config")
+    
     if job_id in setup_engine.SETUP_JOBS and new_cfg:
         setup_engine.SETUP_JOBS[job_id]["config"].update(new_cfg)
+        
+        # ✅ INSTANT RECALCULATION: Update target/SL for all active signals
+        target_pct = float(new_cfg.get("target_pct", 2.0))
+        stop_pct = float(new_cfg.get("stop_pct", 3.0))
+        
+        for key, row in setup_engine.SETUP_STATE.items():
+            action = row.get("wt_action", "")
+            tl = row.get("trigger_lvl")
+            if tl and tl != "—" and ("Buy" in action or "Sell" in action):
+                try:
+                    entry_level = float(tl)
+                    if target_pct > 0:
+                        t_val = entry_level * (1 + target_pct/100) if "Buy" in action else entry_level * (1 - target_pct/100)
+                        row["target_val"] = f"{t_val:.5f}" if abs(t_val) < 10 else f"{t_val:.2f}"
+                    
+                    if stop_pct > 0:
+                        s_val = entry_level * (1 - stop_pct/100) if "Buy" in action else entry_level * (1 + stop_pct/100)
+                        row["sl_val"] = f"{s_val:.5f}" if abs(s_val) < 10 else f"{s_val:.2f}"
+                except Exception:
+                    pass
+                    
+        # ✅ INSTANT SYNC: Push to paper_trades.json
+        setup_engine.sync_state_to_ledger()
+        
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Job not found."})
 
@@ -917,9 +956,77 @@ def api_trade_setup_json_files():
     return jsonify({
         "ok": True,
         "paper_processed": read_file("setup_paper_processed.json"),
-        "paper_queue": read_file("setup_paper_orders_queue.json"),
+        "paper_queue": read_file("order_queue.json"),
+        "live_queue": read_file("live_order_queue.json"),
+        "live_processed": read_file("live_processed.json"),
         "allocations": read_file("setup_allocations.json")
     })
+
+@app.route("/api/trade/setup/execute_queue", methods=["POST"])
+def api_trade_setup_execute_queue():
+    try:
+        import trading_setup_engine as setup_engine
+        setup_engine.execute_queue()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+# ✅ NEW ROUTE TO SAVE EDITED TARGET/SL VALUES
+@app.route("/api/trade/setup/update_value", methods=["POST"])
+def api_trade_setup_update_value():
+    body = request.get_json(silent=True) or {}
+    sym, tf, field, val = body.get("symbol"), body.get("tf"), body.get("field"), body.get("value")
+    
+    if not sym or not tf or not field: return jsonify({"ok": False})
+    
+    # 1. Update the live UI state
+    import trading_setup_engine as setup_engine
+    key = f"{sym}_{tf}"
+    if key in setup_engine.SETUP_STATE:
+        setup_engine.SETUP_STATE[key][field] = val
+        
+    # 2. Update BOTH queues (Paper and Live)
+    for q_file in [setup_engine.SETUP_QUEUE_FILE, setup_engine.LIVE_QUEUE_FILE]:
+        if q_file.exists():
+            try:
+                queue = json.loads(q_file.read_text())
+                for q in queue:
+                    if q.get("symbol") == sym and q.get("tf") == tf:
+                        q[field] = val
+                q_file.write_text(json.dumps(queue, indent=2))
+            except: pass
+            
+    # 3. Update Paper Ledger ONLY IF Paper Trade is enabled
+    paper_enabled = body.get("paper_trade", False)
+    
+    if paper_enabled:
+        import paper_trades
+        try:
+            ledger_file = paper_trades.DATA_DIR / "paper_trades.json"
+            if ledger_file.exists():
+                data = json.loads(ledger_file.read_text())
+                
+                for o in data.get("orders", []):
+                    if o.get("symbol") == sym and o.get("status") == "OPEN":
+                        if field == "target_val": o["target"] = val
+                        if field == "sl_val": o["sl"] = val
+                        
+                for p in data.get("positions", []):
+                    if p.get("symbol") == sym:
+                        if field == "target_val": p["target"] = val
+                        if field == "sl_val": p["sl"] = val
+                        
+                ledger_file.write_text(json.dumps(data, indent=2))
+        except Exception as e:
+            pass
+            
+    # 4. Update Live Broker ONLY IF Live Trade is enabled (Future logic placeholder)
+    live_enabled = body.get("live_trade", False)
+    if live_enabled:
+        print(f"🚀 [LIVE] Updating {field} to {val} for {sym} on Zerodha")
+        # broker_zerodha.modify_gtt(...) goes here later
+        
+    return jsonify({"ok": True})
 
 @app.route("/api/trade/setup/save_allocations", methods=["POST"])
 def api_trade_setup_save_allocations():

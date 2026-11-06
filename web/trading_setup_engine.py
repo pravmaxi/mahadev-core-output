@@ -6,6 +6,7 @@ import pandas as pd
 import pytz
 import yfinance as yf
 import re
+import paper_trades
 
 from data import download_batch, get_live_ltp, _SYMBOL_MAP
 from indicators.common import candles_to_df, heikin_ashi, apply_fno_filter
@@ -24,6 +25,12 @@ DATA_DIR = Path(__file__).resolve().parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 SETUP_ALLOC_FILE = DATA_DIR / "setup_allocations.json"
 SETUP_STATE_FILE = DATA_DIR / "setup_state_cache.json"
+SETUP_PROCESSED_FILE = DATA_DIR / "setup_paper_processed.json"
+SETUP_QUEUE_FILE = DATA_DIR / "order_queue.json"
+
+# ✅ NEW: Live Queue and Processed files
+LIVE_QUEUE_FILE = DATA_DIR / "live_order_queue.json"
+LIVE_PROCESSED_FILE = DATA_DIR / "live_processed.json"
 
 def start_job(job_id, config):
     SETUP_STATE.clear()
@@ -37,16 +44,119 @@ def start_job(job_id, config):
     t.start()
     return job_id
 
+# ✅ FIX: Added missing stop_job function
 def stop_job(job_id):
     if job_id in SETUP_JOBS:
         SETUP_JOBS[job_id]["stop"] = True
 
+def sync_state_to_ledger():
+    """Pushes the latest Target/SL from SETUP_STATE into paper_trades.json"""
+    import paper_trades
+    import json
+    
+    try:
+        ledger_file = paper_trades.DATA_DIR / "paper_trades.json"
+        if not ledger_file.exists(): return
+        data = json.loads(ledger_file.read_text())
+        
+        updated_count = 0
+        # 1. Sync Open Orders
+        for o in data.get("orders", []):
+            if o.get("status") == "OPEN":
+                for state in SETUP_STATE.values():
+                    if state.get("symbol") == o["symbol"]:
+                        if state.get("target_val") and state["target_val"] != "—":
+                            o["target"] = state["target_val"]
+                        if state.get("sl_val") and state["sl_val"] != "—":
+                            o["sl"] = state["sl_val"]
+                        updated_count += 1
+                        break
+                        
+        # 2. Sync Open Positions
+        for p in data.get("positions", []):
+            for state in SETUP_STATE.values():
+                if state.get("symbol") == p["symbol"]:
+                    if state.get("target_val") and state["target_val"] != "—":
+                        p["target"] = state["target_val"]
+                    if state.get("sl_val") and state["sl_val"] != "—":
+                        p["sl"] = state["sl_val"]
+                    updated_count += 1
+                    break
+                    
+        if updated_count > 0:
+            ledger_file.write_text(json.dumps(data, indent=2))
+            print(f"🔄 Synced {updated_count} orders/positions with new Target/SL")
+    except Exception as e:
+        print(f"⚠️ Sync failed: {e}")
+
+def _process_queue_file(queue_file, processed_file, mode="PAPER"):
+    if not queue_file.exists(): return
+    try: queue = json.loads(queue_file.read_text())
+    except: return
+    if not queue: return
+    
+    processed = []
+    if processed_file.exists():
+        try: processed = json.loads(processed_file.read_text())
+        except: pass
+        
+    for q in queue:
+        try:
+            o_type = q.get("order_type", "MARKET")
+            limit_px = q.get("price") or q.get("signal_level") or q.get("ltp") or 0
+            
+            if mode == "PAPER":
+                o = paper_trades.place_order(
+                    symbol=q["symbol"], exchange=q["exchange"], side=q["side"], 
+                    qty=q["qty"], order_type=o_type, price=limit_px if o_type=="LIMIT" else None, product="MIS", ltp=q.get("ltp") or limit_px,
+                    tag=q.get("tag")
+                )
+                if o_type == "MARKET":
+                    paper_trades.mark_filled(o["id"], q.get("ltp") or limit_px)
+            else:
+                # ✅ FUTURE: Live Zerodha execution logic will go here
+                print(f"🚀 [LIVE] Would have placed {o_type} for {q['symbol']} - {q['side']} @ {limit_px}")
+            
+            processed.append({
+                "id": q["id"], "symbol": q["symbol"], "tf": q["tf"], "side": q["side"],
+                "signal_level": q.get("signal_level"), "signal_time": q.get("signal_time"),
+                "target_val": q.get("target_val"), "sl_val": q.get("sl_val"), "opp_sig": q.get("opp_sig"),
+                "executed_time": str(pd.Timestamp.now(tz=IST))
+            })
+        except Exception as e:
+            print(f"Queue execution failed for {q.get('symbol')}: {e}")
+            
+    processed_file.write_text(json.dumps(processed, indent=2))
+    queue_file.write_text("[]")
+    print(f"✅ Executed {mode} Queue successfully.")
+
+def execute_queue():
+    _process_queue_file(SETUP_QUEUE_FILE, SETUP_PROCESSED_FILE, mode="PAPER")
+    _process_queue_file(LIVE_QUEUE_FILE, LIVE_PROCESSED_FILE, mode="LIVE")
+
+def _check_pending_limits(downloaded_data):
+    try: orders = paper_trades.list_orders()
+    except: return
+    for o in orders:
+        if o["status"] == "OPEN" and o.get("order_type") == "LIMIT":
+            live_px = None
+            for k, v in downloaded_data.items():
+                if k.endswith(o["symbol"]) or k.endswith(o["symbol"] + ".NS") or k.endswith(o["symbol"] + ".BO"):
+                    try:
+                        df_real = candles_to_df(v)
+                        live_px = float(df_real["Close"].iloc[-1])
+                    except: pass
+                    break
+            
+            if live_px is not None:
+                limit_px = o.get("price")
+                if limit_px:
+                    if o["side"] == "BUY" and live_px > limit_px:
+                        paper_trades.mark_filled(o["id"], limit_px)
+                    elif o["side"] == "SELL" and live_px < limit_px:
+                        paper_trades.mark_filled(o["id"], limit_px)
+
 def get_active_pending_signals(df, params, buffer_pts, max_wait, pending_rule):
-    """
-    Scans historical closed candles to find:
-    1. Currently active pending signals.
-    2. The absolute latest signal (whether it triggered, timed out, or is pending) for UI display.
-    """
     mod = get_indicator("wt")
     comp = mod.compute(df, params)
     cross = comp["cross"]
@@ -118,7 +228,6 @@ def _worker(job_id):
             cfg = SETUP_JOBS[job_id]["config"]
             tasks = cfg.get("tasks", [])
             
-            # Build sym_map FIRST
             sym_map = {}
             for t in tasks:
                 raw_sym = t["sym"]
@@ -132,27 +241,23 @@ def _worker(job_id):
                     sym_yf = _SYMBOL_MAP.get(sym_yf, sym_yf)
                 sym_map[f"{raw_sym}_{t['tf']}"] = sym_yf
 
-            # Remove symbols from UI state
             current_keys = {f"{t['sym']}_{t['tf']}" for t in tasks}
             for k in list(SETUP_STATE.keys()):
                 if k not in current_keys:
                     del SETUP_STATE[k]
             
-            # Purge TRIGGER_STATE
             current_yf_syms = {sym_map[k] for k in current_keys if k in sym_map}
             for k in list(TRIGGER_STATE.keys()):
                 sym_yf = k.split('|')[0]
                 if sym_yf not in current_yf_syms:
                     del TRIGGER_STATE[k]
             
-            # Group by TF
             tf_groups = {}
             for t in tasks:
                 tf = t["tf"]
                 key = f"{t['sym']}_{tf}"
                 tf_groups.setdefault(tf, []).append(sym_map[key])
 
-            # F&O FILTER SETUP
             fno_mode = cfg.get("fno_mode", "none")
             fno_list = None
             has_indian_stocks = any(t.get("exch", "").upper() in ["NSE", "BSE"] or str(t.get("sym", "")).upper().endswith((".NS", ".BO")) for t in tasks)
@@ -165,6 +270,7 @@ def _worker(job_id):
                     pass
 
             use_ha = cfg.get("candles", "ha") == "ha"
+            downloaded_data = {}
             
             for tf, syms in tf_groups.items():
                 if tf in ["1m", "2m", "5m", "15m", "30m"]: period = "60d"
@@ -173,11 +279,12 @@ def _worker(job_id):
                 
                 try:
                     res = download_batch(syms, interval=tf, period=period, force_refresh=True)
+                    for s_yf, rows in res.items():
+                        downloaded_data[f"{tf}_{s_yf}"] = rows
                 except Exception as e:
                     print(f"Download failed for {tf}: {e}")
                     continue
 
-                # FETCH TRUE LIVE LTP (FORCE OVERRIDE FOR FOREX)
                 true_ltps = {}
                 try:
                     true_ltps = get_live_ltp(list(set(syms)))
@@ -219,7 +326,6 @@ def _worker(job_id):
                         
                         if len(df_real) < 30: continue
                         
-                        # FORCE OVERRIDE WITH TRUE LTP
                         if true_ltp is not None:
                             live_px = true_ltp
                             df_real.iloc[-1, df_real.columns.get_loc("Close")] = live_px
@@ -235,7 +341,6 @@ def _worker(job_id):
                         row = {"symbol": raw_sym, "tf": tf, "ltp": _r(live_px), "yf_symbol": sym_yf}
                         wt_params = {"n1": cfg.get("wt_n1", 15), "n2": cfg.get("wt_n2", 27)}
                         
-                        # 1. Generate Scanner WT Action exactly as before
                         wt_mod = get_indicator("wt")
                         wt_comp = wt_mod.compute(df_ha, wt_params)
                         wt_params["live_ltp"] = live_px
@@ -253,7 +358,6 @@ def _worker(job_id):
                             if not k.endswith("_details") and k != "_new_state":
                                 row[k] = v
                                 
-                        # 2. Calculate Trigger Level using Autotrader logic
                         buffer_pts = float(cfg.get("buffer_pts", 0))
                         wait_bars = int(cfg.get("wait_bars", 100))
                         pending_rule = cfg.get("wt_pending_rule", "same_dir")
@@ -270,25 +374,24 @@ def _worker(job_id):
                         if most_recent:
                             direction, sig = most_recent
                             tl = float(sig["level"])
-                            # Format to 5 decimals for Forex (< 10), else 2
                             row["trigger_lvl"] = f"{tl:.5f}" if abs(tl) < 10 else f"{tl:.2f}"
                             
-                            # ✅ FIX: Force the string to say "Market Order" if LTP has already broken out
-                            if direction == "sell" and live_px < tl:
-                                row["wt_action"] = f"Sell Market Order"
-                            elif direction == "buy" and live_px > tl:
-                                row["wt_action"] = f"Buy Market Order"
+                            if "wt_action" in row and row["wt_action"]:
+                                try:
+                                    row["wt_action"] = re.sub(r'\d+\.\d+', row["trigger_lvl"], row["wt_action"])
+                                except Exception:
+                                    pass
+                            
+                            opp_dir = "sell" if direction == "buy" else "buy"
+                            if pending[opp_dir]:
+                                opp_lvl = _r(pending[opp_dir]["level"])
+                                row["opp_sig"] = f"{opp_lvl:.5f}" if abs(opp_lvl) < 10 else f"{opp_lvl:.2f}"
                             else:
-                                # If not broken out, keep the Limit Order string but update the price
-                                if "wt_action" in row and row["wt_action"]:
-                                    try:
-                                        row["wt_action"] = re.sub(r'\d+\.\d+', row["trigger_lvl"], row["wt_action"])
-                                    except Exception:
-                                        pass
+                                row["opp_sig"] = "—"
                         else:
                             row["trigger_lvl"] = "—"
+                            row["opp_sig"] = "—"
 
-                        # ✅ NEW: Calculate VALID status for execution safety
                         action_str = str(row.get("wt_action", ""))
                         row["valid"] = "—"
                         max_gap_pct = float(cfg.get("max_gap_pct", 2.0))
@@ -306,6 +409,90 @@ def _worker(job_id):
                                         row["valid"] = f"NO (Gap {gap_pct:.1f}%)"
                             except Exception:
                                 pass
+                                
+                        target_pct = float(cfg.get("target_pct", 0))
+                        stop_pct = float(cfg.get("stop_pct", 0))
+                        
+                        if row["valid"] == "YES" and row.get("trigger_lvl") and row["trigger_lvl"] != "—":
+                            entry_level = float(row["trigger_lvl"])
+                            if target_pct > 0:
+                                t_val = _r(entry_level * (1 + target_pct/100)) if "Buy" in action_str else _r(entry_level * (1 - target_pct/100))
+                                row["target_val"] = f"{t_val:.5f}" if abs(t_val) < 10 else f"{t_val:.2f}"
+                            else:
+                                row["target_val"] = "—"
+                                
+                            if stop_pct > 0:
+                                s_val = _r(entry_level * (1 - stop_pct/100)) if "Buy" in action_str else _r(entry_level * (1 + stop_pct/100))
+                                row["sl_val"] = f"{s_val:.5f}" if abs(s_val) < 10 else f"{s_val:.2f}"
+                            else:
+                                row["sl_val"] = row["opp_sig"]
+                        else:
+                            row["target_val"] = "—"
+                            row["sl_val"] = "—"
+
+                        is_new_trigger = row.get("wt_trigger_status") == "New Trigger"
+                        is_valid = row.get("valid") == "YES"
+                        is_trade_action = "Buy" in action_str or "Sell" in action_str
+
+                        if is_new_trigger and is_valid and is_trade_action:
+                            side = "BUY" if "Buy" in action_str else "SELL"
+                            order_type = "MARKET" if "Market" in action_str else "LIMIT"
+                            limit_px = live_px if order_type == "MARKET" else float(row["trigger_lvl"])
+                            
+                            sig_time = row.get("valid_time", str(df_real.index[-1]))
+                            sig_id = f"{raw_sym}_{tf}_{side}_{sig_time}"
+                            
+                            processed = []
+                            if SETUP_PROCESSED_FILE.exists():
+                                try: processed = json.loads(SETUP_PROCESSED_FILE.read_text())
+                                except: pass
+                                
+                            already_processed = any(p.get("id") == sig_id for p in processed)
+                            
+                            if not already_processed:
+                                queue = []
+                                if SETUP_QUEUE_FILE.exists():
+                                    try: queue = json.loads(SETUP_QUEUE_FILE.read_text())
+                                    except: pass
+                                
+                                # ✅ FIX: Define qty before using it
+                                qty = max(1, int(float(task.get("amt", 5000)) / limit_px))
+
+                                q_entry = {
+                                    "id": sig_id, "symbol": raw_sym, "exchange": task["exch"],
+                                    "side": side, "qty": qty, "price": limit_px, "tf": tf,
+                                    "order_type": order_type,
+                                    "signal_level": limit_px, "signal_time": sig_time,
+                                    "ltp": live_px,
+                                    "target_val": row.get("target_val"),
+                                    "sl_val": row.get("sl_val"),
+                                    "opp_sig": row.get("opp_sig")
+                                }
+                                
+                                paper_enabled = cfg.get("paper_trade", False)
+                                live_enabled = cfg.get("live_trade", False)
+                                
+                                if paper_enabled:
+                                    if not any(q.get("id") == sig_id for q in queue):
+                                        queue.append(q_entry)
+                                        SETUP_QUEUE_FILE.write_text(json.dumps(queue, indent=2))
+                                        print(f"✅ Queued PAPER {order_type} for {raw_sym} - {side} @ {limit_px}")
+                                
+                                if live_enabled:
+                                    live_q = []
+                                    if LIVE_QUEUE_FILE.exists():
+                                        try: live_q = json.loads(LIVE_QUEUE_FILE.read_text())
+                                        except: pass
+                                    if not any(q.get("id") == sig_id for q in live_q):
+                                        live_q.append(q_entry)
+                                        LIVE_QUEUE_FILE.write_text(json.dumps(live_q, indent=2))
+                                        print(f"✅ Queued LIVE {order_type} for {raw_sym} - {side} @ {limit_px}")
+                                        
+                                if not paper_enabled and not live_enabled:
+                                    if not any(q.get("id") == sig_id for q in queue):
+                                        queue.append(q_entry)
+                                        SETUP_QUEUE_FILE.write_text(json.dumps(queue, indent=2))
+                                        print(f"✅ Queued IDLE {order_type} for {raw_sym} - {side} @ {limit_px}")
 
                         # CALCULATE RSI
                         rsi_period = 14
@@ -326,6 +513,11 @@ def _worker(job_id):
                     except Exception as e:
                         print(f"Error on {raw_sym}: {e}")
                         SETUP_STATE[key] = {"symbol": raw_sym, "tf": tf, "status": "Error"}
+
+            if cfg.get("paper_trade"):
+                execute_queue()
+
+            _check_pending_limits(downloaded_data)
 
         except Exception as e:
             print(f"⚠️ Loop Error: {e}")
