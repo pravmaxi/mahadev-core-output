@@ -1,0 +1,37 @@
+{
+  "GC=F|wt": {
+    "direction": "buy",
+    "datetime": "2026-11-11 18:30",
+    "level": 4053.8
+  },
+  "SI=F|wt": {
+    "direction": "sell",
+    "datetime": "2026-11-11 18:30",
+    "level": 52.71
+  },
+  "EURUSD=X|wt": {
+    "direction": "sell",
+    "datetime": "2026-11-11 18:05",
+    "level": 1.11
+  },
+  "GBPUSD=X|wt": {
+    "direction": "sell",
+    "datetime": "2026-11-11 18:35",
+    "level": 1.33
+  },
+  "USDJPY=X|wt": {
+    "direction": "buy",
+    "datetime": "2026-11-11 18:35",
+    "level": 159.24
+  },
+  "USDCAD=X|wt": {
+    "direction": "buy",
+    "datetime": "2026-11-11 18:45",
+    "level": 1.42
+  },
+  "USDCHF=X|wt": {
+    "direction": "buy",
+    "datetime": "2026-11-11 18:35",
+    "level": 0.83
+  }
+}

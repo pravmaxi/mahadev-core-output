@@ -40,7 +40,9 @@ class PollingFilter(logging.Filter):
         noisy_routes = [
             "/api/trade/auto/status",
             "/api/trade/paper/positions",
-            "/api/trade/paper/orders"
+            "/api/trade/paper/orders",
+            "/api/trade/setup/status",    # ✅ Silences the 5-sec Trade Setup polling
+            "/api/trade/setup/history"    # ✅ Silences the 5-sec History polling
         ]
         return not any(route in msg for route in noisy_routes)
 
@@ -613,6 +615,17 @@ def api_trade_paper_clear():
     if setup_resume.exists(): setup_resume.unlink()
 
     paper_trades.clear_all()
+    
+    # ✅ WIPE ALL 4 SETUP QUEUES & PROCESSED FILES
+    setup_engine.SETUP_QUEUE_FILE.write_text("[]")
+    setup_engine.LIVE_QUEUE_FILE.write_text("[]")
+    setup_engine.SETUP_PROCESSED_FILE.write_text("[]")
+    setup_engine.LIVE_PROCESSED_FILE.write_text("[]")
+    
+    # ✅ DELETE TRADE HISTORY
+    if hasattr(setup_engine, 'SETUP_HISTORY_FILE') and setup_engine.SETUP_HISTORY_FILE.exists():
+        setup_engine.SETUP_HISTORY_FILE.unlink()
+    
     return jsonify({"ok": True})
 
 import autotrader
@@ -848,7 +861,18 @@ def api_trade_setup_start():
 @app.route("/api/trade/setup/stop", methods=["POST"])
 def api_trade_setup_stop():
     body = request.get_json(silent=True) or {}
-    if body.get("job_id"): setup_engine.stop_job(body.get("job_id"))
+    job_id = body.get("job_id")
+    
+    if job_id:
+        setup_engine.stop_job(job_id)
+    else:
+        # ✅ If no job_id is passed, kill ALL running setup jobs
+        for jid in list(setup_engine.SETUP_JOBS.keys()):
+            setup_engine.stop_job(jid)
+            
+    # ✅ Force clear the jobs dictionary to ensure it stops
+    setup_engine.SETUP_JOBS.clear()
+    
     return jsonify({"ok": True})
 
 @app.route("/api/trade/setup/status")
@@ -869,28 +893,44 @@ def api_trade_setup_update_config():
     if job_id in setup_engine.SETUP_JOBS and new_cfg:
         setup_engine.SETUP_JOBS[job_id]["config"].update(new_cfg)
         
-        # ✅ INSTANT RECALCULATION: Update target/SL for all active signals
-        target_pct = float(new_cfg.get("target_pct", 2.0))
-        stop_pct = float(new_cfg.get("stop_pct", 3.0))
+        # ✅ INSTANT RECALCULATION: Read from the full saved config, not just the payload
+        active_cfg = setup_engine.SETUP_JOBS[job_id]["config"]
+        target_pct = float(active_cfg.get("target_pct", 0))
+        stop_pct = float(active_cfg.get("stop_pct", 0))
         
         for key, row in setup_engine.SETUP_STATE.items():
             action = row.get("wt_action", "")
             tl = row.get("trigger_lvl")
             if tl and tl != "—" and ("Buy" in action or "Sell" in action):
                 try:
-                    entry_level = float(tl)
+                    # ✅ Fix: Use pos_entry if position is open
+                    if row.get("pos_qty", 0) != 0:
+                        entry_level = float(row["pos_entry"])
+                        is_buy_dir = (row["pos_side"] == "BUY")
+                    else:
+                        entry_level = float(tl)
+                        is_buy_dir = "Buy" in action
+
                     if target_pct > 0:
-                        t_val = entry_level * (1 + target_pct/100) if "Buy" in action else entry_level * (1 - target_pct/100)
+                        t_val = entry_level * (1 + target_pct/100) if is_buy_dir else entry_level * (1 - target_pct/100)
                         row["target_val"] = f"{t_val:.5f}" if abs(t_val) < 10 else f"{t_val:.2f}"
+                    else:
+                        row["target_val"] = "—"
                     
                     if stop_pct > 0:
-                        s_val = entry_level * (1 - stop_pct/100) if "Buy" in action else entry_level * (1 + stop_pct/100)
+                        s_val = entry_level * (1 - stop_pct/100) if is_buy_dir else entry_level * (1 + stop_pct/100)
                         row["sl_val"] = f"{s_val:.5f}" if abs(s_val) < 10 else f"{s_val:.2f}"
+                    else:
+                        row["sl_val"] = row.get("opp_sig", "—")
                 except Exception:
                     pass
                     
-        # ✅ INSTANT SYNC: Push to paper_trades.json
-        setup_engine.sync_state_to_ledger()
+        # ✅ Push updates to queues (patch pending or append UPDATE_RISK)
+        for key, row in setup_engine.SETUP_STATE.items():
+            parts = key.rsplit("_", 1)
+            if len(parts) == 2:
+                sym, tf = parts[0], parts[1]
+                _update_queues_risk(sym, tf, row.get("target_val", "—"), row.get("sl_val", "—"))
         
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Job not found."})
@@ -904,6 +944,7 @@ def api_trade_setup_trigger_scan():
 def api_trade_setup_fetch_ltp():
     from data import get_live_ltp
     import yfinance as yf
+    import pandas as pd
     
     if getattr(setup_engine, "SETUP_IS_SCANNING", False):
         return jsonify({"ok": False, "error": "Auto-Scan in progress"})
@@ -943,7 +984,76 @@ def api_trade_setup_fetch_ltp():
             r["ltp"] = new_ltp
             updated += 1
             
+            # ✅ 1. Check Limit Order Fills
+            if r.get("pos_qty", 0) == 0 and r.get("position_col") == "Pending":
+                side = "BUY" if "BUY" in r.get("order_col", "") else "SELL"
+                filled = False
+                if side == "BUY" and new_ltp >= float(r.get("order_trig_price", 0)): filled = True
+                elif side == "SELL" and new_ltp <= float(r.get("order_trig_price", 0)): filled = True
+                
+                if filled:
+                    r["pos_qty"] = max(1, int(float(r.get("alloted_amt", 5000)) / float(r["order_trig_price"])))
+                    r["pos_entry"] = float(r["order_trig_price"])
+                    r["pos_side"] = side
+                    r["pos_in_progress"] = "YES"
+                    r["position_col"] = f"{'LONG' if side == 'BUY' else 'SHORT'} {r['pos_qty']}"
+                    r["order_pnl"] = 0
+
+            # ✅ 2. Calculate Live P&L
+            if r.get("pos_qty", 0) != 0:
+                if r["pos_side"] == "BUY":
+                    r["order_pnl"] = round((new_ltp - r["pos_entry"]) * r["pos_qty"], 2)
+                else:
+                    r["order_pnl"] = round((r["pos_entry"] - new_ltp) * r["pos_qty"], 2)
+                    
+                # ✅ 3. Check for Exit (Target / SL / Opp Signal)
+                exit_reason = None
+                t_val = float(r["target_val"]) if r.get("target_val") != "—" else (9999999 if r["pos_side"] == "BUY" else 0)
+                s_val = float(r["sl_val"]) if r.get("sl_val") != "—" else (0 if r["pos_side"] == "BUY" else 9999999)
+                opp_val = float(r["opp_sig"]) if r.get("opp_sig") != "—" else (0 if r["pos_side"] == "BUY" else 9999999)
+                
+                if r["pos_side"] == "BUY":
+                    if new_ltp >= t_val: exit_reason = "Target"
+                    elif new_ltp <= opp_val: exit_reason = "Opposite Signal"
+                    elif new_ltp <= s_val: exit_reason = "StopLoss"
+                else:
+                    if new_ltp <= t_val: exit_reason = "Target"
+                    elif new_ltp >= opp_val: exit_reason = "Opposite Signal"
+                    elif new_ltp >= s_val: exit_reason = "StopLoss"
+                    
+                if exit_reason:
+                    r["total_pnl"] = round(r.get("total_pnl", 0) + r["order_pnl"], 2)
+                    setup_engine.save_history_entry({
+                        "symbol": r["symbol"], "tf": r["tf"], "side": r["pos_side"],
+                        "qty": r["pos_qty"], "entry": r["pos_entry"],
+                        "exit": new_ltp, "pnl": r["order_pnl"],
+                        "reason": exit_reason, "time": str(pd.Timestamp.now(tz=IST).strftime('%Y-%m-%d %H:%M:%S'))
+                    })
+                    r["pos_qty"] = 0
+                    r["pos_entry"] = 0
+                    r["pos_side"] = ""
+                    r["order_pnl"] = 0
+                    r["position_col"] = "—"
+                    r["order_col"] = "—"
+                    r["order_trig_price"] = "—"
+                    r["pos_in_progress"] = "NO"
+
+    # Save the updated state so it persists
+    try: setup_engine.SETUP_STATE_FILE.write_text(json.dumps(setup_engine.SETUP_STATE, indent=2))
+    except: pass
+
     return jsonify({"ok": True, "updated": updated})
+
+@app.route("/api/trade/setup/history")
+def api_trade_setup_history():
+    file_path = Path(__file__).resolve().parent / "data" / "setup_trade_history.json"
+    if not file_path.exists(): return jsonify({"ok": True, "history": []})
+    try:
+        history = json.loads(file_path.read_text())
+        # Return newest first
+        return jsonify({"ok": True, "history": list(reversed(history))})
+    except:
+        return jsonify({"ok": True, "history": []})
 
 @app.route("/api/trade/setup/json_files")
 def api_trade_setup_json_files():
@@ -971,6 +1081,41 @@ def api_trade_setup_execute_queue():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
+def _update_queues_risk(sym, tf, target_val, sl_val):
+    import trading_setup_engine as setup_engine
+    
+    for q_file in [setup_engine.SETUP_QUEUE_FILE, setup_engine.LIVE_QUEUE_FILE]:
+        queue = []
+        if q_file.exists():
+            try: queue = json.loads(q_file.read_text())
+            except: pass
+            
+        # 1. Check if the order is still pending in the queue
+        existing_new_order = None
+        for q in queue:
+            if q.get("symbol") == sym and q.get("tf") == tf and q.get("action", "NEW_ORDER") == "NEW_ORDER":
+                existing_new_order = q
+                break
+                
+        if existing_new_order:
+            # ✅ Patch the pending NEW_ORDER directly
+            existing_new_order["target_val"] = target_val
+            existing_new_order["sl_val"] = sl_val
+            print(f"✏️ Patched pending NEW_ORDER in {q_file.name} for {sym}")
+        else:
+            # ✅ If already processed, append UPDATE_RISK command
+            update_cmd = {
+                "id": f"upd_{int(time.time()*1000)}_{sym}",
+                "action": "UPDATE_RISK",
+                "symbol": sym,
+                "tf": tf,
+                "target_val": target_val,
+                "sl_val": sl_val
+            }
+            queue.append(update_cmd)
+        
+        q_file.write_text(json.dumps(queue, indent=2))
+
 # ✅ NEW ROUTE TO SAVE EDITED TARGET/SL VALUES
 @app.route("/api/trade/setup/update_value", methods=["POST"])
 def api_trade_setup_update_value():
@@ -985,40 +1130,17 @@ def api_trade_setup_update_value():
     if key in setup_engine.SETUP_STATE:
         setup_engine.SETUP_STATE[key][field] = val
         
-    # 2. Update BOTH queues (Paper and Live)
-    for q_file in [setup_engine.SETUP_QUEUE_FILE, setup_engine.LIVE_QUEUE_FILE]:
-        if q_file.exists():
-            try:
-                queue = json.loads(q_file.read_text())
-                for q in queue:
-                    if q.get("symbol") == sym and q.get("tf") == tf:
-                        q[field] = val
-                q_file.write_text(json.dumps(queue, indent=2))
-            except: pass
-            
-    # 3. Update Paper Ledger ONLY IF Paper Trade is enabled
-    paper_enabled = body.get("paper_trade", False)
+    # 2. Append UPDATE_RISK command to BOTH queues (or patch pending)
+    current_target = setup_engine.SETUP_STATE.get(key, {}).get("target_val", "—")
+    current_sl = setup_engine.SETUP_STATE.get(key, {}).get("sl_val", "—")
     
-    if paper_enabled:
-        import paper_trades
-        try:
-            ledger_file = paper_trades.DATA_DIR / "paper_trades.json"
-            if ledger_file.exists():
-                data = json.loads(ledger_file.read_text())
-                
-                for o in data.get("orders", []):
-                    if o.get("symbol") == sym and o.get("status") == "OPEN":
-                        if field == "target_val": o["target"] = val
-                        if field == "sl_val": o["sl"] = val
-                        
-                for p in data.get("positions", []):
-                    if p.get("symbol") == sym:
-                        if field == "target_val": p["target"] = val
-                        if field == "sl_val": p["sl"] = val
-                        
-                ledger_file.write_text(json.dumps(data, indent=2))
-        except Exception as e:
-            pass
+    if field == "target_val": current_target = val
+    if field == "sl_val": current_sl = val
+
+    _update_queues_risk(sym, tf, current_target, current_sl)
+
+    # 3. REMOVED direct paper_trades.json update logic. 
+    # The engine will now handle it when it processes the queue.
             
     # 4. Update Live Broker ONLY IF Live Trade is enabled (Future logic placeholder)
     live_enabled = body.get("live_trade", False)
@@ -1065,6 +1187,9 @@ def api_trade_setup_reset_signals():
         
     if hasattr(setup_engine, 'SETUP_STATE_FILE'):
         setup_engine.SETUP_STATE_FILE.unlink(missing_ok=True)
+        
+    if hasattr(setup_engine, 'SETUP_TRIGGER_FILE'):
+        setup_engine.SETUP_TRIGGER_FILE.unlink(missing_ok=True) # ✅ Delete trigger state file
         
     setup_engine.SETUP_PROCESSED_FILE.unlink(missing_ok=True)
     setup_engine.SETUP_QUEUE_FILE.unlink(missing_ok=True)
