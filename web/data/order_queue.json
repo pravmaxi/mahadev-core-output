@@ -1,1 +1,282 @@
-[]
+[
+  {
+    "id": "upd_1794399587108_XAUUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAUUSD",
+    "tf": "5m",
+    "target_val": "4013.76",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794399587109_XAGUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAGUSD",
+    "tf": "5m",
+    "target_val": "52.30",
+    "sl_val": "53.06"
+  },
+  {
+    "id": "upd_1794399587109_EURUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "EURUSD",
+    "tf": "5m",
+    "target_val": "1.12497",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794399587110_GBPUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "GBPUSD",
+    "tf": "5m",
+    "target_val": "1.31838",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794399587111_USDJPY",
+    "action": "UPDATE_RISK",
+    "symbol": "USDJPY",
+    "tf": "5m",
+    "target_val": "157.59",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794399587112_USDCAD",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCAD",
+    "tf": "5m",
+    "target_val": "1.43713",
+    "sl_val": "1.42120"
+  },
+  {
+    "id": "upd_1794399587112_USDCHF",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCHF",
+    "tf": "5m",
+    "target_val": "0.82110",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794399989661_XAUUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAUUSD",
+    "tf": "5m",
+    "target_val": "4013.76",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794399989662_XAGUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAGUSD",
+    "tf": "5m",
+    "target_val": "52.30",
+    "sl_val": "53.06"
+  },
+  {
+    "id": "upd_1794399989663_EURUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "EURUSD",
+    "tf": "5m",
+    "target_val": "1.12497",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794399989664_GBPUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "GBPUSD",
+    "tf": "5m",
+    "target_val": "1.34457",
+    "sl_val": "1.33126"
+  },
+  {
+    "id": "upd_1794399989664_USDJPY",
+    "action": "UPDATE_RISK",
+    "symbol": "USDJPY",
+    "tf": "5m",
+    "target_val": "157.59",
+    "sl_val": "159.19"
+  },
+  {
+    "id": "upd_1794399989665_USDCAD",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCAD",
+    "tf": "5m",
+    "target_val": "1.43713",
+    "sl_val": "1.42270"
+  },
+  {
+    "id": "upd_1794399989666_USDCHF",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCHF",
+    "tf": "5m",
+    "target_val": "0.82110",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794400224835_XAUUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAUUSD",
+    "tf": "5m",
+    "target_val": "4013.76",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794400224837_XAGUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAGUSD",
+    "tf": "5m",
+    "target_val": "52.30",
+    "sl_val": "53.06"
+  },
+  {
+    "id": "upd_1794400224837_EURUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "EURUSD",
+    "tf": "5m",
+    "target_val": "1.12497",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794400224838_GBPUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "GBPUSD",
+    "tf": "5m",
+    "target_val": "1.34457",
+    "sl_val": "1.33126"
+  },
+  {
+    "id": "upd_1794400224839_USDJPY",
+    "action": "UPDATE_RISK",
+    "symbol": "USDJPY",
+    "tf": "5m",
+    "target_val": "157.59",
+    "sl_val": "159.19"
+  },
+  {
+    "id": "upd_1794400224840_USDCAD",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCAD",
+    "tf": "5m",
+    "target_val": "1.43713",
+    "sl_val": "1.42270"
+  },
+  {
+    "id": "upd_1794400224841_USDCHF",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCHF",
+    "tf": "5m",
+    "target_val": "0.82110",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794400647797_XAUUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAUUSD",
+    "tf": "5m",
+    "target_val": "4013.76",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794400647798_XAGUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAGUSD",
+    "tf": "5m",
+    "target_val": "52.30",
+    "sl_val": "53.06"
+  },
+  {
+    "id": "upd_1794400647799_EURUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "EURUSD",
+    "tf": "5m",
+    "target_val": "1.12497",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794400647800_GBPUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "GBPUSD",
+    "tf": "5m",
+    "target_val": "1.34488",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794400647801_USDJPY",
+    "action": "UPDATE_RISK",
+    "symbol": "USDJPY",
+    "tf": "5m",
+    "target_val": "157.59",
+    "sl_val": "159.19"
+  },
+  {
+    "id": "upd_1794400647803_USDCAD",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCAD",
+    "tf": "5m",
+    "target_val": "1.43713",
+    "sl_val": "1.42270"
+  },
+  {
+    "id": "upd_1794400647804_USDCHF",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCHF",
+    "tf": "5m",
+    "target_val": "0.82110",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794403109482_XAUUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAUUSD",
+    "tf": "5m",
+    "target_val": "4013.76",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794403109484_XAGUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "XAGUSD",
+    "tf": "5m",
+    "target_val": "52.30",
+    "sl_val": "52.86"
+  },
+  {
+    "id": "upd_1794403109485_EURUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "EURUSD",
+    "tf": "5m",
+    "target_val": "1.10257",
+    "sl_val": "\u2014"
+  },
+  {
+    "id": "upd_1794403109486_GBPUSD",
+    "action": "UPDATE_RISK",
+    "symbol": "GBPUSD",
+    "tf": "5m",
+    "target_val": "1.34488",
+    "sl_val": "1.33076"
+  },
+  {
+    "id": "upd_1794403109488_USDJPY",
+    "action": "UPDATE_RISK",
+    "symbol": "USDJPY",
+    "tf": "5m",
+    "target_val": "160.83",
+    "sl_val": "159.24"
+  },
+  {
+    "id": "upd_1794403109489_USDCAD",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCAD",
+    "tf": "5m",
+    "target_val": "1.43713",
+    "sl_val": "1.42270"
+  },
+  {
+    "id": "upd_1794403109490_USDCHF",
+    "action": "UPDATE_RISK",
+    "symbol": "USDCHF",
+    "tf": "5m",
+    "target_val": "0.83800",
+    "sl_val": "0.82945"
+  }
+]

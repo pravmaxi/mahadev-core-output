@@ -1,0 +1,50 @@
+[
+  {
+    "symbol": "GBPUSD",
+    "tf": "5m",
+    "side": "SELL",
+    "qty": 53636,
+    "entry": 1.3317,
+    "entry_time": "\u2014",
+    "exit": 1.3315579891204834,
+    "pnl": 7.62,
+    "reason": "Opposite Signal",
+    "time": "2026-11-11 17:55:26"
+  },
+  {
+    "symbol": "USDCHF",
+    "tf": "5m",
+    "side": "SELL",
+    "qty": 86121,
+    "entry": 0.82939,
+    "entry_time": "\u2014",
+    "exit": 0.829770028591156,
+    "pnl": -32.73,
+    "reason": "Opposite Signal",
+    "time": "2026-11-11 18:09:06"
+  },
+  {
+    "symbol": "EURUSD",
+    "tf": "5m",
+    "side": "BUY",
+    "qty": 64128,
+    "entry": 1.11383,
+    "entry_time": "\u2014",
+    "exit": 1.113709807395935,
+    "pnl": -7.71,
+    "reason": "Opposite Signal",
+    "time": "2026-11-11 18:17:34"
+  },
+  {
+    "symbol": "USDJPY",
+    "tf": "5m",
+    "side": "SELL",
+    "qty": 448,
+    "entry": 159.18,
+    "entry_time": "\u2014",
+    "exit": 159.2530059814453,
+    "pnl": -32.71,
+    "reason": "Opposite Signal",
+    "time": "2026-11-11 18:46:09"
+  }
+]

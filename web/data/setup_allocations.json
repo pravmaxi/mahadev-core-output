@@ -1,32 +1,44 @@
 [
   {
-    "sym": "AARTIIND.NS",
-    "amt": 4201,
+    "sym": "XAUUSD",
+    "amt": 71428,
     "tf": "5m",
-    "exch": "NSE"
+    "exch": "FX"
   },
   {
-    "sym": "ACC.NS",
-    "amt": 4201,
+    "sym": "XAGUSD",
+    "amt": 71428,
     "tf": "5m",
-    "exch": "NSE"
+    "exch": "FX"
   },
   {
-    "sym": "CHOLAFIN.NS",
-    "amt": 4201,
+    "sym": "EURUSD",
+    "amt": 71428,
     "tf": "5m",
-    "exch": "NSE"
+    "exch": "FX"
   },
   {
-    "sym": "HAL.NS",
-    "amt": 4201,
+    "sym": "GBPUSD",
+    "amt": 71428,
     "tf": "5m",
-    "exch": "NSE"
+    "exch": "FX"
   },
   {
-    "sym": "HCLTECH.NS",
-    "amt": 4201,
+    "sym": "USDJPY",
+    "amt": 71428,
     "tf": "5m",
-    "exch": "NSE"
+    "exch": "FX"
+  },
+  {
+    "sym": "USDCAD",
+    "amt": 71428,
+    "tf": "5m",
+    "exch": "FX"
+  },
+  {
+    "sym": "USDCHF",
+    "amt": 71428,
+    "tf": "5m",
+    "exch": "FX"
   }
 ]

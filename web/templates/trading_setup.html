@@ -23,7 +23,7 @@
   <div>
 
     <!-- ═══════════ AUTO-TRADE PANEL ═══════════ -->
-    <details style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;" open>
+    <details style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
       <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">🤖 Auto-Trading Setup</summary>
       <div style="padding-top:14px; max-height:80vh; overflow-y:auto">
 
@@ -356,7 +356,7 @@
   <!-- ═══════════ RIGHT SIDE ═══════════ -->
   <div>
 
-    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;" open>
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
       <summary style="cursor:pointer; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;">
         <span>Symbols & Allocation</span>
         <div style="display:flex; align-items:center; gap:12px;">
@@ -428,10 +428,13 @@
     </div>
     <div style="display:flex; align-items:center; gap:12px;" onclick="event.stopPropagation()">
       <label class="chk" style="margin:0; font-size:11px;">
-        <input type="checkbox" id="tpPaperTradeToggle" checked> Paper Trade
+        <input type="checkbox" id="tpPaperTradeToggle" onchange="syncRouting()" checked> Paper Trade
       </label>
       <label class="chk" style="margin:0; font-size:11px; color:var(--accent);">
-        <input type="checkbox" id="tpLiveTradeToggle"> Live Trade
+        <input type="checkbox" id="tpLiveTradeToggle" onchange="syncRouting()"> Live Trade
+      </label>
+      <label class="chk" style="margin:0; font-size:11px; color:#e3b341;" title="If unchecked, orders are only simulated in the panel. No JSON queues or paper_trades.py updates.">
+        <input type="checkbox" id="tpSendToQueue" checked> Send to Queue
       </label>
       <label class="chk" style="margin:0; font-size:11px;">
         <input type="checkbox" id="tpAllowMarketOrders"> Allow Market Orders
@@ -469,7 +472,15 @@
       </button>
     </div>
 
-    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;" open>
+    <!-- ✅ Moved Trade History here -->
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
+      <summary style="cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; outline:none; margin-bottom:8px;">
+        <span>Trade History</span>
+      </summary>
+      <div id="historyWrap" class="tblwrap" style="margin-top:8px;"></div>
+    </details>
+
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
       <summary style="cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; outline:none; margin-bottom:8px;">
         <span>Paper positions</span>
         <span style="flex:1"></span>
@@ -478,7 +489,7 @@
       <div id="posWrap" class="tblwrap" style="margin-top:8px;"></div>
     </details>
 
-    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;" open>
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
       <summary style="cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; outline:none; margin-bottom:8px;">
         <span>Paper orders</span>
         <span style="flex:1"></span>
@@ -489,38 +500,43 @@
       </div>
     </details>
 
+    <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
+      <summary style="cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; outline:none; margin-bottom:8px;">
+        <span>Trade History</span>
+      </summary>
+      <div id="historyWrap" class="tblwrap" style="margin-top:8px;"></div>
+    </details>
+
     <details style="margin-top:20px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
       <summary style="cursor:pointer; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">
         📁 Debug: JSON Files
       </summary>
-      <div style="padding-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+      <div style="padding-top:12px; display:flex; flex-direction:column; gap:12px;">
+        
+        <!-- Allocation at the top -->
         <div>
           <div class="setHead" style="margin-top:0">Allocations</div>
-          <pre id="jsonAllocations" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+          <pre id="jsonAllocations" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:100px; overflow:auto; white-space:pre-wrap;"></pre>
         </div>
-        <div>
-          <div class="setHead" style="margin-top:0">Paper Processed</div>
-          <pre id="jsonPaperProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
-        </div>
-        <div>
-          <div class="setHead" style="margin-top:0">Live Order Queue</div>
-          <pre id="jsonLiveQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
-        </div>
-        <div>
-          <div class="setHead" style="margin-top:0">Live Processed</div>
-          <pre id="jsonLiveProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
-        </div>
-        <div>
-          <div class="setHead" style="margin-top:0">Live Order Queue</div>
-          <pre id="jsonLiveQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
-        </div>
-        <div>
-          <div class="setHead" style="margin-top:0">Live Processed</div>
-          <pre id="jsonLiveProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
-        </div>
-        <div>
-          <div class="setHead" style="margin-top:0">Order Queue (Pending Execution)</div>
-          <pre id="jsonOrderQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+        
+        <!-- 2x2 Grid exactly as requested -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div>
+            <div class="setHead" style="margin-top:0">Live Order Queue</div>
+            <pre id="jsonLiveQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+          </div>
+          <div>
+            <div class="setHead" style="margin-top:0">Live Order Processed</div>
+            <pre id="jsonLiveProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+          </div>
+          <div>
+            <div class="setHead" style="margin-top:0">Paper Order Queue</div>
+            <pre id="jsonOrderQueue" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+          </div>
+          <div>
+            <div class="setHead" style="margin-top:0">Paper Order Processed</div>
+            <pre id="jsonPaperProcessed" style="background:var(--panel2); padding:8px; border-radius:4px; font-size:10px; max-height:150px; overflow:auto; white-space:pre-wrap;"></pre>
+          </div>
         </div>
       </div>
       <button class="ghostBtn" style="margin-top:10px" onclick="fetchJsonFiles()">↻ Refresh JSON View</button>
@@ -585,13 +601,24 @@
   .tag.ok{background:#1e4620;color:#7ee787}
   .tag.err{background:#5c1e1e;color:#f85149}
   .tag.warn{background:#3d3d1e;color:#e3b341}
-  table.tb{width:100%;border-collapse:collapse;font-size:12px;
+  table.tb{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;
            font-variant-numeric:tabular-nums}
   table.tb th, table.tb td{padding:7px 10px;border-bottom:1px solid var(--border);
            text-align:right;white-space:nowrap}
   table.tb th{color:var(--muted);font-weight:600;font-size:10.5px;
            text-transform:uppercase;letter-spacing:.05em;
-           position:sticky;top:0;background:var(--bg);z-index:1}
+           position:sticky;top:0;background:var(--bg);z-index:5}
+           
+  /* ✅ Freeze Symbol and LTP columns */
+  table.tb th.c-symbol, table.tb th.c-ltp { position: sticky; z-index: 6; background: var(--bg); }
+  table.tb th.c-symbol { left: 0; }
+  table.tb th.c-ltp { left: 90px; box-shadow: 6px 0 6px -6px #000; }
+
+  table.tb td.c-symbol, table.tb td.c-ltp { position: sticky; z-index: 3; background: var(--panel); }
+  table.tb td.c-symbol { left: 0; }
+  table.tb td.c-ltp { left: 90px; box-shadow: 6px 0 6px -6px #000; }
+  
+  table.tb tr:hover td.c-symbol, table.tb tr:hover td.c-ltp { background: #141c28; }
   table.tb th:first-child, table.tb td:first-child{text-align:left}
   table.tb tr:hover{background:#141c28}
   .buy{color:var(--good)} .sell{color:var(--bad)} .mut{color:var(--muted)}
@@ -1053,55 +1080,58 @@ window._cancelOrder = async function(id){
   await refreshAll();
 };
 
-async function refreshSummary(){
-  try {
-    const [posR, ordR] = await Promise.all([
-      fetch('/api/trade/paper/positions').then(r => r.json()),
-      fetch('/api/trade/paper/orders').then(r => r.json()),
-    ]);
-    const pos = posR.positions || [];
-    const ord = ordR.orders || [];
-    const openPos = pos.filter(p => p.qty !== 0);
-    const unreal  = openPos.reduce((s, p) => s + (p.unrealized_pnl || 0), 0);
-    const filled  = ord.filter(o => o.status === 'FILLED');
-    const openOrd = ord.filter(o => o.status === 'OPEN');
+function refreshSummary() {
+  // ✅ Read directly from the panel data instead of paper_trades.py
+  if (!lastScannerState) return;
+  const syms = Object.values(lastScannerState);
 
-    let realizedPnl = 0;
-    const posTracker = {};
-    filled.sort((a, b) => a.ts.localeCompare(b.ts)).forEach(o => {
-      const key = `${o.symbol}|${o.exchange}|${o.product}`;
-      if (!posTracker[key]) posTracker[key] = { qty: 0, avg: 0 };
-      const p = posTracker[key];
-      const px = o.fill_price || o.price || 0;
-      if (o.side === 'BUY') {
-        const totalCost = (p.qty * p.avg) + (o.qty * px);
-        p.qty += o.qty;
-        p.avg = totalCost / p.qty;
-      } else {
-        const matchQty = Math.min(o.qty, p.qty);
-        if (matchQty > 0) {
-          realizedPnl += (px - p.avg) * matchQty;
-          p.qty -= matchQty;
-        }
-      }
-    });
+  let openPosCount = 0;
+  let unrealizedPnl = 0;
+  let realizedPnl = 0;
+  let openOrdCount = 0;
+  let filledOrdCount = 0;
 
-    const cards = [
-      ['Open positions', openPos.length, ''],
-      ['Unrealized P&L', (unreal >= 0 ? '+' : '') + fmtINR(unreal), cls(unreal)],
-      ['Realized P&L',   (realizedPnl >= 0 ? '+' : '') + fmtINR(realizedPnl), cls(realizedPnl)],
-      ['Filled orders',  filled.length, ''],
-      ['Open orders',    openOrd.length, ''],
-    ];
-    $('tradeSummary').innerHTML = cards.map(([k,v,c]) =>
-      `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
-  } catch {}
+  syms.forEach(r => {
+    // 1. Open Positions & Unrealized P&L
+    if (r.pos_qty && r.pos_qty !== 0) {
+      openPosCount++;
+      unrealizedPnl += (r.order_pnl || 0);
+      filledOrdCount++; // Count active positions as filled orders
+    }
+    
+    // 2. Realized P&L (Accumulated in total_pnl)
+    if (r.total_pnl) {
+      realizedPnl += r.total_pnl;
+    }
+
+    // 3. Open Orders (Pending Limit/Market)
+    if (r.position_col === 'Pending') {
+      openOrdCount++;
+    }
+    
+    // 4. Closed Positions (Historical filled orders)
+    if (r.total_pnl !== 0 && r.pos_qty === 0) {
+        filledOrdCount++;
+    }
+  });
+
+  const cards = [
+    ['Open positions', openPosCount, ''],
+    ['Unrealized P&L', (unrealizedPnl >= 0 ? '+' : '') + fmtINR(unrealizedPnl, 2), cls(unrealizedPnl)],
+    ['Realized P&L',   (realizedPnl >= 0 ? '+' : '') + fmtINR(realizedPnl, 2), cls(realizedPnl)],
+    ['Filled orders',  filledOrdCount, ''],
+    ['Open orders',    openOrdCount, ''],
+  ];
+  
+  $('tradeSummary').innerHTML = cards.map(([k,v,c]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
 }
 
 async function clearPaperData() {
   if (!confirm('Clear all paper orders and positions? This cannot be undone.')) return;
   await fetch('/api/trade/paper/clear', { method: 'POST' });
   await refreshAll();
+  fetchJsonFiles(); // ✅ Instantly update the 4 JSON debug boxes to []
 }
 
 $('clearPaperBtn').addEventListener('click', clearPaperData);
@@ -1536,11 +1566,16 @@ $('startAutoBtn').addEventListener('click', async () => {
     localStorage.removeItem('active_setup_job');
     
     if (monitorInterval) clearInterval(monitorInterval);
+    if (scannerLtpIntId) clearInterval(scannerLtpIntId); 
+    if (ltpIntervalId) clearInterval(ltpIntervalId);     
     $('startAutoBtn').textContent = "▶ Start Auto-Trading";
     $('startAutoBtn').style.background = "#3fb950";
     $('startAutoBtn').disabled = false;
     $('applySettingsBtn').style.display = "none";
     $('tpScanNowBtn').disabled = true;
+    
+    // ✅ CLEAR THE UI STATUS TEXT IMMEDIATELY
+    $('tpScanStatus').textContent = ""; 
     
     return;
   }
@@ -1597,7 +1632,9 @@ $('startAutoBtn').addEventListener('click', async () => {
     scan_interval: parseInt($('tpScanIntervalMins')?.value) || 1,
     allow_market_orders: $('tpAllowMarketOrders')?.checked || false,
     paper_trade: $('tpPaperTradeToggle')?.checked || false,
-    live_trade: $('tpLiveTradeToggle')?.checked || false
+    live_trade: $('tpLiveTradeToggle')?.checked || false,
+    send_to_queue: $('tpSendToQueue')?.checked || false,
+    paused: !$('tpAutoScanEnabled').checked // ✅ Tell backend if Auto-Scan is off
   };
 
   $('startAutoBtn').disabled = true;
@@ -1681,7 +1718,8 @@ function saveAutoState() {
         autoLtp: $('autoLtpRefresh')?.checked,
         scanInterval: $('tpScanIntervalMins')?.value || 1,
         writeToSheet: $('tpWriteToGSheet')?.checked,
-        showAllSignals: $('tpShowAllSignals')?.checked
+        showAllSignals: $('tpShowAllSignals')?.checked,
+        autoScan: $('tpAutoScanEnabled')?.checked // ✅ Save Auto-Scan UI state
       }
     };
     localStorage.setItem('trading_setup_state', JSON.stringify(state));
@@ -1762,6 +1800,9 @@ function restoreAutoState() {
       if (state.settings.showAllSignals) {
         if ($('tpShowAllSignals')) $('tpShowAllSignals').checked = true;
         showAllSignals = true;
+      }
+      if (state.settings.autoScan !== undefined) {
+        if ($('tpAutoScanEnabled')) $('tpAutoScanEnabled').checked = state.settings.autoScan; // ✅ Restore Auto-Scan UI
       }
     }
 
@@ -1908,6 +1949,7 @@ function startMonitorPoll() {
       refreshPositions();
       refreshOrders();
       refreshSummary();
+      fetchHistory();
     } catch(e) {}
   };
 
@@ -2001,6 +2043,8 @@ function getCurrentAutoConfig() {
     allow_market_orders: $('tpAllowMarketOrders')?.checked || false,
     paper_trade: $('tpPaperTradeToggle')?.checked || false,
     live_trade: $('tpLiveTradeToggle')?.checked || false,
+    send_to_queue: $('tpSendToQueue')?.checked || false,
+    paused: !$('tpAutoScanEnabled').checked, // ✅ Sync with Apply Settings
     scan_interval: parseInt($('tpScanIntervalMins')?.value) || 1,
     write_to_sheet: $('tpWriteToGSheet')?.checked || false
   };
@@ -2067,13 +2111,97 @@ async function fetchJsonFiles() {
       if (document.getElementById('jsonLiveProcessed')) {
         document.getElementById('jsonLiveProcessed').textContent = JSON.stringify(data.live_processed, null, 2);
       }
-      if (document.getElementById('jsonLiveQueue')) {
-        document.getElementById('jsonLiveQueue').textContent = JSON.stringify(data.live_queue, null, 2);
-      }
-      if (document.getElementById('jsonLiveProcessed')) {
-        document.getElementById('jsonLiveProcessed').textContent = JSON.stringify(data.live_processed, null, 2);
-      }
+
     }
+  } catch(e) { console.error(e); }
+}
+
+async function fetchHistory() {
+  try {
+    const res = await fetch('/api/trade/setup/history');
+    const data = await res.json();
+    const el = $('historyWrap');
+    if (!data.ok || !data.history.length) {
+      el.innerHTML = '<div class="empty">No closed trades yet.</div>';
+      return;
+    }
+    
+    // ✅ 1. Save which accordions are currently open
+    const openSymbols = new Set();
+    el.querySelectorAll('details').forEach(d => {
+        if (d.open) openSymbols.add(d.dataset.symbol);
+    });
+
+    // Group trades by symbol
+    const grouped = {};
+    data.history.forEach(h => {
+        if (!grouped[h.symbol]) grouped[h.symbol] = [];
+        grouped[h.symbol].push(h);
+    });
+
+    let html = '';
+    for (const [sym, trades] of Object.entries(grouped)) {
+        const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+        const pnlCls = totalPnl >= 0 ? 'buy' : 'sell';
+        const pnlSign = totalPnl >= 0 ? '+' : '';
+        
+        // Get the most recent trade for the summary bar
+        const recent = trades[0]; 
+
+        html += `<details data-symbol="${sym}" style="margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel2);">
+            <summary style="cursor: pointer; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; outline: none; flex-wrap: wrap; gap: 10px;">
+                <div style="min-width: 120px;">
+                    <b style="font-size: 14px;">${sym}</b> 
+                    <span style="color:var(--muted);font-size:10px;margin-left:8px;">${trades.length} trade(s)</span>
+                </div>
+                <div style="display:flex; gap:16px; font-size:11.5px; color:var(--muted); flex:1; justify-content:flex-end;">
+                    <span>Last Entry: <b style="color:var(--fg)">${fmtINR(recent.entry)}</b></span>
+                    <span>Last Exit: <b style="color:var(--fg)">${fmtINR(recent.exit)}</b></span>
+                    <span>Exit Time: <b style="color:var(--fg)">${recent.time.split(' ')[1]}</b></span>
+                </div>
+                <div class="${pnlCls}" style="font-weight: bold; font-size: 14px; min-width: 80px; text-align: right;">
+                    ${pnlSign}${fmtINR(totalPnl, 2)}
+                </div>
+            </summary>
+            <div style="padding: 0 14px 14px 14px; overflow-x: auto;">
+                <table class="tb" style="margin-top: 4px; width:100%;">
+                    <thead><tr>
+                        <th>Entry Time</th>
+                        <th>Exit Time</th>
+                        <th>Side</th>
+                        <th>Qty</th>
+                        <th>Entry Px</th>
+                        <th>Exit Px</th>
+                        <th>Reason</th>
+                        <th style="text-align:right">P&L</th>
+                    </tr></thead>
+                    <tbody>`;
+
+        trades.forEach(t => {
+            const tCls = t.pnl >= 0 ? 'buy' : 'sell';
+            const tSign = t.pnl >= 0 ? '+' : '';
+            html += `<tr>
+                <td style="color:var(--muted);font-size:11px">${t.entry_time || '—'}</td>
+                <td style="color:var(--muted);font-size:11px">${t.time || '—'}</td>
+                <td class="${t.side === 'BUY' ? 'buy' : 'sell'}">${t.side}</td>
+                <td>${t.qty}</td>
+                <td>${fmtINR(t.entry)}</td>
+                <td>${fmtINR(t.exit)}</td>
+                <td>${t.reason}</td>
+                <td class="${tCls}" style="text-align:right">${tSign}${fmtINR(t.pnl, 2)}</td>
+            </tr>`;
+        });
+
+        html += `</tbody></table></div></details>`;
+    }
+
+    el.innerHTML = html;
+
+    // ✅ 2. Re-open the accordions that were open before the refresh
+    el.querySelectorAll('details').forEach(d => {
+        if (openSymbols.has(d.dataset.symbol)) d.open = true;
+    });
+
   } catch(e) { console.error(e); }
 }
 
@@ -2178,6 +2306,35 @@ fetchMode();
 refreshAll();
 toggleScannerLtp(true); 
 
+async function syncRouting() {
+    const jid = localStorage.getItem('active_setup_job');
+    if (!jid) return;
+    const paperEnabled = $('tpPaperTradeToggle')?.checked || false;
+    const liveEnabled = $('tpLiveTradeToggle')?.checked || false;
+
+    // 1. Update the backend config instantly
+    await fetch('/api/trade/setup/update_config', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ job_id: jid, config: { paper_trade: paperEnabled, live_trade: liveEnabled } })
+    });
+
+    // 2. Trigger queue execution immediately
+    executeQueue();
+}
+
+async function executeQueue() {
+    try {
+        const res = await fetch('/api/trade/setup/execute_queue', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+            await refreshAll();
+            fetchJsonFiles();
+        } else {
+            console.error("Queue execution failed", data.error);
+        }
+    } catch(e) { console.error(e); }
+}
+
 async function saveAllocations() {
   let tasks = [];
   document.querySelectorAll('#manualStocksList > div').forEach(r => {
@@ -2253,6 +2410,7 @@ function renderScannerMonitor(state, isForced = false) {
   const cols = [
     { key: 'symbol', label: 'SYMBOL', align: 'left' },
     { key: 'ltp', label: 'LTP', align: 'right' },
+    { key: 'tf', label: 'TF', align: 'center' }, // ✅ NEW: Timeframe column
     { key: 'wt_cross', label: 'WT CROSS', align: 'center' },
     { key: 'wt_trend', label: 'WT TREND', align: 'center' },
     { key: 'trigger_lvl', label: 'TRIGGER LVL', align: 'center' },
@@ -2262,16 +2420,29 @@ function renderScannerMonitor(state, isForced = false) {
     { key: 'wt_trigger_dt', label: 'TRIG DT', align: 'center' },
     { key: 'wt_action', label: 'WT ACTION', align: 'center' },
     { key: 'valid', label: 'VALID', align: 'center' },
-    { key: 'target_val', label: 'TARGET (EDIT)', align: 'center' },      // ✅ NEW
-    { key: 'sl_val', label: 'STOP LOSS (EDIT)', align: 'center' },       // ✅ NEW
+    { key: 'alloted_amt', label: 'ALLOTED AMOUNT', align: 'right' },
+    { key: 'order_col', label: 'ORDER', align: 'center' },
+    { key: 'order_queue', label: 'ORDER QUEUE', align: 'center' }, // ✅ NEW COLUMN
+    { key: 'position_col', label: 'POSITION', align: 'center' },
+    { key: 'pos_in_progress', label: 'POS IN PROGRESS', align: 'center' },
+    { key: 'order_trig_price', label: 'ORDER TRIG PRICE', align: 'center' },
+    { key: 'order_pnl', label: 'ORDER P&L', align: 'right' },
+    { key: 'total_pnl', label: 'TOTAL P&L', align: 'right' },
+    { key: 'target_val', label: 'TARGET (EDIT)', align: 'center' },
+    { key: 'sl_val', label: 'STOP LOSS (EDIT)', align: 'center' },
     { key: 'opp_sig', label: 'OPP SIGNAL', align: 'center' },     // ✅ NEW
     { key: 'wt_trigger_candle_date', label: 'TRIG DATE', align: 'center' },
     { key: 'wt_trigger_candle_time', label: 'TRIG TIME', align: 'center' }
   ];
 
   let html = '<thead><tr>';
-  for (const c of cols) {
-    html += `<th style="text-align:${c.align}; cursor:pointer; user-select:none;" onclick="handleScanSort('${c.key}')">${c.label}${getSortIcon(scanSort, c.key)}</th>`;
+  for (let i = 0; i < cols.length; i++) {
+    const c = cols[i];
+    let thCls = '';
+    if (i === 0) thCls = 'c-symbol';
+    if (i === 1) thCls = 'c-ltp';
+    
+    html += `<th class="${thCls}" style="text-align:${c.align}; cursor:pointer; user-select:none;" onclick="handleScanSort('${c.key}')">${c.label}${getSortIcon(scanSort, c.key)}</th>`;
   }
   html += '</tr></thead><tbody>';
 
@@ -2279,9 +2450,14 @@ function renderScannerMonitor(state, isForced = false) {
     if (r.status === 'No Data' || r.status === 'Error') continue;
     
     html += '<tr>';
-    for (const c of cols) {
+    for (let i = 0; i < cols.length; i++) {
+      const c = cols[i];
       let v = r[c.key];
       if (v === null || v === undefined || v === '') v = '—';
+      
+      let tdCls = '';
+      if (i === 0) tdCls = 'c-symbol';
+      if (i === 1) tdCls = 'c-ltp';
       
 // Number Formatting
       if (['ltp', 'wt1', 'wt2', 'wt_diff', 'wt_valid_open', 'wt_valid_high', 'wt_valid_low', 'wt_valid_close', 'wt_valid_diff', 'wt_valid_wt_value', 'wt_ltp', 'wt_trigger_diff', 'wt_diff_pct', 'wt_profit', 'wt_max_profit_pct', 'wt_max_profit_value', 'trigger_lvl'].includes(c.key)) {
@@ -2290,6 +2466,23 @@ function renderScannerMonitor(state, isForced = false) {
 
       if (['wt_rsi', 'wt_trigger_diff', 'wt_diff_pct'].includes(c.key)) {
         if (v !== '—' && !isNaN(v)) v = Number(v).toFixed(2);
+      }
+
+      if (c.key === 'order_trig_price') {
+        // ✅ Only show order trig price if the position is actually in progress (filled)
+        if (r.pos_in_progress === 'NO' || r.pos_in_progress === '') {
+          v = '—';
+        } else if (v !== '—' && !isNaN(v)) {
+          v = fmtINR(v);
+        }
+      } else if (['order_pnl', 'total_pnl'].includes(c.key)) {
+        // ✅ Force 2 decimals for P&L so it doesn't show 0.00000
+        if (v !== '—' && !isNaN(v)) {
+            v = fmtINR(v, 2);
+            if (v > 0 && v !== '0.00') v = '+' + v;
+        }
+      } else if (c.key === 'alloted_amt') {
+        if (v !== '—' && !isNaN(v)) v = fmtINR(v);
       }
 
       if (c.key === 'is_new') v = r.is_new ? '<span class="bell">🔔</span>' : '';
@@ -2308,7 +2501,7 @@ function renderScannerMonitor(state, isForced = false) {
       }
       
       if (c.key === 'valid') {
-        if (v === 'YES') cls = 'buy';
+        if (v.startsWith('YES')) cls = 'buy';
         else if (v.startsWith('NO')) cls = 'sell';
         else cls = 'mut';
       }
@@ -2318,7 +2511,7 @@ function renderScannerMonitor(state, isForced = false) {
           let numVal = v !== '—' && !isNaN(v) ? parseFloat(v) : '';
           let sym = r.symbol;
           let tf = r.tf;
-          html += `<td style="text-align:center; padding:2px;">
+          html += `<td class="${tdCls}" style="text-align:center; padding:2px;">
             <input type="number" class="setInput editable-val" 
                    style="width:80px; padding:2px; text-align:center; font-size:12px;"
                    value="${numVal}" 
@@ -2331,7 +2524,18 @@ function renderScannerMonitor(state, isForced = false) {
         if (v !== '—' && !isNaN(v)) v = fmtINR(v);
       }
 
-      html += `<td style="text-align:${c.align}" class="${cls}">${v}</td>`;
+      // ✅ Color formatting for Order, Position, and P&L columns
+      if (c.key === 'order_col' || c.key === 'order_queue') cls = v.includes('BUY') ? 'buy' : v.includes('SELL') ? 'sell' : 'mut';
+      if (c.key === 'position_col') cls = v.includes('LONG') ? 'buy' : v.includes('SHORT') ? 'sell' : 'mut';
+      
+      if (c.key === 'order_pnl' || c.key === 'total_pnl') {
+        if (v !== '—' && v !== '0.00') {
+            const num = parseFloat(v);
+            cls = num > 0 ? 'buy' : 'sell';
+        }
+      }
+
+      html += `<td class="${tdCls} ${cls}" style="text-align:${c.align}">${v}</td>`;
     }
     html += '</tr>';
   }

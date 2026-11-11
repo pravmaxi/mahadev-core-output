@@ -27,14 +27,23 @@ SETUP_ALLOC_FILE = DATA_DIR / "setup_allocations.json"
 SETUP_STATE_FILE = DATA_DIR / "setup_state_cache.json"
 SETUP_PROCESSED_FILE = DATA_DIR / "setup_paper_processed.json"
 SETUP_QUEUE_FILE = DATA_DIR / "order_queue.json"
+SETUP_HISTORY_FILE = DATA_DIR / "setup_trade_history.json" # ✅ NEW: Trade History
 
 # ✅ NEW: Live Queue and Processed files
 LIVE_QUEUE_FILE = DATA_DIR / "live_order_queue.json"
 LIVE_PROCESSED_FILE = DATA_DIR / "live_processed.json"
 
+# ✅ STEP 2: Setup Trigger Persistence
+SETUP_TRIGGER_FILE = DATA_DIR / "setup_trigger_state.json"
+if SETUP_TRIGGER_FILE.exists():
+    try:
+        TRIGGER_STATE.update(json.loads(SETUP_TRIGGER_FILE.read_text()))
+    except Exception as e:
+        print(f"⚠️ Failed to load setup_trigger_state.json: {e}")
+
 def start_job(job_id, config):
     SETUP_STATE.clear()
-    TRIGGER_STATE.clear() 
+    # TRIGGER_STATE.clear()  <-- REMOVED to keep trigger memory across restarts
     if SETUP_STATE_FILE.exists():
         try: SETUP_STATE.update(json.loads(SETUP_STATE_FILE.read_text()))
         except: pass
@@ -43,6 +52,15 @@ def start_job(job_id, config):
     t = threading.Thread(target=_worker, args=(job_id,), daemon=True)
     t.start()
     return job_id
+
+def save_history_entry(entry):
+    history = []
+    if SETUP_HISTORY_FILE.exists():
+        try: history = json.loads(SETUP_HISTORY_FILE.read_text())
+        except: pass
+    history.append(entry)
+    if len(history) > 200: history = history[-200:]
+    SETUP_HISTORY_FILE.write_text(json.dumps(history, indent=2))
 
 # ✅ FIX: Added missing stop_job function
 def stop_job(job_id):
@@ -102,6 +120,31 @@ def _process_queue_file(queue_file, processed_file, mode="PAPER"):
         
     for q in queue:
         try:
+            action = q.get("action", "NEW_ORDER")
+            
+            if action == "UPDATE_RISK":
+                # ✅ Queue Action: Update Target/SL for existing orders/positions
+                if mode == "PAPER":
+                    ledger_file = paper_trades.DATA_DIR / "paper_trades.json"
+                    if ledger_file.exists():
+                        data = json.loads(ledger_file.read_text())
+                        for o in data.get("orders", []):
+                            if o.get("symbol") == q["symbol"] and o.get("status") == "OPEN":
+                                if q.get("target_val"): o["target"] = q["target_val"]
+                                if q.get("sl_val"): o["sl"] = q["sl_val"]
+                        for p in data.get("positions", []):
+                            if p.get("symbol") == q["symbol"]:
+                                if q.get("target_val"): p["target"] = q["target_val"]
+                                if q.get("sl_val"): p["sl"] = q["sl_val"]
+                        ledger_file.write_text(json.dumps(data, indent=2))
+                        print(f"✅ [QUEUE] Updated Target/SL for {q['symbol']} via Paper Queue")
+                else:
+                    print(f"🚀 [LIVE] Would have updated Target/SL for {q['symbol']} on Zerodha")
+                
+                # Skip the normal order placement logic
+                continue
+
+            # --- Standard NEW_ORDER Logic ---
             o_type = q.get("order_type", "MARKET")
             limit_px = q.get("price") or q.get("signal_level") or q.get("ltp") or 0
             
@@ -223,9 +266,16 @@ def _worker(job_id):
     while not SETUP_JOBS[job_id]["stop"]:
         try:
             global SETUP_IS_SCANNING, SETUP_FORCE_SCAN, SETUP_LAST_SCAN_TIME
-            SETUP_IS_SCANNING = True
             
             cfg = SETUP_JOBS[job_id]["config"]
+            
+            # ✅ FIX: Allow the FIRST scan to run even if paused.
+            is_first = SETUP_JOBS[job_id].get("is_first_scan", False)
+            if cfg.get("paused", False) and not SETUP_FORCE_SCAN and not is_first:
+                time.sleep(1)
+                continue
+                
+            SETUP_IS_SCANNING = True
             tasks = cfg.get("tasks", [])
             
             sym_map = {}
@@ -304,6 +354,11 @@ def _worker(job_id):
                 for task in tasks:
                     if task["tf"] != tf: continue
                     
+                    # ✅ FIX: Instantly kill the worker loop if Stop is clicked
+                    if job_id not in SETUP_JOBS or SETUP_JOBS[job_id].get("stop", False):
+                        print(f"🛑 [SETUP] Stop requested. Halting scan immediately...")
+                        return
+                    
                     raw_sym = task["sym"]
                     key = f"{raw_sym}_{tf}"
                     sym_yf = sym_map[key]
@@ -338,7 +393,21 @@ def _worker(job_id):
                         
                         def _r(val): return round(val, 5) if abs(val) < 10 else round(val, 2)
                         
+                        # ✅ Restore previous position tracking data
+                        prev_row = SETUP_STATE.get(key, {})
                         row = {"symbol": raw_sym, "tf": tf, "ltp": _r(live_px), "yf_symbol": sym_yf}
+                        row["alloted_amt"] = task.get("amt", 0)
+                        row["pos_qty"] = prev_row.get("pos_qty", 0)
+                        row["pos_entry"] = prev_row.get("pos_entry", 0)
+                        row["pos_side"] = prev_row.get("pos_side", "")
+                        row["order_pnl"] = prev_row.get("order_pnl", 0)
+                        row["total_pnl"] = prev_row.get("total_pnl", 0)
+                        row["order_col"] = prev_row.get("order_col", "—")
+                        row["position_col"] = prev_row.get("position_col", "—")
+                        row["order_trig_price"] = prev_row.get("order_trig_price", "—")
+                        row["pos_in_progress"] = prev_row.get("pos_in_progress", "NO")
+                        row["order_queue"] = prev_row.get("order_queue", "—") # ✅ NEW
+                        row["queue_trig_price"] = prev_row.get("queue_trig_price", 0) # ✅ NEW
                         wt_params = {"n1": cfg.get("wt_n1", 15), "n2": cfg.get("wt_n2", 27)}
                         
                         wt_mod = get_indicator("wt")
@@ -374,20 +443,48 @@ def _worker(job_id):
                         if most_recent:
                             direction, sig = most_recent
                             tl = float(sig["level"])
-                            row["trigger_lvl"] = f"{tl:.5f}" if abs(tl) < 10 else f"{tl:.2f}"
+                            gap_pct = abs(live_px - tl) / tl * 100 if tl > 0 else 0
                             
-                            if "wt_action" in row and row["wt_action"]:
-                                try:
-                                    row["wt_action"] = re.sub(r'\d+\.\d+', row["trigger_lvl"], row["wt_action"])
-                                except Exception:
-                                    pass
-                            
-                            opp_dir = "sell" if direction == "buy" else "buy"
-                            if pending[opp_dir]:
-                                opp_lvl = _r(pending[opp_dir]["level"])
-                                row["opp_sig"] = f"{opp_lvl:.5f}" if abs(opp_lvl) < 10 else f"{opp_lvl:.2f}"
-                            else:
+                            # ✅ 20% GAP FILTER: Prevent data glitches / stock split errors
+                            if gap_pct > 20:
+                                row["valid_time"] = "—"
+                                row["trigger_lvl"] = "—"
+                                row["wt_action"] = "Data Glitch (Gap > 20%)"
                                 row["opp_sig"] = "—"
+                            else:
+                                row["valid_time"] = sig.get("valid_time")
+                                row["trigger_lvl"] = f"{tl:.5f}" if abs(tl) < 10 else f"{tl:.2f}"
+                                
+                                if "wt_action" in row and row["wt_action"]:
+                                    try:
+                                        row["wt_action"] = re.sub(r'\d+\.\d+', row["trigger_lvl"], row["wt_action"])
+                                    except Exception:
+                                        pass
+                            
+                            # ✅ FIX: If a position is open, the opposite signal is the opposite of the position.
+                            if row.get("pos_qty", 0) != 0:
+                                opp_dir = "sell" if row["pos_side"] == "BUY" else "buy"
+                            else:
+                                opp_dir = "sell" if direction == "buy" else "buy"
+                                
+                            # ✅ NEW: Check if there is a pending active order in the opposite direction
+                            has_pending_order = False
+                            if row.get("order_col", "—") != "—" and row.get("position_col") == "Pending":
+                                order_side = "BUY" if "BUY" in row["order_col"] else "SELL"
+                                sig_side = "BUY" if direction == "buy" else "SELL"
+                                
+                                # If the pending order is opposite to the new signal
+                                if order_side != sig_side:
+                                    row["opp_sig"] = row.get("order_trig_price", "—")
+                                    has_pending_order = True
+
+                            # If no pending opposite order, use the WT indicator's pending signal
+                            if not has_pending_order:
+                                if pending[opp_dir]:
+                                    opp_lvl = _r(pending[opp_dir]["level"])
+                                    row["opp_sig"] = f"{opp_lvl:.5f}" if abs(opp_lvl) < 10 else f"{opp_lvl:.2f}"
+                                else:
+                                    row["opp_sig"] = "—"
                         else:
                             row["trigger_lvl"] = "—"
                             row["opp_sig"] = "—"
@@ -397,32 +494,44 @@ def _worker(job_id):
                         max_gap_pct = float(cfg.get("max_gap_pct", 2.0))
                         
                         if "Limit" in action_str:
-                            row["valid"] = "YES"
+                            tl = float(row["trigger_lvl"]) if row.get("trigger_lvl") and row["trigger_lvl"] != "—" else 0
+                            if tl > 0:
+                                gap_pct = abs(live_px - tl) / tl * 100
+                                row["valid"] = f"YES (Gap {gap_pct:.1f}%)"
+                            else:
+                                row["valid"] = "YES"
                         elif "Market" in action_str and row.get("trigger_lvl") and row["trigger_lvl"] != "—":
                             try:
                                 tl = float(row["trigger_lvl"])
                                 if tl > 0:
                                     gap_pct = abs(live_px - tl) / tl * 100
                                     if gap_pct <= max_gap_pct:
-                                        row["valid"] = "YES"
+                                        row["valid"] = f"YES (Gap {gap_pct:.1f}%)"
                                     else:
                                         row["valid"] = f"NO (Gap {gap_pct:.1f}%)"
                             except Exception:
                                 pass
                                 
-                        target_pct = float(cfg.get("target_pct", 0))
-                        stop_pct = float(cfg.get("stop_pct", 0))
-                        
-                        if row["valid"] == "YES" and row.get("trigger_lvl") and row["trigger_lvl"] != "—":
-                            entry_level = float(row["trigger_lvl"])
-                            if target_pct > 0:
-                                t_val = _r(entry_level * (1 + target_pct/100)) if "Buy" in action_str else _r(entry_level * (1 - target_pct/100))
+                        if str(row["valid"]).startswith("YES") and row.get("trigger_lvl") and row["trigger_lvl"] != "—":
+                            # ✅ Fix: Use pos_entry if position is open, else trigger_lvl
+                            if row.get("pos_qty", 0) != 0:
+                                entry_level = float(row["pos_entry"])
+                                is_buy_dir = (row["pos_side"] == "BUY")
+                            else:
+                                entry_level = float(row["trigger_lvl"])
+                                is_buy_dir = "Buy" in action_str
+                                
+                            current_target_pct = float(cfg.get("target_pct", 0))
+                            current_stop_pct = float(cfg.get("stop_pct", 0))
+                            
+                            if current_target_pct > 0:
+                                t_val = _r(entry_level * (1 + current_target_pct/100)) if is_buy_dir else _r(entry_level * (1 - current_target_pct/100))
                                 row["target_val"] = f"{t_val:.5f}" if abs(t_val) < 10 else f"{t_val:.2f}"
                             else:
                                 row["target_val"] = "—"
                                 
-                            if stop_pct > 0:
-                                s_val = _r(entry_level * (1 - stop_pct/100)) if "Buy" in action_str else _r(entry_level * (1 + stop_pct/100))
+                            if current_stop_pct > 0:
+                                s_val = _r(entry_level * (1 - current_stop_pct/100)) if is_buy_dir else _r(entry_level * (1 + current_stop_pct/100))
                                 row["sl_val"] = f"{s_val:.5f}" if abs(s_val) < 10 else f"{s_val:.2f}"
                             else:
                                 row["sl_val"] = row["opp_sig"]
@@ -431,15 +540,106 @@ def _worker(job_id):
                             row["sl_val"] = "—"
 
                         is_new_trigger = row.get("wt_trigger_status") == "New Trigger"
-                        is_valid = row.get("valid") == "YES"
+                        is_valid = str(row.get("valid", "")).startswith("YES") # ✅ Fix for "YES (Gap %)"
                         is_trade_action = "Buy" in action_str or "Sell" in action_str
+
+                        # ✅ NEW: QUEUE-BASED STATE MACHINE
+                        if "order_queue" not in row:
+                            row["order_queue"] = "—"
+                            
+                        # 1. Update Order Queue on New Signal
+                        if is_new_trigger and is_valid and is_trade_action:
+                            side = "BUY" if "Buy" in action_str else "SELL"
+                            order_type = "MARKET" if "Market" in action_str else "LIMIT"
+                            row["order_queue"] = f"{side} {order_type}"
+                            row["queue_trig_price"] = _r(live_px) if order_type == "MARKET" else float(row["trigger_lvl"])
+
+                        # ✅ 2. THE PROMOTION RULE: If flat and no active order, promote from queue
+                        if row["pos_qty"] == 0 and row["order_col"] == "—" and row.get("order_queue", "—") != "—":
+                            row["order_col"] = row["order_queue"]
+                            row["order_trig_price"] = row.get("queue_trig_price", float(row["trigger_lvl"]))
+                            row["order_queue"] = "—"
+
+                        # 2. Manage Active Order (if no position is open yet)
+                        if row["pos_qty"] == 0 and row["order_col"] != "—":
+                            row["position_col"] = "Pending"
+                            side = "BUY" if "BUY" in row["order_col"] else "SELL"
+                            order_type = "MARKET" if "MARKET" in row["order_col"] else "LIMIT"
+                            
+                            row["pos_in_progress"] = "YES" if order_type == "MARKET" else "NO"
+                            
+                            filled = False
+                            if order_type == "MARKET": filled = True
+                            elif order_type == "LIMIT":
+                                # Buy Limit triggers when price breaks ABOVE the level
+                                # Sell Limit triggers when price breaks BELOW the level
+                                if side == "BUY" and live_px >= float(row["order_trig_price"]): filled = True
+                                elif side == "SELL" and live_px <= float(row["order_trig_price"]): filled = True
+                                    
+                            if filled:
+                                row["pos_qty"] = max(1, int(float(task.get("amt", 5000)) / float(row["order_trig_price"])))
+                                row["pos_entry"] = float(row["order_trig_price"])
+                                row["pos_entry_time"] = str(pd.Timestamp.now(tz=IST).strftime('%Y-%m-%d %H:%M:%S'))
+                                row["pos_side"] = side
+                                row["pos_in_progress"] = "YES"
+                                row["position_col"] = f"{'LONG' if side == 'BUY' else 'SHORT'} {row['pos_qty']}"
+                                row["order_pnl"] = 0
+
+                        # 3. Manage Open Position
+                        if row["pos_qty"] != 0:
+                            # Calculate Live P&L
+                            if row["pos_side"] == "BUY":
+                                row["order_pnl"] = round((live_px - row["pos_entry"]) * row["pos_qty"], 2)
+                            else:
+                                row["order_pnl"] = round((row["pos_entry"] - live_px) * row["pos_qty"], 2)
+                            
+                            # Check for Exit (Strictly price-based now)
+                            exit_reason = None
+                            t_val = float(row["target_val"]) if row.get("target_val") != "—" else (9999999 if row["pos_side"] == "BUY" else 0)
+                            s_val = float(row["sl_val"]) if row.get("sl_val") != "—" else (0 if row["pos_side"] == "BUY" else 9999999)
+                            opp_val = float(row["opp_sig"]) if row.get("opp_sig") != "—" else (0 if row["pos_side"] == "BUY" else 9999999)
+                            
+                            if row["pos_side"] == "BUY":
+                                if live_px >= t_val: exit_reason = "Target"
+                                elif live_px <= opp_val: exit_reason = "Opposite Signal"
+                                elif live_px <= s_val: exit_reason = "StopLoss"
+                            else:
+                                if live_px <= t_val: exit_reason = "Target"
+                                elif live_px >= opp_val: exit_reason = "Opposite Signal"
+                                elif live_px >= s_val: exit_reason = "StopLoss"
+
+                            if exit_reason:
+                                row["total_pnl"] = round(row.get("total_pnl", 0) + row["order_pnl"], 2)
+                                save_history_entry({
+                                    "symbol": raw_sym, "tf": tf, "side": row["pos_side"],
+                                    "qty": row["pos_qty"], "entry": row["pos_entry"], "entry_time": row.get("pos_entry_time", "—"),
+                                    "exit": live_px, "pnl": row["order_pnl"],
+                                    "reason": exit_reason, "time": str(pd.Timestamp.now(tz=IST).strftime('%Y-%m-%d %H:%M:%S'))
+                                })
+                                row["pos_qty"] = 0
+                                row["pos_entry"] = 0
+                                row["pos_side"] = ""
+                                row["order_pnl"] = 0
+                                row["position_col"] = "—"
+                                row["order_col"] = "—" # ✅ Clears active order
+                                row["order_trig_price"] = "—"
+                                row["pos_in_progress"] = "NO"
+                                
+                                # ✅ Instantly promote queue item if one was waiting
+                                if row.get("order_queue", "—") != "—":
+                                    row["order_col"] = row["order_queue"]
+                                    row["order_trig_price"] = row.get("queue_trig_price", float(row["trigger_lvl"]))
+                                    row["order_queue"] = "—"
 
                         if is_new_trigger and is_valid and is_trade_action:
                             side = "BUY" if "Buy" in action_str else "SELL"
                             order_type = "MARKET" if "Market" in action_str else "LIMIT"
                             limit_px = live_px if order_type == "MARKET" else float(row["trigger_lvl"])
                             
-                            sig_time = row.get("valid_time", str(df_real.index[-1]))
+                            sig_time = row.get("valid_time")
+                            if not sig_time:
+                                print(f"⚠️ Skipping queue for {raw_sym}: missing valid_time")
+                                continue # ✅ STEP 2: Skip if missing
                             sig_id = f"{raw_sym}_{tf}_{side}_{sig_time}"
                             
                             processed = []
@@ -459,7 +659,7 @@ def _worker(job_id):
                                 qty = max(1, int(float(task.get("amt", 5000)) / limit_px))
 
                                 q_entry = {
-                                    "id": sig_id, "symbol": raw_sym, "exchange": task["exch"],
+                                    "id": sig_id, "action": "NEW_ORDER", "symbol": raw_sym, "exchange": task["exch"],
                                     "side": side, "qty": qty, "price": limit_px, "tf": tf,
                                     "order_type": order_type,
                                     "signal_level": limit_px, "signal_time": sig_time,
@@ -472,13 +672,15 @@ def _worker(job_id):
                                 paper_enabled = cfg.get("paper_trade", False)
                                 live_enabled = cfg.get("live_trade", False)
                                 
-                                if paper_enabled:
+                                # ✅ MASTER SWITCH: Only write to JSON queues if Send to Queue is enabled
+                                if cfg.get("send_to_queue", True):
+                                    # WRITE TO PAPER QUEUE
                                     if not any(q.get("id") == sig_id for q in queue):
                                         queue.append(q_entry)
                                         SETUP_QUEUE_FILE.write_text(json.dumps(queue, indent=2))
                                         print(f"✅ Queued PAPER {order_type} for {raw_sym} - {side} @ {limit_px}")
-                                
-                                if live_enabled:
+                                    
+                                    # WRITE TO LIVE QUEUE
                                     live_q = []
                                     if LIVE_QUEUE_FILE.exists():
                                         try: live_q = json.loads(LIVE_QUEUE_FILE.read_text())
@@ -487,12 +689,6 @@ def _worker(job_id):
                                         live_q.append(q_entry)
                                         LIVE_QUEUE_FILE.write_text(json.dumps(live_q, indent=2))
                                         print(f"✅ Queued LIVE {order_type} for {raw_sym} - {side} @ {limit_px}")
-                                        
-                                if not paper_enabled and not live_enabled:
-                                    if not any(q.get("id") == sig_id for q in queue):
-                                        queue.append(q_entry)
-                                        SETUP_QUEUE_FILE.write_text(json.dumps(queue, indent=2))
-                                        print(f"✅ Queued IDLE {order_type} for {raw_sym} - {side} @ {limit_px}")
 
                         # CALCULATE RSI
                         rsi_period = 14
@@ -514,24 +710,53 @@ def _worker(job_id):
                         print(f"Error on {raw_sym}: {e}")
                         SETUP_STATE[key] = {"symbol": raw_sym, "tf": tf, "status": "Error"}
 
-            if cfg.get("paper_trade"):
-                execute_queue()
+            # Process queues ONLY if Send to Queue is enabled
+            if cfg.get("send_to_queue", True):
+                if cfg.get("paper_trade"):
+                    _process_queue_file(SETUP_QUEUE_FILE, SETUP_PROCESSED_FILE, mode="PAPER")
+                    
+                if cfg.get("live_trade"):
+                    _process_queue_file(LIVE_QUEUE_FILE, LIVE_PROCESSED_FILE, mode="LIVE")
 
-            _check_pending_limits(downloaded_data)
+                _check_pending_limits(downloaded_data)
 
         except Exception as e:
             print(f"⚠️ Loop Error: {e}")
         finally:
             SETUP_IS_SCANNING = False
             SETUP_LAST_SCAN_TIME = time.time()
+            SETUP_JOBS[job_id]["is_first_scan"] = False  # ✅ Mark first scan as done
             
             try: SETUP_STATE_FILE.write_text(json.dumps(SETUP_STATE, indent=2))
             except: pass
+            
+            # ✅ STEP 2: Atomic write for TRIGGER_STATE
+            try:
+                tmp_file = SETUP_TRIGGER_FILE.with_suffix('.tmp')
+                tmp_file.write_text(json.dumps(TRIGGER_STATE, indent=2))
+                tmp_file.replace(SETUP_TRIGGER_FILE)
+            except Exception as e:
+                print(f"⚠️ Failed to save trigger state: {e}")
             
         if SETUP_FORCE_SCAN:
             SETUP_FORCE_SCAN = False
             continue
             
+        # ✅ Continuous background check every 1 second
         for _ in range(cfg.get("scan_interval", 1) * 60):
-            if SETUP_JOBS[job_id]["stop"] or SETUP_FORCE_SCAN: break
+            if SETUP_JOBS[job_id]["stop"] or SETUP_FORCE_SCAN or cfg.get("paused", False): break
+            
+            # ✅ Instantly promote queue if ORDER column is empty
+            queue_updated = False
+            for k, r in SETUP_STATE.items():
+                if r.get("pos_qty", 0) == 0 and r.get("order_col") == "—" and r.get("order_queue", "—") != "—":
+                    r["order_col"] = r["order_queue"]
+                    r["order_trig_price"] = r.get("queue_trig_price", r.get("trigger_lvl", 0))
+                    r["order_queue"] = "—"
+                    queue_updated = True
+                    
+            if queue_updated:
+                try: SETUP_STATE_FILE.write_text(json.dumps(SETUP_STATE, indent=2))
+                except: pass
+                
             time.sleep(1)
