@@ -328,7 +328,8 @@ def _worker(job_id):
                 else: period = "1y"
                 
                 try:
-                    res = download_batch(syms, interval=tf, period=period, force_refresh=True)
+                    # ✅ OPTIMIZATION: Disabled force_refresh for speed. We override with live LTP anyway.
+                    res = download_batch(syms, interval=tf, period=period, force_refresh=False)
                     for s_yf, rows in res.items():
                         downloaded_data[f"{tf}_{s_yf}"] = rows
                 except Exception as e:
@@ -341,15 +342,26 @@ def _worker(job_id):
                 except Exception:
                     pass
                 
-                for sym_yf in syms:
-                    if "=X" in sym_yf:
-                        try:
-                            ticker = yf.Ticker(sym_yf)
-                            hist = ticker.history(period="1d", interval="1m")
-                            if not hist.empty:
-                                true_ltps[sym_yf] = float(hist["Close"].iloc[-1])
-                        except Exception:
-                            pass
+                # ✅ OPTIMIZATION: Batch fetch all Forex symbols in ONE network call
+                forex_syms = [s for s in syms if "=X" in s]
+                if forex_syms:
+                    try:
+                        import pandas as pd
+                        hist = yf.download(forex_syms, period="1d", interval="1m", progress=False, auto_adjust=False, threads=True)
+                        if not hist.empty:
+                            if len(forex_syms) == 1:
+                                if "Close" in hist.columns:
+                                    true_ltps[forex_syms[0]] = float(hist["Close"].dropna().iloc[-1])
+                            else:
+                                if isinstance(hist.columns, pd.MultiIndex):
+                                    close_df = hist["Close"]
+                                    for sym in forex_syms:
+                                        if sym in close_df.columns:
+                                            valid = close_df[sym].dropna()
+                                            if not valid.empty:
+                                                true_ltps[sym] = float(valid.iloc[-1])
+                    except Exception as e:
+                        print(f"Forex batch fetch failed: {e}")
 
                 for task in tasks:
                     if task["tf"] != tf: continue
@@ -493,26 +505,32 @@ def _worker(job_id):
                         row["valid"] = "—"
                         max_gap_pct = float(cfg.get("max_gap_pct", 2.0))
                         
+                        # ✅ FIX: Calculate gap and validity robustly
+                        gap_pct = 0
+                        is_valid = False
+                        
                         if "Limit" in action_str:
+                            is_valid = True
                             tl = float(row["trigger_lvl"]) if row.get("trigger_lvl") and row["trigger_lvl"] != "—" else 0
                             if tl > 0:
                                 gap_pct = abs(live_px - tl) / tl * 100
-                                row["valid"] = f"YES (Gap {gap_pct:.1f}%)"
-                            else:
-                                row["valid"] = "YES"
                         elif "Market" in action_str and row.get("trigger_lvl") and row["trigger_lvl"] != "—":
                             try:
                                 tl = float(row["trigger_lvl"])
                                 if tl > 0:
                                     gap_pct = abs(live_px - tl) / tl * 100
-                                    if gap_pct <= max_gap_pct:
-                                        row["valid"] = f"YES (Gap {gap_pct:.1f}%)"
-                                    else:
-                                        row["valid"] = f"NO (Gap {gap_pct:.1f}%)"
+                                    is_valid = (gap_pct <= max_gap_pct)
                             except Exception:
                                 pass
+                        else:
+                            is_valid = True # Fallback for things like indicators without levels
+                            
+                        if is_valid:
+                            row["valid"] = f"YES (Gap {gap_pct:.1f}%)"
+                        else:
+                            row["valid"] = f"NO (Gap {gap_pct:.1f}%)"
                                 
-                        if str(row["valid"]).startswith("YES") and row.get("trigger_lvl") and row["trigger_lvl"] != "—":
+                        if is_valid and row.get("trigger_lvl") and row["trigger_lvl"] != "—":
                             # ✅ Fix: Use pos_entry if position is open, else trigger_lvl
                             if row.get("pos_qty", 0) != 0:
                                 entry_level = float(row["pos_entry"])
@@ -539,8 +557,8 @@ def _worker(job_id):
                             row["target_val"] = "—"
                             row["sl_val"] = "—"
 
-                        is_new_trigger = row.get("wt_trigger_status") == "New Trigger"
-                        is_valid = str(row.get("valid", "")).startswith("YES") # ✅ Fix for "YES (Gap %)"
+                        # ✅ FIX: Use the robust is_valid calculated above, and strip whitespace from trigger status
+                        is_new_trigger = str(row.get("wt_trigger_status", "")).strip() == "New Trigger"
                         is_trade_action = "Buy" in action_str or "Sell" in action_str
 
                         # ✅ NEW: QUEUE-BASED STATE MACHINE
@@ -585,6 +603,23 @@ def _worker(job_id):
                                 row["position_col"] = f"{'LONG' if side == 'BUY' else 'SHORT'} {row['pos_qty']}"
                                 row["order_pnl"] = 0
 
+                                # ✅ FIX: Recalculate Target/SL based on the actual fill price (pos_entry)
+                                current_target_pct = float(cfg.get("target_pct", 0))
+                                current_stop_pct = float(cfg.get("stop_pct", 0))
+                                is_buy_dir = (row["pos_side"] == "BUY")
+                                
+                                if current_target_pct > 0:
+                                    t_val = _r(row["pos_entry"] * (1 + current_target_pct/100)) if is_buy_dir else _r(row["pos_entry"] * (1 - current_target_pct/100))
+                                    row["target_val"] = f"{t_val:.5f}" if abs(t_val) < 10 else f"{t_val:.2f}"
+                                else:
+                                    row["target_val"] = "—"
+                                    
+                                if current_stop_pct > 0:
+                                    s_val = _r(row["pos_entry"] * (1 - current_stop_pct/100)) if is_buy_dir else _r(row["pos_entry"] * (1 + current_stop_pct/100))
+                                    row["sl_val"] = f"{s_val:.5f}" if abs(s_val) < 10 else f"{s_val:.2f}"
+                                else:
+                                    row["sl_val"] = row["opp_sig"]
+
                         # 3. Manage Open Position
                         if row["pos_qty"] != 0:
                             # Calculate Live P&L
@@ -625,6 +660,11 @@ def _worker(job_id):
                                 row["order_trig_price"] = "—"
                                 row["pos_in_progress"] = "NO"
                                 
+                                # ✅ FIX: Clear old risk values so they don't trigger an instant exit on the new trade
+                                row["target_val"] = "—"
+                                row["sl_val"] = "—"
+                                row["opp_sig"] = "—"
+
                                 # ✅ Instantly promote queue item if one was waiting
                                 if row.get("order_queue", "—") != "—":
                                     row["order_col"] = row["order_queue"]

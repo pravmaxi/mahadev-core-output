@@ -964,16 +964,26 @@ def api_trade_setup_fetch_ltp():
     except Exception as e:
         live_ltps = {}
         
-    # ✅ FIX: Force accurate 1m fetch for Forex
-    for sym_yf in set(yf_syms):
-        if "=X" in sym_yf:
-            try:
-                ticker = yf.Ticker(sym_yf)
-                hist = ticker.history(period="1d", interval="1m")
-                if not hist.empty:
-                    live_ltps[sym_yf] = float(hist["Close"].iloc[-1])
-            except Exception:
-                pass
+    # ✅ OPTIMIZATION: Batch fetch all Forex symbols in ONE network call
+    forex_syms = [s for s in set(yf_syms) if "=X" in s]
+    if forex_syms:
+        try:
+            import pandas as pd
+            hist = yf.download(forex_syms, period="1d", interval="1m", progress=False, auto_adjust=False, threads=True)
+            if not hist.empty:
+                if len(forex_syms) == 1:
+                    if "Close" in hist.columns:
+                        live_ltps[forex_syms[0]] = float(hist["Close"].dropna().iloc[-1])
+                else:
+                    if isinstance(hist.columns, pd.MultiIndex):
+                        close_df = hist["Close"]
+                        for sym in forex_syms:
+                            if sym in close_df.columns:
+                                valid = close_df[sym].dropna()
+                                if not valid.empty:
+                                    live_ltps[sym] = float(valid.iloc[-1])
+        except Exception as e:
+            print(f"Forex batch fetch failed: {e}")
     
     updated = 0
     for key, r in setup_engine.SETUP_STATE.items():
@@ -985,12 +995,16 @@ def api_trade_setup_fetch_ltp():
             updated += 1
             
             # ✅ 1. Check Limit Order Fills
-            if r.get("pos_qty", 0) == 0 and r.get("position_col") == "Pending":
+            if r.get("pos_qty", 0) == 0 and r.get("order_col", "—") != "—":
                 side = "BUY" if "BUY" in r.get("order_col", "") else "SELL"
-                filled = False
-                if side == "BUY" and new_ltp >= float(r.get("order_trig_price", 0)): filled = True
-                elif side == "SELL" and new_ltp <= float(r.get("order_trig_price", 0)): filled = True
+                order_type = "MARKET" if "MARKET" in r.get("order_col", "") else "LIMIT"
                 
+                filled = False
+                if order_type == "MARKET": filled = True
+                elif order_type == "LIMIT":
+                    if side == "BUY" and new_ltp >= float(r.get("order_trig_price", 0)): filled = True
+                    elif side == "SELL" and new_ltp <= float(r.get("order_trig_price", 0)): filled = True
+                    
                 if filled:
                     r["pos_qty"] = max(1, int(float(r.get("alloted_amt", 5000)) / float(r["order_trig_price"])))
                     r["pos_entry"] = float(r["order_trig_price"])
@@ -998,6 +1012,9 @@ def api_trade_setup_fetch_ltp():
                     r["pos_in_progress"] = "YES"
                     r["position_col"] = f"{'LONG' if side == 'BUY' else 'SHORT'} {r['pos_qty']}"
                     r["order_pnl"] = 0
+                    # ✅ CLEAR ORDER COLUMN ONCE FILLED
+                    r["order_col"] = "—"
+                    r["order_trig_price"] = "—"
 
             # ✅ 2. Calculate Live P&L
             if r.get("pos_qty", 0) != 0:
@@ -1037,6 +1054,38 @@ def api_trade_setup_fetch_ltp():
                     r["order_col"] = "—"
                     r["order_trig_price"] = "—"
                     r["pos_in_progress"] = "NO"
+                    
+                    # ✅ FIX: Clear old risk values so they don't trigger an instant exit on the new trade
+                    r["target_val"] = "—"
+                    r["sl_val"] = "—"
+                    r["opp_sig"] = "—"
+
+                    # ✅ FIX: Instantly promote from queue and check for fill
+                    if r.get("order_queue", "—") != "—":
+                        r["order_col"] = r["order_queue"]
+                        r["order_trig_price"] = r.get("queue_trig_price", r.get("trigger_lvl", 0))
+                        r["order_queue"] = "—"
+                        
+                        side = "BUY" if "BUY" in r["order_col"] else "SELL"
+                        order_type = "MARKET" if "MARKET" in r["order_col"] else "LIMIT"
+                        
+                        filled = False
+                        if order_type == "MARKET": 
+                            filled = True
+                        elif order_type == "LIMIT":
+                            if side == "BUY" and new_ltp >= float(r["order_trig_price"]): filled = True
+                            elif side == "SELL" and new_ltp <= float(r["order_trig_price"]): filled = True
+                            
+                        if filled:
+                            r["pos_qty"] = max(1, int(float(r.get("alloted_amt", 5000)) / float(r["order_trig_price"])))
+                            r["pos_entry"] = float(r["order_trig_price"])
+                            r["pos_side"] = side
+                            r["pos_in_progress"] = "YES"
+                            r["position_col"] = f"{'LONG' if side == 'BUY' else 'SHORT'} {r['pos_qty']}"
+                            r["order_pnl"] = 0
+                            # ✅ CLEAR ORDER COLUMN ONCE FILLED
+                            r["order_col"] = "—"
+                            r["order_trig_price"] = "—"
 
     # Save the updated state so it persists
     try: setup_engine.SETUP_STATE_FILE.write_text(json.dumps(setup_engine.SETUP_STATE, indent=2))
