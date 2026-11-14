@@ -1,218 +1,44 @@
 [
   {
     "sym": "EURUSD",
-    "amt": 71428,
-    "tf": "5m",
-    "exch": "FX"
-  },
-  {
-    "sym": "GBPUSD",
-    "amt": 71428,
-    "tf": "5m",
+    "amt": 7142857,
+    "tf": "1m",
     "exch": "FX"
   },
   {
     "sym": "USDJPY",
-    "amt": 71428,
-    "tf": "5m",
-    "exch": "FX"
-  },
-  {
-    "sym": "USDCAD",
-    "amt": 71428,
-    "tf": "5m",
+    "amt": 7142857,
+    "tf": "1m",
     "exch": "FX"
   },
   {
     "sym": "USDCHF",
-    "amt": 71428,
-    "tf": "5m",
+    "amt": 7142857,
+    "tf": "1m",
     "exch": "FX"
   },
   {
     "sym": "AMD",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "AAPL",
-    "amt": 131578,
-    "tf": "5m",
+    "amt": 865800,
+    "tf": "1m",
     "exch": "US"
   },
   {
     "sym": "ABBV",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "AMZN",
-    "amt": 131578,
-    "tf": "5m",
+    "amt": 865800,
+    "tf": "1m",
     "exch": "US"
   },
   {
     "sym": "AVGO",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "COST",
-    "amt": 131578,
-    "tf": "5m",
+    "amt": 865800,
+    "tf": "1m",
     "exch": "US"
   },
   {
     "sym": "CTSH",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "GOOGL",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "HD",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "INTC",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "JNJ",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "JPM",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "KO",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "LEVI",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "LLY",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "MA",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "META",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "MSFT",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "NVDA",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "PEP",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "PG",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "SHEL",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "SPY",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "TSLA",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "TSM",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "UNH",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "V",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "IBM",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "NFLX",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "QQQ",
-    "amt": 131578,
-    "tf": "5m",
-    "exch": "US"
-  },
-  {
-    "sym": "IWM",
-    "amt": 131578,
-    "tf": "5m",
+    "amt": 865800,
+    "tf": "1m",
     "exch": "US"
   }
 ]

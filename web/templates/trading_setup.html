@@ -23,6 +23,7 @@
   <div>
 
     <!-- ═══════════ AUTO-TRADE PANEL ═══════════ -->
+    <!-- ✅ Ensure no `open` attribute is present so it defaults to hidden -->
     <details style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
       <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;">🤖 Auto-Trading Setup</summary>
       <div style="padding-top:14px; max-height:80vh; overflow-y:auto">
@@ -356,6 +357,7 @@
   <!-- ═══════════ RIGHT SIDE ═══════════ -->
   <div>
 
+    <!-- ✅ Ensure no `open` attribute is present so it defaults to hidden -->
     <details style="margin-bottom:16px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px;">
       <summary style="cursor:pointer; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; display:flex; justify-content:space-between; align-items:center;">
         <span>Symbols & Allocation</span>
@@ -434,7 +436,8 @@
         <input type="checkbox" id="tpLiveTradeToggle" onchange="syncRouting()"> Live Trade
       </label>
       <label class="chk" style="margin:0; font-size:11px; color:#e3b341;" title="If unchecked, orders are only simulated in the panel. No JSON queues or paper_trades.py updates.">
-        <input type="checkbox" id="tpSendToQueue" checked> Send to Queue
+        <!-- ✅ Removed `checked` so it defaults to OFF -->
+        <input type="checkbox" id="tpSendToQueue"> Send to Queue
       </label>
       <label class="chk" style="margin:0; font-size:11px;">
         <input type="checkbox" id="tpAllowMarketOrders"> Allow Market Orders
@@ -609,16 +612,20 @@
            text-transform:uppercase;letter-spacing:.05em;
            position:sticky;top:0;background:var(--bg);z-index:5}
            
-  /* ✅ Freeze Symbol and LTP columns */
-  table.tb th.c-symbol, table.tb th.c-ltp { position: sticky; z-index: 6; background: var(--bg); }
-  table.tb th.c-symbol { left: 0; }
-  table.tb th.c-ltp { left: 90px; box-shadow: 6px 0 6px -6px #000; }
+  /* ✅ Freeze Symbol, LTP, Trigger Lvl, Valid DT columns */
+  table.tb th.c-symbol, table.tb th.c-ltp, table.tb th.c-trigger, table.tb th.c-valid { position: sticky; z-index: 6; background: var(--bg); }
+  table.tb th.c-symbol { left: 0; width: 85px; min-width: 85px; max-width: 85px; }
+  table.tb th.c-ltp { left: 85px; width: 75px; min-width: 75px; max-width: 75px; }
+  table.tb th.c-trigger { left: 160px; width: 95px; min-width: 95px; max-width: 95px; }
+  table.tb th.c-valid { left: 255px; width: 140px; min-width: 140px; max-width: 140px; box-shadow: 6px 0 6px -6px #000; }
 
-  table.tb td.c-symbol, table.tb td.c-ltp { position: sticky; z-index: 3; background: var(--panel); }
-  table.tb td.c-symbol { left: 0; }
-  table.tb td.c-ltp { left: 90px; box-shadow: 6px 0 6px -6px #000; }
+  table.tb td.c-symbol, table.tb td.c-ltp, table.tb td.c-trigger, table.tb td.c-valid { position: sticky; z-index: 3; background: var(--panel); }
+  table.tb td.c-symbol { left: 0; width: 85px; min-width: 85px; max-width: 85px; }
+  table.tb td.c-ltp { left: 85px; width: 75px; min-width: 75px; max-width: 75px; }
+  table.tb td.c-trigger { left: 160px; width: 95px; min-width: 95px; max-width: 95px; }
+  table.tb td.c-valid { left: 255px; width: 140px; min-width: 140px; max-width: 140px; box-shadow: 6px 0 6px -6px #000; }
   
-  table.tb tr:hover td.c-symbol, table.tb tr:hover td.c-ltp { background: #141c28; }
+  table.tb tr:hover td.c-symbol, table.tb tr:hover td.c-ltp, table.tb tr:hover td.c-trigger, table.tb tr:hover td.c-valid { background: #141c28; }
   table.tb th:first-child, table.tb td:first-child{text-align:left}
   table.tb tr:hover{background:#141c28}
   .buy{color:var(--good)} .sell{color:var(--bad)} .mut{color:var(--muted)}
@@ -2408,23 +2415,24 @@ function renderScannerMonitor(state, isForced = false) {
   syms = sortData(syms, scanSort);
 
   const cols = [
-    { key: 'symbol', label: 'SYMBOL', align: 'left' },
-    { key: 'ltp', label: 'LTP', align: 'right' },
+    { key: 'symbol', label: 'SYMBOL', align: 'left', width: '85px' },
+    { key: 'ltp', label: 'LTP', align: 'right', width: '75px' },
+    { key: 'trigger_lvl', label: 'TRIGGER LVL', align: 'center', width: '95px' },
+    { key: 'wt_valid_dt', label: 'VALID DT', align: 'center', width: '140px' },
     { key: 'tf', label: 'TF', align: 'center' }, // ✅ NEW: Timeframe column
     { key: 'wt_cross', label: 'WT CROSS', align: 'center' },
     { key: 'wt_trend', label: 'WT TREND', align: 'center' },
-    { key: 'trigger_lvl', label: 'TRIGGER LVL', align: 'center' },
-    { key: 'wt_valid_dt', label: 'VALID DT', align: 'center' },
     { key: 'wt_valid_wt_value', label: 'VALID WT VAL', align: 'center' },
     { key: 'wt_trigger_status', label: 'TRIG STATUS', align: 'center' },
     { key: 'wt_trigger_dt', label: 'TRIG DT', align: 'center' },
     { key: 'wt_action', label: 'WT ACTION', align: 'center' },
     { key: 'valid', label: 'VALID', align: 'center' },
     { key: 'alloted_amt', label: 'ALLOTED AMOUNT', align: 'right' },
-    { key: 'order_col', label: 'ORDER', align: 'center' },
+    { key: 'order_col', label: 'PAPER ORDER', align: 'center' },
     { key: 'order_queue', label: 'ORDER QUEUE', align: 'center' }, // ✅ NEW COLUMN
     { key: 'position_col', label: 'POSITION', align: 'center' },
     { key: 'pos_in_progress', label: 'POS IN PROGRESS', align: 'center' },
+    { key: 'entry_side', label: 'ENTRY SIDE', align: 'center' }, // ✅ NEW COLUMN
     { key: 'order_trig_price', label: 'ORDER TRIG PRICE', align: 'center' },
     { key: 'order_pnl', label: 'ORDER P&L', align: 'right' },
     { key: 'total_pnl', label: 'TOTAL P&L', align: 'right' },
@@ -2441,8 +2449,13 @@ function renderScannerMonitor(state, isForced = false) {
     let thCls = '';
     if (i === 0) thCls = 'c-symbol';
     if (i === 1) thCls = 'c-ltp';
+    if (i === 2) thCls = 'c-trigger';
+    if (i === 3) thCls = 'c-valid';
     
-    html += `<th class="${thCls}" style="text-align:${c.align}; cursor:pointer; user-select:none;" onclick="handleScanSort('${c.key}')">${c.label}${getSortIcon(scanSort, c.key)}</th>`;
+    let styleStr = `text-align:${c.align}; cursor:pointer; user-select:none;`;
+    if (c.width) styleStr += `min-width:${c.width}; max-width:${c.width};`;
+
+    html += `<th class="${thCls}" style="${styleStr}" onclick="handleScanSort('${c.key}')">${c.label}${getSortIcon(scanSort, c.key)}</th>`;
   }
   html += '</tr></thead><tbody>';
 
@@ -2458,6 +2471,11 @@ function renderScannerMonitor(state, isForced = false) {
       let tdCls = '';
       if (i === 0) tdCls = 'c-symbol';
       if (i === 1) tdCls = 'c-ltp';
+      if (i === 2) tdCls = 'c-trigger';
+      if (i === 3) tdCls = 'c-valid';
+      
+      let styleStr = `text-align:${c.align};`;
+      if (c.width) styleStr += `min-width:${c.width}; max-width:${c.width};`;
       
 // Number Formatting
       if (['ltp', 'wt1', 'wt2', 'wt_diff', 'wt_valid_open', 'wt_valid_high', 'wt_valid_low', 'wt_valid_close', 'wt_valid_diff', 'wt_valid_wt_value', 'wt_ltp', 'wt_trigger_diff', 'wt_diff_pct', 'wt_profit', 'wt_max_profit_pct', 'wt_max_profit_value', 'trigger_lvl'].includes(c.key)) {
@@ -2472,7 +2490,10 @@ function renderScannerMonitor(state, isForced = false) {
         // ✅ Only show order trig price if the position is actually in progress (filled)
         if (r.pos_in_progress === 'NO' || r.pos_in_progress === '') {
           v = '—';
-        } else if (v !== '—' && !isNaN(v)) {
+        } else if (v === '—' || v === '' || v === undefined) {
+          // ✅ FALLBACK: If trigger price is missing but we are in a position, show pos_entry
+          v = r.pos_entry ? fmtINR(r.pos_entry) : '—';
+        } else if (!isNaN(v)) {
           v = fmtINR(v);
         }
       } else if (['order_pnl', 'total_pnl'].includes(c.key)) {
@@ -2527,6 +2548,7 @@ function renderScannerMonitor(state, isForced = false) {
       // ✅ Color formatting for Order, Position, and P&L columns
       if (c.key === 'order_col' || c.key === 'order_queue') cls = v.includes('BUY') ? 'buy' : v.includes('SELL') ? 'sell' : 'mut';
       if (c.key === 'position_col') cls = v.includes('LONG') ? 'buy' : v.includes('SHORT') ? 'sell' : 'mut';
+      if (c.key === 'entry_side') cls = v.includes('BUY') ? 'buy' : v.includes('SELL') ? 'sell' : 'mut'; // ✅ NEW COLUMN COLORING
       
       if (c.key === 'order_pnl' || c.key === 'total_pnl') {
         if (v !== '—' && v !== '0.00') {
@@ -2535,7 +2557,7 @@ function renderScannerMonitor(state, isForced = false) {
         }
       }
 
-      html += `<td class="${tdCls} ${cls}" style="text-align:${c.align}">${v}</td>`;
+      html += `<td class="${tdCls} ${cls}" style="${styleStr}">${v}</td>`;
     }
     html += '</tr>';
   }

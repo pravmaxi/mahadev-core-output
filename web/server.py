@@ -968,7 +968,7 @@ def api_trade_setup_fetch_ltp():
     forex_syms = [s for s in set(yf_syms) if "=X" in s]
     if forex_syms:
         try:
-            import pandas as pd
+            # ✅ FIX: Removed local `import pandas as pd` to prevent UnboundLocalError
             hist = yf.download(forex_syms, period="1d", interval="1m", progress=False, auto_adjust=False, threads=True)
             if not hist.empty:
                 if len(forex_syms) == 1:
@@ -994,10 +994,16 @@ def api_trade_setup_fetch_ltp():
             r["ltp"] = new_ltp
             updated += 1
             
-            # ✅ 1. Check Limit Order Fills
+            # ✅ 0. INSTANT PROMOTE: If flat and Paper Order is empty, pull from Queue
+            if r.get("pos_qty", 0) == 0 and r.get("order_col", "—") == "—" and r.get("order_queue", "—") != "—":
+                r["order_col"] = r["order_queue"]
+                r["order_trig_price"] = r.get("queue_trig_price", r.get("trigger_lvl", 0))
+                r["order_queue"] = "—"
+            
+            # ✅ 1. Check Order Fills (Both Market and Limit)
             if r.get("pos_qty", 0) == 0 and r.get("order_col", "—") != "—":
-                side = "BUY" if "BUY" in r.get("order_col", "") else "SELL"
-                order_type = "MARKET" if "MARKET" in r.get("order_col", "") else "LIMIT"
+                side = "BUY" if "BUY" in r.get("order_col", "").upper() else "SELL"
+                order_type = "MARKET" if "MARKET" in r.get("order_col", "").upper() else "LIMIT"
                 
                 filled = False
                 if order_type == "MARKET": filled = True
@@ -1012,9 +1018,12 @@ def api_trade_setup_fetch_ltp():
                     r["pos_in_progress"] = "YES"
                     r["position_col"] = f"{'LONG' if side == 'BUY' else 'SHORT'} {r['pos_qty']}"
                     r["order_pnl"] = 0
-                    # ✅ CLEAR ORDER COLUMN ONCE FILLED
+                    r["entry_side"] = f"{order_type} {side}" # ✅ Shows "MARKET BUY" or "LIMIT SELL"
+                    r["pos_entry_time"] = str(pd.Timestamp.now(tz=IST).strftime('%Y-%m-%d %H:%M:%S')) # ✅ FIX: Set Entry Time
+                    # ✅ FIX: Force string sync so it persists correctly
+                    r["order_trig_price"] = f"{r['pos_entry']:.5f}" if abs(r['pos_entry']) < 10 else f"{r['pos_entry']:.2f}"
+                    # ✅ CLEAR PAPER ORDER COLUMN
                     r["order_col"] = "—"
-                    r["order_trig_price"] = "—"
 
             # ✅ 2. Calculate Live P&L
             if r.get("pos_qty", 0) != 0:
@@ -1054,6 +1063,8 @@ def api_trade_setup_fetch_ltp():
                     r["order_col"] = "—"
                     r["order_trig_price"] = "—"
                     r["pos_in_progress"] = "NO"
+                    r["entry_side"] = "—" # ✅ FIX: Clear Entry Side
+                    r["pos_entry_time"] = "—" # ✅ FIX: Clear Entry Time
                     
                     # ✅ FIX: Clear old risk values so they don't trigger an instant exit on the new trade
                     r["target_val"] = "—"
@@ -1083,6 +1094,8 @@ def api_trade_setup_fetch_ltp():
                             r["pos_in_progress"] = "YES"
                             r["position_col"] = f"{'LONG' if side == 'BUY' else 'SHORT'} {r['pos_qty']}"
                             r["order_pnl"] = 0
+                            r["entry_side"] = f"{order_type} {side}" # ✅ Shows "MARKET BUY" or "LIMIT SELL"
+                            r["pos_entry_time"] = str(pd.Timestamp.now(tz=IST).strftime('%Y-%m-%d %H:%M:%S')) # ✅ FIX: Set Entry Time
                             # ✅ CLEAR ORDER COLUMN ONCE FILLED
                             r["order_col"] = "—"
                             r["order_trig_price"] = "—"

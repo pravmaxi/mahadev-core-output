@@ -86,158 +86,158 @@
   },
   "AMD|wt": {
     "direction": "sell",
-    "datetime": "2026-10-29 19:00",
-    "level": 560.57
+    "datetime": "2026-11-13 02:00",
+    "level": 579.73
   },
   "AAPL|wt": {
-    "direction": "sell",
-    "datetime": "2026-10-30 19:00",
-    "level": 344.13
+    "direction": "buy",
+    "datetime": "2026-11-13 21:00",
+    "level": 359.2
   },
   "ABBV|wt": {
     "direction": "sell",
-    "datetime": "2026-10-31 01:00",
-    "level": 293.54
+    "datetime": "2026-11-13 01:00",
+    "level": 295.17
   },
   "AMZN|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-02 20:00",
-    "level": 253.19
+    "direction": "sell",
+    "datetime": "2026-11-13 01:00",
+    "level": 267.71
   },
   "AVGO|wt": {
     "direction": "sell",
-    "datetime": "2026-11-03 00:00",
-    "level": 323.9
+    "datetime": "2026-11-13 02:00",
+    "level": 361.09
   },
   "COST|wt": {
     "direction": "buy",
-    "datetime": "2026-10-29 19:00",
-    "level": 994.23
+    "datetime": "2026-11-13 21:00",
+    "level": 1109.5
   },
   "CTSH|wt": {
-    "direction": "buy",
-    "datetime": "2026-10-30 19:00",
-    "level": 65.25
+    "direction": "sell",
+    "datetime": "2026-11-13 01:00",
+    "level": 64.1
   },
   "GOOGL|wt": {
-    "direction": "buy",
-    "datetime": "2026-10-30 22:00",
-    "level": 281.65
+    "direction": "sell",
+    "datetime": "2026-11-13 20:00",
+    "level": 294.7
   },
   "HD|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-02 20:00",
-    "level": 338.05
+    "direction": "sell",
+    "datetime": "2026-11-12 23:00",
+    "level": 348.89
   },
   "INTC|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-02 23:00",
-    "level": 63.39
+    "direction": "sell",
+    "datetime": "2026-11-12 20:00",
+    "level": 59.41
   },
   "JNJ|wt": {
-    "direction": "sell",
-    "datetime": "2026-10-30 21:00",
-    "level": 275.53
+    "direction": "buy",
+    "datetime": "2026-11-12 02:00",
+    "level": 281.16
   },
   "JPM|wt": {
     "direction": "buy",
-    "datetime": "2026-11-02 22:00",
-    "level": 341.8
+    "datetime": "2026-11-13 21:00",
+    "level": 345.51
   },
   "KO|wt": {
     "direction": "buy",
-    "datetime": "2026-10-28 21:00",
-    "level": 92.25
+    "datetime": "2026-11-13 21:00",
+    "level": 99.29
   },
   "LEVI|wt": {
     "direction": "buy",
-    "datetime": "2026-11-02 20:00",
-    "level": 23.11
+    "datetime": "2026-11-13 21:00",
+    "level": 24.35
   },
   "LLY|wt": {
     "direction": "sell",
-    "datetime": "2026-10-30 23:00",
-    "level": 1420.18
+    "datetime": "2026-11-13 01:00",
+    "level": 1433.57
   },
   "MA|wt": {
     "direction": "buy",
-    "datetime": "2026-10-28 20:00",
-    "level": 616.12
+    "datetime": "2026-11-13 21:00",
+    "level": 662.75
   },
   "META|wt": {
-    "direction": "sell",
-    "datetime": "2026-10-30 23:00",
-    "level": 613.67
+    "direction": "buy",
+    "datetime": "2026-11-13 21:00",
+    "level": 633.65
   },
   "MSFT|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-02 23:00",
-    "level": 518.88
+    "direction": "buy",
+    "datetime": "2026-11-13 22:00",
+    "level": 524.6
   },
   "NVDA|wt": {
     "direction": "sell",
-    "datetime": "2026-11-03 01:00",
-    "level": 202.93
+    "datetime": "2026-11-13 21:00",
+    "level": 158.39
   },
   "PEP|wt": {
     "direction": "buy",
-    "datetime": "2026-10-29 19:00",
-    "level": 134.91
+    "datetime": "2026-11-13 21:00",
+    "level": 144.93
   },
   "PG|wt": {
     "direction": "buy",
-    "datetime": "2026-11-02 20:00",
-    "level": 163.87
+    "datetime": "2026-11-13 20:00",
+    "level": 169.87
   },
   "SHEL|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-02 20:00",
-    "level": 105.29
+    "direction": "buy",
+    "datetime": "2026-11-11 01:00",
+    "level": 97.58
   },
   "SPY|wt": {
     "direction": "sell",
-    "datetime": "2026-11-03 00:00",
-    "level": 754.06
+    "datetime": "2026-11-13 01:00",
+    "level": 756.84
   },
   "TSLA|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-02 20:00",
-    "level": 410.9
+    "direction": "sell",
+    "datetime": "2026-11-13 21:00",
+    "level": 385.83
   },
   "TSM|wt": {
     "direction": "sell",
-    "datetime": "2026-10-28 23:00",
-    "level": 436.96
+    "datetime": "2026-11-12 20:00",
+    "level": 393.91
   },
   "UNH|wt": {
     "direction": "sell",
-    "datetime": "2026-10-31 01:00",
-    "level": 405.91
+    "datetime": "2026-11-13 21:00",
+    "level": 402.02
   },
   "V|wt": {
     "direction": "buy",
-    "datetime": "2026-10-28 20:00",
-    "level": 403.81
+    "datetime": "2026-11-13 21:00",
+    "level": 427.11
   },
   "IBM|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-03 00:00",
-    "level": 254.32
+    "direction": "buy",
+    "datetime": "2026-11-13 21:00",
+    "level": 247.1
   },
   "NFLX|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-02 20:00",
-    "level": 62.85
+    "direction": "sell",
+    "datetime": "2026-11-13 00:00",
+    "level": 63.41
   },
   "QQQ|wt": {
     "direction": "sell",
-    "datetime": "2026-11-03 00:00",
-    "level": 684.58
+    "datetime": "2026-11-13 01:00",
+    "level": 686.35
   },
   "IWM|wt": {
     "direction": "sell",
-    "datetime": "2026-11-03 00:00",
-    "level": 279.57
+    "datetime": "2026-11-12 20:00",
+    "level": 278.67
   },
   "ITC.NS|wt": {
     "direction": "sell",
@@ -610,34 +610,34 @@
     "level": 203.35000610351562
   },
   "COPX|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-02 21:00",
-    "level": 74.51
+    "direction": "sell",
+    "datetime": "2026-11-12 20:00",
+    "level": 70.1
   },
   "SCHG|wt": {
     "direction": "sell",
-    "datetime": "2026-11-03 00:00",
-    "level": 34.11
+    "datetime": "2026-11-13 01:00",
+    "level": 34.24
   },
   "ICOP|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-02 20:00",
-    "level": 48.54
+    "direction": "sell",
+    "datetime": "2026-11-12 01:00",
+    "level": 48.35
   },
   "EWY|wt": {
     "direction": "sell",
-    "datetime": "2026-11-03 00:00",
-    "level": 153.37
+    "datetime": "2026-11-12 21:00",
+    "level": 143.46
   },
   "EWT|wt": {
     "direction": "sell",
-    "datetime": "2026-11-03 01:00",
-    "level": 100.93
+    "datetime": "2026-11-12 20:00",
+    "level": 94.3
   },
   "FLJP|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-02 20:00",
-    "level": 40.01
+    "direction": "sell",
+    "datetime": "2026-11-13 01:00",
+    "level": 39.08
   },
   "APOLLOHOSP.NS|wt": {
     "direction": "buy",
