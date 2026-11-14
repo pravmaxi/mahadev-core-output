@@ -346,7 +346,7 @@ def _worker(job_id):
                 forex_syms = [s for s in syms if "=X" in s]
                 if forex_syms:
                     try:
-                        import pandas as pd
+                        # ✅ FIX: Removed local `import pandas as pd` to prevent UnboundLocalError
                         hist = yf.download(forex_syms, period="1d", interval="1m", progress=False, auto_adjust=False, threads=True)
                         if not hist.empty:
                             if len(forex_syms) == 1:
@@ -420,6 +420,7 @@ def _worker(job_id):
                         row["pos_in_progress"] = prev_row.get("pos_in_progress", "NO")
                         row["order_queue"] = prev_row.get("order_queue", "—") # ✅ NEW
                         row["queue_trig_price"] = prev_row.get("queue_trig_price", 0) # ✅ NEW
+                        row["entry_side"] = prev_row.get("entry_side", "—") # ✅ NEW COLUMN
                         wt_params = {"n1": cfg.get("wt_n1", 15), "n2": cfg.get("wt_n2", 27)}
                         
                         wt_mod = get_indicator("wt")
@@ -481,16 +482,31 @@ def _worker(job_id):
                                 
                             # ✅ NEW: Check if there is a pending active order in the opposite direction
                             has_pending_order = False
+                            
+                            # 1. Check PAPER ORDER (if order is pending)
                             if row.get("order_col", "—") != "—" and row.get("position_col") == "Pending":
-                                order_side = "BUY" if "BUY" in row["order_col"] else "SELL"
+                                order_side = "BUY" if "BUY" in row["order_col"].upper() else "SELL"
                                 sig_side = "BUY" if direction == "buy" else "SELL"
                                 
-                                # If the pending order is opposite to the new signal
                                 if order_side != sig_side:
                                     row["opp_sig"] = row.get("order_trig_price", "—")
                                     has_pending_order = True
 
-                            # If no pending opposite order, use the WT indicator's pending signal
+                            # 2. Check ORDER QUEUE (if position is active and a new opposite order is waiting)
+                            if not has_pending_order and row.get("pos_qty", 0) != 0 and row.get("order_queue", "—") != "—":
+                                q_side = "BUY" if "BUY" in row["order_queue"].upper() else "SELL"
+                                pos_side = "BUY" if row["pos_side"] == "BUY" else "SELL"
+                                
+                                if q_side != pos_side:
+                                    # ✅ FIX: Ensure queue_trig_price is not 0 or missing
+                                    q_price = row.get("queue_trig_price")
+                                    if not q_price or float(q_price) == 0:
+                                        q_price = live_px # Fallback to current LTP for market orders
+                                        
+                                    row["opp_sig"] = f"{q_price:.5f}" if abs(q_price) < 10 else f"{q_price:.2f}"
+                                    has_pending_order = True
+
+                            # If no pending opposite order in queue or paper, use the WT indicator's pending signal
                             if not has_pending_order:
                                 if pending[opp_dir]:
                                     opp_lvl = _r(pending[opp_dir]["level"])
@@ -569,20 +585,67 @@ def _worker(job_id):
                         if is_new_trigger and is_valid and is_trade_action:
                             side = "BUY" if "Buy" in action_str else "SELL"
                             order_type = "MARKET" if "Market" in action_str else "LIMIT"
-                            row["order_queue"] = f"{side} {order_type}"
-                            row["queue_trig_price"] = _r(live_px) if order_type == "MARKET" else float(row["trigger_lvl"])
+                            
+                            # ✅ FIX: Do not queue same-direction signals while a position is already open
+                            is_same_dir = False
+                            if row.get("pos_qty", 0) != 0:
+                                pos_side = "BUY" if row["pos_side"] == "BUY" else "SELL"
+                                if side == pos_side:
+                                    is_same_dir = True
+                            
+                            if not is_same_dir:
+                                row["order_queue"] = action_str
+                                row["queue_trig_price"] = _r(live_px) if order_type == "MARKET" else float(row["trigger_lvl"])
 
-                        # ✅ 2. THE PROMOTION RULE: If flat and no active order, promote from queue
-                        if row["pos_qty"] == 0 and row["order_col"] == "—" and row.get("order_queue", "—") != "—":
-                            row["order_col"] = row["order_queue"]
-                            row["order_trig_price"] = row.get("queue_trig_price", float(row["trigger_lvl"]))
-                            row["order_queue"] = "—"
+                        # ✅ 2. THE PROMOTION & CANCELLATION RULE
+                        if row.get("order_queue", "—") != "—":
+                            # If there's a pending order in PAPER ORDER, cancel it first
+                            if row["pos_qty"] == 0 and row["order_col"] != "—":
+                                # ✅ FIX: Extract the side before clearing
+                                cancel_side = "BUY" if "BUY" in row["order_col"].upper() else "SELL"
+                                save_history_entry({
+                                    "symbol": raw_sym, "tf": tf, "side": cancel_side,
+                                    "qty": 0, "entry": row.get("order_trig_price", 0), "entry_time": "—",
+                                    "exit": 0, "pnl": 0,
+                                    "reason": "Cancelled", "time": str(pd.Timestamp.now(tz=IST).strftime('%Y-%m-%d %H:%M:%S'))
+                                })
+                                row["order_col"] = "—"
+                                row["position_col"] = "—"
+                                row["order_trig_price"] = "—"
+                                row["pos_in_progress"] = "NO"
+                                
+                            # Now promote from queue
+                            if row["pos_qty"] == 0 and row["order_col"] == "—":
+                                row["order_col"] = row["order_queue"]
+                                row["order_trig_price"] = row.get("queue_trig_price", float(row["trigger_lvl"]))
+                                row["order_queue"] = "—"
+                                row["paper_order_time"] = time.time() # ✅ Track when order was placed
+
+                        # ✅ EXPIRY LOGIC: Cancel limit order if it sits too long
+                        if row["pos_qty"] == 0 and row["order_col"] != "—" and "LIMIT" in row["order_col"].upper():
+                            placed_time = row.get("paper_order_time", time.time())
+                            max_wait_mins = int(cfg.get("wait_bars", 100))
+                            
+                            # Approximate: 1 bar = 1 minute for this UI check
+                            if (time.time() - placed_time) > (max_wait_mins * 60):
+                                # ✅ FIX: Extract the side before clearing
+                                cancel_side = "BUY" if "BUY" in row["order_col"].upper() else "SELL"
+                                save_history_entry({
+                                    "symbol": raw_sym, "tf": tf, "side": cancel_side,
+                                    "qty": 0, "entry": row.get("order_trig_price", 0), "entry_time": "—",
+                                    "exit": 0, "pnl": 0,
+                                    "reason": "Expired", "time": str(pd.Timestamp.now(tz=IST).strftime('%Y-%m-%d %H:%M:%S'))
+                                })
+                                row["order_col"] = "—"
+                                row["order_trig_price"] = "—"
+                                row["position_col"] = "—"
 
                         # 2. Manage Active Order (if no position is open yet)
                         if row["pos_qty"] == 0 and row["order_col"] != "—":
                             row["position_col"] = "Pending"
-                            side = "BUY" if "BUY" in row["order_col"] else "SELL"
-                            order_type = "MARKET" if "MARKET" in row["order_col"] else "LIMIT"
+                            # ✅ FIX: Use .upper() since the string is now "Sell Limit Order..."
+                            side = "BUY" if "BUY" in row["order_col"].upper() else "SELL"
+                            order_type = "MARKET" if "MARKET" in row["order_col"].upper() else "LIMIT"
                             
                             row["pos_in_progress"] = "YES" if order_type == "MARKET" else "NO"
                             
@@ -595,12 +658,15 @@ def _worker(job_id):
                                 elif side == "SELL" and live_px <= float(row["order_trig_price"]): filled = True
                                     
                             if filled:
-                                row["pos_qty"] = max(1, int(float(task.get("amt", 5000)) / float(row["order_trig_price"])))
+                                # ✅ FIX: Allow Qty to be 0 if allotted amount is too small
+                                calc_qty = int(float(task.get("amt", 5000)) / float(row["order_trig_price"]))
+                                row["pos_qty"] = calc_qty
                                 row["pos_entry"] = float(row["order_trig_price"])
                                 row["pos_entry_time"] = str(pd.Timestamp.now(tz=IST).strftime('%Y-%m-%d %H:%M:%S'))
                                 row["pos_side"] = side
                                 row["pos_in_progress"] = "YES"
                                 row["position_col"] = f"{'LONG' if side == 'BUY' else 'SHORT'} {row['pos_qty']}"
+                                row["entry_side"] = f"{order_type} {side}" # ✅ Shows "MARKET BUY" or "LIMIT SELL"
                                 row["order_pnl"] = 0
 
                                 # ✅ FIX: Recalculate Target/SL based on the actual fill price (pos_entry)
@@ -622,14 +688,46 @@ def _worker(job_id):
 
                         # 3. Manage Open Position
                         if row["pos_qty"] != 0:
+                            # ✅ FIX: Force PAPER ORDER to be empty while a position is active
+                            row["order_col"] = "—"
+                            
+                            # ✅ FIX: Force sync the trigger price with the actual entry price
+                            row["order_trig_price"] = f"{row['pos_entry']:.5f}" if abs(row['pos_entry']) < 10 else f"{row['pos_entry']:.2f}"
+                            
                             # Calculate Live P&L
                             if row["pos_side"] == "BUY":
                                 row["order_pnl"] = round((live_px - row["pos_entry"]) * row["pos_qty"], 2)
                             else:
                                 row["order_pnl"] = round((row["pos_entry"] - live_px) * row["pos_qty"], 2)
                             
+                            # ✅ TRAILING STOP LOSS LOGIC
+                            if cfg.get("trailing_enabled", False):
+                                start_pct = float(cfg.get("trailing_start_pct", 3.0))
+                                step_pct = float(cfg.get("trailing_step_pct", 2.0))
+                                
+                                if row["pos_side"] == "BUY":
+                                    profit_pct = (live_px - row["pos_entry"]) / row["pos_entry"] * 100
+                                    if profit_pct >= start_pct:
+                                        new_sl = live_px * (1 - step_pct/100)
+                                        current_sl = float(row["sl_val"]) if row["sl_val"] != "—" else 0
+                                        if new_sl > current_sl:
+                                            row["sl_val"] = f"{new_sl:.5f}" if abs(new_sl) < 10 else f"{new_sl:.2f}"
+                                else: # SHORT
+                                    profit_pct = (row["pos_entry"] - live_px) / row["pos_entry"] * 100
+                                    if profit_pct >= start_pct:
+                                        new_sl = live_px * (1 + step_pct/100)
+                                        current_sl = float(row["sl_val"]) if row["sl_val"] != "—" else 9999999
+                                        if new_sl < current_sl:
+                                            row["sl_val"] = f"{new_sl:.5f}" if abs(new_sl) < 10 else f"{new_sl:.2f}"
+
+                            # ✅ FIX: If an opposite MARKET order is waiting in the queue, force an instant exit
+                            if row.get("order_queue", "—") != "—" and "Market" in row["order_queue"]:
+                                q_side = "BUY" if "BUY" in row["order_queue"].upper() else "SELL"
+                                if (row["pos_side"] == "BUY" and q_side == "SELL") or (row["pos_side"] == "SELL" and q_side == "BUY"):
+                                    exit_reason = "Opposite Signal (Market)"
+
                             # Check for Exit (Strictly price-based now)
-                            exit_reason = None
+                            exit_reason = exit_reason if 'exit_reason' in locals() else None
                             t_val = float(row["target_val"]) if row.get("target_val") != "—" else (9999999 if row["pos_side"] == "BUY" else 0)
                             s_val = float(row["sl_val"]) if row.get("sl_val") != "—" else (0 if row["pos_side"] == "BUY" else 9999999)
                             opp_val = float(row["opp_sig"]) if row.get("opp_sig") != "—" else (0 if row["pos_side"] == "BUY" else 9999999)
@@ -659,8 +757,9 @@ def _worker(job_id):
                                 row["order_col"] = "—" # ✅ Clears active order
                                 row["order_trig_price"] = "—"
                                 row["pos_in_progress"] = "NO"
+                                row["entry_side"] = "—" # ✅ CLEAR ENTRY SIDE
                                 
-                                # ✅ FIX: Clear old risk values so they don't trigger an instant exit on the new trade
+                                # ✅ CLEAR SLATE: Wipe all risk values before the next order
                                 row["target_val"] = "—"
                                 row["sl_val"] = "—"
                                 row["opp_sig"] = "—"
@@ -695,8 +794,11 @@ def _worker(job_id):
                                     try: queue = json.loads(SETUP_QUEUE_FILE.read_text())
                                     except: pass
                                 
-                                # ✅ FIX: Define qty before using it
-                                qty = max(1, int(float(task.get("amt", 5000)) / limit_px))
+                                # ✅ FIX: Define qty before using it (Allow 0)
+                                qty = int(float(task.get("amt", 5000)) / limit_px)
+                                if qty == 0:
+                                    print(f"⚠️ Skipping queue for {raw_sym}: Alloted amount too small (Qty=0)")
+                                    continue
 
                                 q_entry = {
                                     "id": sig_id, "action": "NEW_ORDER", "symbol": raw_sym, "exchange": task["exch"],
@@ -729,6 +831,12 @@ def _worker(job_id):
                                         live_q.append(q_entry)
                                         LIVE_QUEUE_FILE.write_text(json.dumps(live_q, indent=2))
                                         print(f"✅ Queued LIVE {order_type} for {raw_sym} - {side} @ {limit_px}")
+
+                        # ✅ FIX: Final Cleanup - If flat with no orders, wipe risk columns to prevent ghost values
+                        if row.get("pos_qty", 0) == 0 and row.get("order_col", "—") == "—" and row.get("order_queue", "—") == "—":
+                            row["target_val"] = "—"
+                            row["sl_val"] = "—"
+                            row["opp_sig"] = "—"
 
                         # CALCULATE RSI
                         rsi_period = 14
