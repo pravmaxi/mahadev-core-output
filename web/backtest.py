@@ -571,6 +571,7 @@ def _simulate_simple(df, events_by_bar, n, C, res_series=None, sup_series=None):
                                         entry["source"], entry["perfect"],
                                         net, notional, reason,
                                         extra={"total_qty": _q,
+                                               "wt_val": entry.get("wt_val"),
                                                "pending_after": round(pending, 2),
                                                "entries_detail": [
                                                    {"t": str(df.index[entry["bar_i"]]),
@@ -596,6 +597,7 @@ def _simulate_simple(df, events_by_bar, n, C, res_series=None, sup_series=None):
                                         entry["source"], entry["perfect"],
                                         net, notional, "opp_signal",
                                         extra={"total_qty": _q,
+                                               "wt_val": entry.get("wt_val"),
                                                "pending_after": round(pending, 2),
                                                "entries_detail": [
                                                    {"t": str(df.index[entry["bar_i"]]),
@@ -643,7 +645,7 @@ def _simulate_simple(df, events_by_bar, n, C, res_series=None, sup_series=None):
                 side = ev_sign
                 entry = {"bar_i": i, "price": fill, "source": ev["source"],
                          "perfect": ev["perfect"], "commission": comm,
-                         "best_price": fill}
+                         "best_price": fill, "wt_val": ev.get("wt_val")}
                 break
 
         equity.append(cash + units * bar_c)
@@ -661,6 +663,7 @@ def _simulate_simple(df, events_by_bar, n, C, res_series=None, sup_series=None):
                                 entry["source"], entry["perfect"],
                                 net, notional, "eod",
                                 extra={"total_qty": _q,
+                                       "wt_val": entry.get("wt_val"),
                                        "pending_after": round(pending, 2),
                                        "entries_detail": [
                                            {"t": str(df.index[entry["bar_i"]]),
@@ -706,6 +709,7 @@ def _simulate_same_side(df, events_by_bar, n, C):
             net, total_cost, reason,
             extra={"levels": len(entries), "avg_entry": round(ep, 2),
                    "total_qty": qty,
+                   "wt_val": entries[0].get("wt_val"),
                    "pending_after": round(pending, 2),
                    "entries_detail": [{"t": str(df.index[e["bar_i"]]),
                                        "px": round(e["price"], 2),
@@ -766,7 +770,7 @@ def _simulate_same_side(df, events_by_bar, n, C):
             total_cost += notional
             entries.append({"bar_i": i, "price": fill, "qty": qty,
                             "comm": comm, "source": ev["source"],
-                            "perfect": ev["perfect"]})
+                            "perfect": ev["perfect"], "wt_val": ev.get("wt_val")})
             level += 1
 
         equity.append(cash + total_qty * bar_c)
@@ -808,6 +812,7 @@ def _simulate_alternate(df, events_by_bar, n, C):
             "leg_pnl": round(leg_pnl, 2), "level": p["level"] + 1,
             "reason": reason,
             "source": p.get("source", ""), "perfect": p.get("perfect", ""),
+            "wt_val": p.get("wt_val")
         })
         position = None
 
@@ -834,6 +839,7 @@ def _simulate_alternate(df, events_by_bar, n, C):
             "levels":   len(cycle_legs), "total_qty": last["qty"],
             "capital_used": round(total_notional, 2),
             "pending_after": round(pending, 2),
+            "wt_val": first.get("wt_val"),
             "entries_detail": [
                 {"t": l["t_in"], "px": l["px_in"], "qty": l["qty"],
                  "sign": l["sign"], "leg_pnl": l["leg_pnl"],
@@ -845,7 +851,7 @@ def _simulate_alternate(df, events_by_bar, n, C):
         in_cycle = False; cycle_realized = 0.0; cycle_legs = []
         cycle_source = None; cycle_perfect = None; base_qty_locked = None
 
-    def _open_leg(i, raw_price, direction, level, source, perfect):
+    def _open_leg(i, raw_price, direction, level, source, perfect, wt_val=None):
         nonlocal cash, position, base_qty_locked
         sign = 1 if direction == "buy" else -1
         if level == 0:
@@ -866,7 +872,7 @@ def _simulate_alternate(df, events_by_bar, n, C):
             cash += notional - comm
         position = {"bar_i": i, "price": fill, "qty": qty, "sign": sign,
                     "comm": comm, "source": source, "perfect": perfect,
-                    "level": level, "best_price": fill}
+                    "level": level, "best_price": fill, "wt_val": wt_val}
         return True
 
     def _target_amount():
@@ -930,7 +936,7 @@ def _simulate_alternate(df, events_by_bar, n, C):
             if not in_cycle:
                 if role not in ("entry", "both"): continue
                 if _open_leg(i, ev_px, ev["direction"], 0,
-                             ev["source"], ev["perfect"]):
+                             ev["source"], ev["perfect"], ev.get("wt_val")):
                     in_cycle = True; cycle_realized = 0.0; cycle_legs = []
                     cycle_source = ev["source"]; cycle_perfect = ev["perfect"]
             else:
@@ -943,7 +949,7 @@ def _simulate_alternate(df, events_by_bar, n, C):
                     continue
                 _close_leg(i, ev_px, "flip")
                 if not _open_leg(i, ev_px, ev["direction"], next_level,
-                                 ev["source"], ev["perfect"]):
+                                 ev["source"], ev["perfect"], ev.get("wt_val")):
                     _end_cycle(i, "flip_no_cash")
 
         qty_now = position["qty"] if position else 0
