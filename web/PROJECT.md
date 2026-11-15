@@ -1,6 +1,6 @@
 # Mahadev Trading Platform — PROJECT.md
 
-Last updated: November 2026 (Post-Session 27: Virtual Panel Overhaul)
+Last updated: November 2026 (Post-Session 28: Backtest Analytics & Panel Fixes)
 
 ---
 
@@ -24,6 +24,7 @@ A. Existing app (Session 27 and earlier)
 B. Trading Setup (Virtual Panel)
    Independent module at /trade-setup. It no longer relies on paper_trades.py for UI display. 
    Documented in sections 7–9 below. This is the active development track.
+   *For exact column formulas and the state machine flow tree, refer to `PANEL_LOGIC.md`.*
 
 ---
 
@@ -70,6 +71,7 @@ The Auto-Trader is a direct port of `backtest.py`, ensuring 1:1 parity with back
 
     mahadev core output/
     ├── PROJECT.md
+    ├── PANEL_LOGIC.md                ← ★ Source of truth for Virtual Panel
     ├── NEW_INDICATOR_TEMPLATE.md
     ├── venv/
     ├── web/                          ← THE APP (run everything from here)
@@ -158,7 +160,7 @@ Applies to intraday timeframes. Drops candles that start at 15:15 IST or later t
 
 ---
 
-## 6. Existing Known Issues & Gotchas (Auto-Trader & Core)
+## 6. Existing Known Issues & Gotchas (Core)
 1. Yahoo Finance Data Gaps — 20% gap protection prevents bad orders.
 2. ST + F&O Filter = Broken Pivots. Always turn F&O off for ST.
 3. Two backtest.py files. Always edit `web/backtest.py`.
@@ -176,7 +178,7 @@ Applies to intraday timeframes. Drops candles that start at 15:15 IST or later t
 
 ## 7. Trading Setup — Virtual Panel (Active Track)
 
-Trading Setup is now a fully self-contained "Virtual Trading Panel". It calculates positions, Target/SL, P&L, and History entirely in memory. It does not rely on `paper_trades.py` for the UI display.
+Trading Setup is now a fully self-contained "Virtual Trading Panel". It calculates positions, Target/SL, P&L, and History entirely in memory. It does not rely on `paper_trades.py` for the UI display. All rules are documented in `PANEL_LOGIC.md`.
 
 ### 7.1 Independence rules (non-negotiable)
 1. Do NOT modify `autotrader.py`, `trading.html`, `paper_trades.py`, `backtest.py`, `batch_backtest.py`, `autotest.py`, `data.py`, `sheets.py`, `settings.py`, `settings_store.py`, `broker_zerodha.py`, or `indicators/*`.
@@ -188,7 +190,7 @@ Trading Setup is now a fully self-contained "Virtual Trading Panel". It calculat
 
 ### 7.2 The 4-Step State Machine
 1. **ORDER QUEUE:** New valid signals go here first.
-2. **ORDER:** Active order (`MARKET` fills instantly, `LIMIT` waits for LTP cross). If flat and no active order exists, the queue item instantly promotes to the ORDER column.
+2. **PAPER ORDER:** Active order (`MARKET` fills instantly, `LIMIT` waits for LTP cross). If flat and no active order exists, the queue item instantly promotes to the PAPER ORDER column.
 3. **POSITION:** Once filled, shows `LONG X` or `SHORT Y`. Live P&L calculated on every tick.
 4. **EXIT:** Target, SL, or Opp Signal triggers an exit. P&L is banked into `TOTAL P&L`, logged to `setup_trade_history.json`, and the next item from `ORDER QUEUE` is instantly promoted.
 
@@ -197,34 +199,54 @@ Trading Setup is now a fully self-contained "Virtual Trading Panel". It calculat
 - **Send to Queue:** If the UI checkbox is ON, it writes to `order_queue.json`, `live_order_queue.json`, and calls `paper_trades.py`. If OFF, it skips all disk I/O for ultra-fast virtual scanning.
 - **20% Gap Filter:** If `LTP` vs `TRIGGER LVL` gap > 20%, it assumes a stock split/data glitch and flags the row as `Data Glitch (Gap > 20%)`, preventing false orders.
 - **Target/SL Lock:** If a position is open, Target/SL is calculated from `pos_entry` (not the fluctuating LTP).
-- **Stop Button:** `_worker` checks `stop_job` inside the `for task in tasks:` loop to halt immediately.
+- **Queue Cancellation Rule:** If a new signal arrives in `ORDER QUEUE` while a Limit order is pending in `PAPER ORDER`, the pending order is cancelled (logged to history) and the new signal promotes.
+- **Same-Direction Filter:** If a position is already open, new signals in the *same* direction are ignored (do not enter the queue).
+- **Market Order Flip:** If an opposite Market Order enters the queue while a position is open, it force-closes the existing position and instantly promotes the Market Order.
 
 ### 7.4 Server Logic (`server.py`)
 - `_update_queues_risk()`: When Target/SL is edited, it checks for a pending `NEW_ORDER` in the JSON queues and patches it. If the order is already processed, it appends an `UPDATE_RISK` command.
 - **DATA_DIR Monkey-Patch:** `paper_trades.py` is read-only and missing `DATA_DIR`. `server.py` injects it on startup: `paper_trades.DATA_DIR = Path(__file__).resolve().parent / "data"`. Do not remove this.
 - **Polling Filter:** Silences the 5-second `/status`, `/history`, and `/json_files` logs.
+- **LTP Fetch Sync:** `fetch_ltp` explicitly updates `ENTRY SIDE` (MARKET/LIMIT + BUY/SELL) and `ENTRY TIME` when an order fills.
 
 ### 7.5 UI Features (`trading_setup.html`)
-- **Frozen Columns:** SYMBOL and LTP are frozen on the left during horizontal scroll.
+- **Frozen Columns:** SYMBOL, LTP, TRIGGER LVL, and VALID DT are frozen on the left.
 - **Editable Columns:** TARGET and STOP LOSS can be edited directly in the panel.
 - **Order Trigger Price:** Hidden (`—`) for pending limits, populated only when the position is active.
 - **Trade History:** Accordion-style grouping by symbol. Shows Last Entry/Exit/P&L in the summary bar. Saves open state during 5-second polling.
+- **Defaults:** Auto-Trading Setup & Symbols panels are collapsed. "Send to Queue" is unchecked by default.
 
 ---
 
-## 8. Session Changelog (Fixes applied this session)
-1. **UI Cleanup:** Removed duplicate JSON debug boxes. Fixed `fetchJsonFiles()` JS.
-2. **Stop Button Bug:** `_worker` loop now checks for `stop_job` inside the `for task in tasks:` loop. Frontend clears `scannerLtpIntId` and `ltpIntervalId` on stop.
-3. **Pause Loop Bug:** Added `is_first_scan` check to prevent infinite background scanning when Auto-Scan is off.
-4. **Queue Routing:** Engine now respects `send_to_queue` toggle.
-5. **Target/SL Recalculation Bug:** When a position is open, target/SL is calculated from `pos_entry` (not the fluctuating LTP). 
-6. **Trade History Bug:** History now correctly saves `entry_time` and uses the `pos_side` to determine Target/SL.
-7. **Accordion UI Bug:** History stays open during 5-second polling by tracking `openSymbols` in JS.
-8. **Missing DATA_DIR:** Monkey-patched in `server.py` to prevent `AttributeError` crashes.
+## 8. Backtest — WT Profitability Analytics
+
+The Backtest page (`backtest.html` + `backtest.py`) now includes a WT Value Profitability dashboard below the Trades table.
+- **Valid WT Val Column:** `backtest.py` passes `wt_val` into the trade record, which the UI displays.
+- **Dashboard Cards:** Added `Buy side profit` and `Sell side profit` dynamically colored based on P&L.
+- **WT Analytics Panel:**
+  - Groups trades by WT Value ranges.
+  - **Macro Ranges:** `0 to Minus Full Range` and `0 to Plus Full Range`.
+  - **Detail Ranges:** `<-40`, `-40 to -20`, `-20 to -10`, `-10 to 0`, `0 to 10`, `10 to 20`, `20 to 40`, `>40`.
+  - Calculates Total Net, Profit, Loss, Long P&L, and Short P&L for each range.
+  - **Final Verdict:** Algorithmically identifies the most profitable WT range for that specific stock.
 
 ---
 
-## 9. Development Workflow (for all future sessions)
+## 9. Session Changelog (Session 28 Fixes)
+1. **Backtest WT Val:** Added `wt_val` to trades in `backtest.py` and displayed it in the UI.
+2. **Backtest Analytics:** Added WT Profitability panel (Macros, Details, Best Bin verdict).
+3. **Backtest Dashboard:** Added Buy/Sell Side Profit cards with dynamic coloring.
+4. **Trading Setup Columns:** Added `ENTRY SIDE` (e.g., MARKET BUY) and `ENTRY TIME`.
+5. **Trading Setup Queue Fix:** Fixed issue where Same-Direction signals blocked the queue.
+6. **Trading Setup Market Flip:** Opposite market orders force an instant close of the existing position.
+7. **Trading Setup Clear Slate:** Fixed ghost values where Targets/SL stayed on screen after a trade closed.
+8. **Speed Optimization:** Batch fetched Forex symbols in `fetch_ltp` and `_worker` to prevent timeout.
+9. **UnboundLocalError Fix:** Removed local `import pandas as pd` inside loops.
+10. **UI Defaults:** Collapsed left panels and unchecked "Send to Queue" by default.
+
+---
+
+## 10. Development Workflow (for all future sessions)
 1. Attach only the files needed for the current step. Do not attach unrelated files.
 2. One step per session. Do not proceed to the next step until verified.
 3. Provide exact FIND / REPLACE blocks with ~10 lines of surrounding context, OR a complete replacement file.

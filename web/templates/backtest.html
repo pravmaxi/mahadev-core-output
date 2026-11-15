@@ -444,6 +444,7 @@
     <!-- Trades + Events moved ABOVE charts -->
     <div id="tradesWrap"></div>
     <div id="eventsWrap" style="margin-top:20px"></div>
+    <div id="wtAnalyticsWrap" style="margin-top:20px"></div> <!-- ✅ NEW WT PANEL -->
 
     <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
                 padding:12px;margin-top:20px">
@@ -672,6 +673,7 @@ function renderBacktest(data){
   renderCards(data.metrics, data.trades);
   renderLatestSignal(data.events);
   renderTrades(data.trades, data.strategy_mode || 'simple');
+  renderWTAnalytics(data.trades); // ✅ Call new analytics function
   renderEvents(data.events);
   if (priceChartOpen)  drawPriceChart(data.candles, data.events, data.trades);
   if (equityChartOpen) drawEquityChart(data.equity, data.metrics.capital);
@@ -1362,6 +1364,10 @@ function renderCards(m, trades){
   const avgRet = pctList.length ? pctList.reduce((s, v) => s + v, 0) / pctList.length : 0;
   const bestRet = pctList.length ? Math.max(...pctList) : 0;
 
+  // ✅ Calculate dynamic profits first
+  const buyProfit = tList.filter(t => t.side === 'long').reduce((s, t) => s + t.pnl, 0);
+  const sellProfit = tList.filter(t => t.side === 'short').reduce((s, t) => s + t.pnl, 0);
+
   const cards = [
     ['Final equity',
       Math.round(m.final_equity).toLocaleString() +
@@ -1381,6 +1387,9 @@ function renderCards(m, trades){
     ['Expectancy',     Math.round(m.expectancy).toLocaleString(), cls(m.expectancy)],
     ['Avg win',        Math.round(m.avg_win).toLocaleString(), 'buy'],
     ['Avg loss',       Math.round(m.avg_loss).toLocaleString(), 'sell'],
+    // ✅ FIX: Use the dynamic `cls()` function instead of hardcoded 'buy'/'sell'
+    ['Buy side profit',  Math.round(buyProfit).toLocaleString(), cls(buyProfit)],
+    ['Sell side profit', Math.round(sellProfit).toLocaleString(), cls(sellProfit)],
   ];
   $('cards').innerHTML = cards.map(([k,v,c]) =>
     `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
@@ -1455,6 +1464,7 @@ function renderTrades(trades, stratMode){
         <td>${capital}</td>
         <td>${t.entry_t.slice(0, 16).replace('T', ' ')}</td>
         <td>${t.entry_px}</td>
+        <td>${t.wt_val != null ? t.wt_val : '—'}</td> <!-- ✅ NEW COLUMN -->
         <td>${t.exit_t.slice(0, 16).replace('T', ' ')}</td>
         <td>${t.exit_px}</td>
         <td>${qty}</td>
@@ -1492,7 +1502,7 @@ function renderTrades(trades, stratMode){
       }).join('');
       detailRow = `
         <tr class="detailRow" data-for="${i}" style="display:${isExpanded ? '' : 'none'}">
-          <td colspan="${isMulti ? 14 : 13}"
+          <td colspan="${isMulti ? 15 : 14}" <!-- ✅ Increment colspan by 1 for the new column -->
               style="text-align:left;padding:8px 16px 8px 40px;
                      background:#0f1620;color:var(--muted);font-size:11px;
                      white-space:normal;border-left:3px solid var(--accent)">
@@ -1525,6 +1535,7 @@ function renderTrades(trades, stratMode){
         ${th('capital_used', 'Capital Used')}
         ${th('entry_t', 'Entry time')}
         ${th('entry_px', 'Avg entry')}
+        ${th('wt_val', 'Valid WT Val')} <!-- ✅ NEW COLUMN -->
         ${th('exit_t', 'Exit time')}
         ${th('exit_px', 'Exit px')}
         ${th('total_qty', 'Qty')}
@@ -2108,6 +2119,142 @@ function renderBatchSummary(){
   ];
   $('batchSummary').innerHTML = cards.map(([k,v,c]) =>
     `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+}
+
+/* ============================ WT ANALYTICS ============================ */
+function renderWTAnalytics(trades) {
+  const wrap = $('wtAnalyticsWrap');
+  if (!trades || !trades.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  const wtTrades = trades.filter(t => t.key === 'wt' && t.wt_val != null && !isNaN(t.wt_val));
+  if (!wtTrades.length) {
+    wrap.innerHTML = '<div class="empty" style="padding:20px">No WT trades with valid WT Val found to analyze.</div>';
+    return;
+  }
+
+  // ✅ NEW: Initialize Macro Bins (0 to Minus, 0 to Plus)
+  const macroBins = [
+    { min: -Infinity, max: 0, label: '0 to Minus Full Range (< 0)' },
+    { min: 0, max: Infinity, label: '0 to Plus Full Range (>= 0)' }
+  ];
+
+  // ✅ NEW: Initialize Detail Bins
+  const detailBins = [
+    { min: -Infinity, max: -40, label: '< -40' },
+    { min: -40, max: -20, label: '-40 to -20' },
+    { min: -20, max: -10, label: '-20 to -10' },
+    { min: -10, max: 0, label: '-10 to 0' },
+    { min: 0, max: 10, label: '0 to 10' },
+    { min: 10, max: 20, label: '10 to 20' },
+    { min: 20, max: 40, label: '20 to 40' },
+    { min: 40, max: Infinity, label: '> 40' }
+  ];
+
+  // Helper to initialize stats
+  const initStats = (arr) => arr.forEach(b => {
+    b.count = 0; b.wins = 0; b.pnl = 0; 
+    b.profit = 0; b.loss = 0; b.longPnl = 0; b.shortPnl = 0;
+  });
+  
+  initStats(macroBins);
+  initStats(detailBins);
+
+  // Helper to populate stats
+  const updateBins = (arr, val, t) => {
+    let b = arr.find(x => val >= x.min && val < x.max);
+    if (!b) b = arr[arr.length - 1];
+    b.count++;
+    if (t.pnl > 0) { b.wins++; b.profit += t.pnl; } 
+    else if (t.pnl < 0) { b.loss += t.pnl; }
+    b.pnl += t.pnl;
+    if (t.side === 'long') b.longPnl += t.pnl;
+    else b.shortPnl += t.pnl;
+  };
+
+  wtTrades.forEach(t => {
+    const val = Number(t.wt_val);
+    updateBins(macroBins, val, t);
+    updateBins(detailBins, val, t);
+  });
+
+  // ✅ FIX: Look for MAX pnl, not MIN. (current.pnl > prev.pnl)
+  let bestBin = detailBins.reduce((prev, current) => (current.pnl > prev.pnl && current.count > 0) ? current : prev, detailBins[0]);
+  if (bestBin.count === 0) bestBin = null;
+
+  // Build HTML
+  let html = `
+    <div class="chartCap">WT Value Profitability Analysis — find the most profitable WT zones</div>
+    <div style="background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; font-size:13px;">
+      <span style="color:var(--accent); font-weight:bold; text-transform:uppercase; letter-spacing:.05em;">Final Verdict:</span>
+  `;
+
+  if (bestBin) {
+    html += `
+      The most profitable WT range for this stock was <b>${bestBin.label}</b>, 
+      generating a net profit of <b class="${cls(bestBin.pnl)}">₹${Math.round(bestBin.pnl).toLocaleString()}</b> 
+      across ${bestBin.count} trades (${((bestBin.wins / bestBin.count) * 100).toFixed(1)}% win rate).
+    `;
+  } else {
+    html += `No profitable WT ranges found.`;
+  }
+
+  html += `
+    </div>
+    <div class="tblwrap">
+      <table class="tlog" style="width:100%">
+        <thead>
+          <tr>
+            <th style="text-align:left">WT Value Range</th>
+            <th>Trades</th>
+            <th>Win Rate</th>
+            <th>Total Net ₹</th>
+            <th class="buy">Profit ₹</th> <!-- ✅ NEW -->
+            <th class="sell">Loss ₹</th>   <!-- ✅ NEW -->
+            <th>Long P&L ₹</th>
+            <th>Short P&L ₹</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  // ✅ Helper to render a single row
+  const renderRow = (b, isBest) => {
+    if (b.count === 0) return '';
+    const wr = b.count ? ((b.wins / b.count) * 100).toFixed(1) : '—';
+    const rowStyle = isBest ? 'style="background:rgba(63,185,80,0.15);"' : '';
+    return `
+      <tr ${rowStyle}>
+        <td style="text-align:left"><b>${b.label}</b></td>
+        <td>${b.count}</td>
+        <td>${wr}%</td>
+        <td class="${cls(b.pnl)}">${b.pnl >= 0 ? '+' : ''}${Math.round(b.pnl).toLocaleString()}</td>
+        <td class="buy">+${Math.round(b.profit).toLocaleString()}</td> <!-- ✅ NEW -->
+        <td class="sell">${Math.round(b.loss).toLocaleString()}</td>   <!-- ✅ NEW -->
+        <td class="${cls(b.longPnl)}">${b.longPnl >= 0 ? '+' : ''}${Math.round(b.longPnl).toLocaleString()}</td>
+        <td class="${cls(b.shortPnl)}">${b.shortPnl >= 0 ? '+' : ''}${Math.round(b.shortPnl).toLocaleString()}</td>
+      </tr>
+    `;
+  };
+
+  // 1. Render Macro Bins
+  macroBins.forEach(b => {
+    html += renderRow(b, false);
+  });
+
+  // 2. Render Divider
+  html += `<tr><td colspan="8" style="background:var(--border); height:1px; padding:0;"></td></tr>`;
+
+  // 3. Render Detail Bins
+  detailBins.forEach(b => {
+    const isBest = b === bestBin && b.count > 0;
+    html += renderRow(b, isBest);
+  });
+
+  html += `</tbody></table></div>`;
+  wrap.innerHTML = html;
 }
 
 let rz;
