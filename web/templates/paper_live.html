@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paper Live — backtest logic on live candles</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2a313c;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff;
+    --good:#3fb950; --bad:#f85149; --warn:#d29922;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--fg);font:13px/1.45 -apple-system,
+       BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+
+  header{background:var(--panel);border-bottom:1px solid var(--border);
+         padding:0 16px;height:48px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+  header b{font-size:14px}
+  .pill{padding:3px 9px;border-radius:20px;background:var(--panel2);
+        border:1px solid var(--border);color:var(--muted);font-size:11px}
+  .pill.live{color:var(--good);border-color:var(--good)}
+  .pill.off{color:var(--muted)}
+  .spacer{flex:1}
+
+  main{flex:1;display:grid;grid-template-columns:300px 1fr;gap:14px;
+       padding:14px 16px 30px;overflow:hidden;min-height:0}
+  .side{overflow:auto;min-height:0}
+  .main{overflow:auto;min-height:0}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+        padding:11px 12px;margin-bottom:12px}
+  .card h3{margin:0 0 8px;font-size:10.5px;font-weight:700;letter-spacing:.07em;
+           text-transform:uppercase;color:var(--muted)}
+
+  .fld{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5px 0}
+  .fld label{font-size:12px;color:var(--muted);flex:1}
+  .fld input[type=number],.fld input[type=text],.fld select{
+      background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+      border-radius:5px;padding:5px 6px;font-size:12px;width:104px;outline:none}
+  .fld input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px}
+  .fld input:focus,.fld select:focus{border-color:var(--accent)}
+  textarea{width:100%;min-height:56px;background:var(--panel2);border:1px solid var(--border);
+           color:var(--fg);border-radius:5px;padding:6px;font-size:12px;
+           font-family:inherit;resize:vertical;outline:none}
+
+  button{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+         border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  button.danger{background:#8b2c25;border-color:#8b2c25;color:#fff}
+  button.good{background:#1b6b32;border-color:#1b6b32;color:#fff}
+  button:disabled{opacity:.5;cursor:default}
+  .btnRow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+  .btnRow button{width:100%}
+
+  .tblwrap{overflow:auto;border:1px solid var(--border);border-radius:7px;max-height:420px}
+  .health{border:1px solid var(--border);border-radius:8px;padding:7px 10px;margin:0 0 8px;font-size:11.5px}
+  .health.ok{border-color:rgba(63,185,80,.45);background:rgba(63,185,80,.05)}
+  .health.warn{border-color:rgba(210,153,34,.65);background:rgba(210,153,34,.07)}
+  .health.error{border-color:rgba(248,81,73,.7);background:rgba(248,81,73,.08)}
+  .health-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .health-ico{font-weight:700;font-size:13px}
+  .health.ok .health-ico{color:var(--good)} .health.warn .health-ico{color:var(--warn)} .health.error .health-ico{color:var(--bad)}
+  .health-tg{margin-left:auto;padding:2px 9px;font-size:10.5px}
+  .health-list{list-style:none;margin:6px 0 0;padding:0;max-height:190px;overflow:auto}
+  .health-list li{padding:3px 0;border-top:1px dashed #263040;line-height:1.35}
+  .health-list li .hi{display:inline-block;width:18px}
+  .health-list li.error .hi{color:var(--bad)} .health-list li.warn .hi{color:var(--warn)}
+  .health-list li.info{color:var(--muted)}
+  .health-list .sym{font-weight:700;margin-right:6px}
+  .recent{margin-top:6px;border-top:1px solid var(--border);padding-top:5px}
+  .recent-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .recent-list{max-height:230px}
+  .recent-list li .rt{display:inline-block;min-width:60px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .recent-list li.ok .hi{color:var(--good)}
+  .recent-list li.info{color:inherit}
+  .recent-list li.info .hi{color:var(--muted)}
+  .recent-list li .new{display:inline-block;margin-left:6px;padding:0 5px;border-radius:8px;font-size:9.5px;font-weight:700;color:#0d1117;background:var(--warn)}
+  .recent-list li .why{display:block;margin-left:84px;font-size:10.5px}
+  .recent-list li .why.bad{color:var(--bad)} .recent-list li .why.warn{color:var(--warn)}
+  .hb{display:inline-block;margin-top:2px;padding:0 5px;border-radius:8px;font-size:10px;line-height:1.35;font-weight:600;cursor:help}
+  .hb.ok{color:var(--good);border:1px solid rgba(63,185,80,.45)}
+  .hb.info{color:var(--muted);border:1px solid var(--border)}
+  .hb.warn{color:var(--warn);border:1px solid rgba(210,153,34,.65)}
+  .hb.error{color:var(--bad);border:1px solid rgba(248,81,73,.7)}
+  .mon-tbl tr.h-error td:first-child{box-shadow:inset 3px 0 0 var(--bad)}
+  .mon-tbl tr.h-warn td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+  .mon-tbl th:nth-child(1),.mon-tbl td:nth-child(1){position:sticky;left:0;min-width:92px;max-width:92px;z-index:2;background:#141820}
+  .mon-tbl th:nth-child(2),.mon-tbl td:nth-child(2){position:sticky;left:92px;min-width:78px;max-width:78px;z-index:2;background:#141820}
+  .mon-tbl th:nth-child(3),.mon-tbl td:nth-child(3){position:sticky;left:170px;min-width:76px;max-width:76px;z-index:2;background:#141820}
+  .mon-tbl th:nth-child(4),.mon-tbl td:nth-child(4){position:sticky;left:246px;min-width:118px;max-width:118px;z-index:2;background:#141820;border-right:2px solid #2a3342}
+  .mon-tbl thead th:nth-child(-n+4){z-index:4;background:#181d27}
+  .dash{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:10px}
+  .dash-card{background:#12161f;border:1px solid var(--border);border-radius:7px;padding:8px 10px}
+  .dash-lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .dash-val{font-size:15px;font-weight:700;margin-top:2px}
+  table{border-collapse:collapse;width:100%;font-size:11.5px;
+        font-variant-numeric:tabular-nums}
+  th,td{padding:6px 8px;text-align:right;white-space:nowrap;
+        border-bottom:1px solid var(--border)}
+  th{background:var(--panel2);color:var(--muted);font-size:9.5px;font-weight:700;
+     letter-spacing:.05em;text-transform:uppercase;position:sticky;top:0;z-index:1}
+  td.l,th.l{text-align:left}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:#182231}
+  .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .muted{color:var(--muted)}
+
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;
+       font-size:11.5px;color:var(--muted)}
+  .bar .kv{background:var(--panel2);border:1px solid var(--border);border-radius:20px;
+           padding:3px 10px}
+  .bar .kv b{color:var(--fg)}
+
+  #msg{font-size:12px;margin-top:8px;min-height:17px;color:var(--muted)}
+  #msg.ok{color:var(--good)} #msg.err{color:var(--bad)}
+
+  .runStrip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    border:1px solid var(--border);border-radius:7px;padding:8px 12px;margin-bottom:10px;
+    background:var(--panel2);font-size:12px}
+  .runStrip b{font-size:13px;letter-spacing:.3px}
+  .runStrip .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;background:var(--muted)}
+  .runStrip.on{border-color:#2ea043;background:rgba(46,160,67,.10)}
+  .runStrip.on .dot{background:#3fb950;box-shadow:0 0 0 0 rgba(63,185,80,.7);
+    animation:pulse 1.6s infinite}
+  .runStrip.busy{border-color:#d29922;background:rgba(210,153,34,.10)}
+  .runStrip.busy .dot{background:#e3b341;animation:spin 1s linear infinite;
+    border-radius:3px}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(63,185,80,.6)}
+    70%{box-shadow:0 0 0 8px rgba(63,185,80,0)}100%{box-shadow:0 0 0 0 rgba(63,185,80,0)}}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .card > h3{cursor:pointer;user-select:none}
+  .card > h3::after{content:'▾';float:right;opacity:.5;font-size:11px;transition:transform .15s}
+  .card.collapsed > h3::after{transform:rotate(-90deg)}
+  .card.collapsed > *:not(h3){display:none !important}
+  .verdict{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+           background:var(--panel2);border:1px solid var(--border);border-radius:7px;
+           padding:10px 12px;margin-bottom:10px}
+  .verdict b{font-size:14px}
+  .chip{background:var(--panel2);border:1px solid var(--border);border-radius:20px;
+        padding:3px 10px;font-size:11px;color:var(--muted)}
+  .doc ul{margin:6px 0 0 16px;padding:0;color:var(--muted);font-size:12px}
+  .doc li{margin:3px 0}
+  .doc code{background:var(--panel2);border:1px solid var(--border);border-radius:4px;
+            padding:1px 5px;font-size:11px;color:var(--fg)}
+</style>
+</head>
+<body>
+
+<header>
+  <b id="brandName">Paper Live</b>
+  <span class="pill" id="runPill">stopped</span>
+  <span class="pill" id="modePill">same logic as Backtest · paper only · no broker</span>
+  <span class="pill" id="verPill" title="page build — if you do not see this, press Ctrl+Shift+R">build v18 · logic check + recent changes</span>
+  <div class="spacer"></div>
+  <span class="pill" id="clock">—</span>
+</header>
+
+<main>
+  <!-- ═══════════════ LEFT: SETTINGS ═══════════════ -->
+  <div class="side" id="leftPanel">
+
+    <div class="card" id="sheetCard" hidden>
+      <h3>Google Sheet output <span class="muted" style="font-weight:400;font-size:10.5px">dry run · no broker</span></h3>
+      <div class="muted" style="font-size:10.5px;margin-bottom:6px">Every signal, entry and exit goes to the
+        orders tab. Open positions go to the positions tab (refreshed about every minute). NSE/BSE shorts are
+        marked “needs F&amp;O futures”. A copy is also saved in <code id="soCsv">live_trade_orders.csv</code>.</div>
+      <label style="display:flex;align-items:center;gap:6px;margin:0 0 6px;cursor:pointer">
+        <input id="so_enabled" type="checkbox" style="width:auto;margin:0"> Write to Google Sheet</label>
+      <div class="fld"><label>Google Sheet name</label>
+        <input id="so_book" list="so_books" placeholder="e.g. paper trading"><datalist id="so_books"></datalist></div>
+      <div class="fld"><label>Orders + signals tab</label><input id="so_orders_tab" placeholder="live_orders"></div>
+      <div class="fld"><label>Open positions tab</label><input id="so_positions_tab" placeholder="live_positions"></div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button type="button" id="soSaveBtn" class="primary" style="flex:1">💾 Save sheet settings</button>
+        <button type="button" id="soTestBtn" style="flex:1">✎ Test write</button>
+      </div>
+      <div id="soMsg" class="muted" style="font-size:10.5px;margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Market</h3>
+
+      <div class="fld"><label>Market</label>
+        <select id="market" onchange="applyMarket(true)">
+          <option value="IN" selected>India (NSE/BSE)</option>
+          <option value="US">US (NASDAQ/NYSE)</option>
+          <option value="FX">Forex / Commodity</option>
+          <option value="CRYPTO">Crypto</option>
+        </select>
+      </div>
+      <div class="muted" id="mktHint" style="font-size:10px;line-height:1.45;margin:-4px 0 8px"></div>
+
+      <div class="fld"><label>Symbol source</label>
+        <select id="sym_source">
+          <option value="manual" selected>Manual list</option>
+          <option value="sheet">Google Sheet</option>
+        </select>
+      </div>
+
+      <div id="sheetBlock" style="display:none">
+        <div class="fld"><label>Book</label>
+          <select id="sheet_book">
+            <option value="paper trading" selected>paper trading</option>
+            <option value="Backtest scanner">Backtest scanner</option>
+            <option value="Stock Price Scraper">Stock Price Scraper</option>
+            <option value="scanner output">scanner output</option>
+          </select>
+        </div>
+        <div class="fld"><label>or type another book name</label>
+          <input id="sheet_book_other" placeholder="leave empty to use the book above">
+        </div>
+        <div class="fld"><label>Tab</label>
+          <select id="sheet_tab"><option value="">— press ⟳ Tabs —</option></select>
+        </div>
+        <div class="btnRow" style="margin:4px 0 6px">
+          <button id="sheetTabsBtn" type="button">⟳ Tabs</button>
+          <button id="sheetLoadBtn" type="button" class="primary">⬇ Load symbols</button>
+        </div>
+        <div class="muted" id="sheetMsg" style="font-size:10.5px;margin-bottom:6px"></div>
+      </div>
+
+      <div class="fld"><label>Quick add (comma or new line)</label>
+        <div style="display:flex;gap:6px">
+          <input id="symQuick" placeholder="HAL, RELIANCE, TATAMOTORS" style="flex:1">
+          <button id="symAddBtn" type="button">＋ Add</button>
+        </div>
+      </div>
+
+      <div class="fld"><label>Default exchange for new rows</label>
+        <select id="exchange">
+          <option value=".NS" selected>NSE</option>
+          <option value=".BO">BSE</option>
+          <option value="">US</option>
+          <option value="_FX">Forex</option>
+          <option value="_CRYPTO">Crypto</option>
+        </select>
+      </div>
+
+      <div class="fld"><label>Allocation</label>
+        <select id="alloc_mode">
+          <option value="equal" selected>Equal distribution</option>
+          <option value="manual">Manual override</option>
+        </select>
+      </div>
+      <div class="fld" id="allocTotalRow"><label id="allocTotalLbl">Total to split ₹</label>
+        <input id="alloc_total" type="number" value="10000" step="500">
+      </div>
+      <div class="muted" id="allocHint" style="font-size:10.5px;line-height:1.4;margin:-2px 0 8px"></div>
+
+      <div id="symTable" style="margin-bottom:8px"></div>
+
+      <div class="btnRow">
+        <button id="lockAllBtn" type="button">🔒 Lock all</button>
+        <button id="unlockAllBtn" type="button">🔓 Unlock all</button>
+        <button id="rmUnlockedBtn" type="button" class="danger">🗑 Remove unlocked</button>
+      </div>
+      <div class="muted" id="runSetMsg" style="font-size:10.5px;margin:2px 0 6px"></div>
+      <div class="btnRow" style="margin-top:6px">
+        <button id="saveAllocBtn" type="button" class="primary" style="flex:1">💾 Save allocations</button>
+      </div>
+      <div class="muted" id="allocSavedMsg" style="font-size:10px;margin:2px 0 6px"></div>
+      <div class="muted" style="font-size:10px;line-height:1.4;margin-bottom:6px">
+        🔒 keeps that row's ₹ as you add/remove rows — the rest is re-split from the total.<br>
+        💾 saves <b>only the 🔒 locked rows</b>; if nothing is locked it saves all of them.
+      </div>
+
+      <div class="fld"><label>Save / load this symbol set</label>
+        <div style="display:flex;gap:4px;margin-bottom:4px">
+          <input id="presetName" placeholder="name, e.g. WT 15m 20 stocks" style="flex:1">
+          <button id="presetSaveBtn" type="button">💾 Save</button>
+        </div>
+        <div style="display:flex;gap:4px">
+          <select id="presetList" style="flex:1"><option value="">— saved sets —</option></select>
+          <button id="presetLoadBtn" type="button">⬇ Load</button>
+          <button id="presetDelBtn" type="button" class="danger" style="padding:2px 8px">✕</button>
+        </div>
+        <div class="muted" id="presetMsg" style="font-size:10px;margin-top:3px"></div>
+      </div>
+
+      <textarea id="symbols" style="display:none">HAL, RELIANCE</textarea>
+      <div class="fld"><label>Timeframe</label>
+        <select id="interval">
+          <option value="5m">5m</option><option value="15m" selected>15m</option>
+          <option value="30m">30m</option><option value="60m">60m</option>
+          <option value="1h">1h</option><option value="1d">1d</option>
+        </select>
+      </div>
+      <div class="fld"><label>Lookback period</label>
+        <select id="period">
+          <option>5d</option><option>1mo</option><option selected>1mo</option>
+          <option>3mo</option><option>6mo</option><option>1y</option>
+        </select>
+      </div>
+      <div class="fld"><label>Poll every (min)</label>
+        <input id="poll_minutes" type="number" value="0" step="0.5" min="0"
+               title="0 = automatic from timeframe. Decimals are fine: 1.5 = 90 seconds">
+        <div class="muted" style="font-size:10px;margin-top:2px">
+          0 = auto · 5m→1 · 15m→1.5 · 30m→2.5 · 1h→4 · 1d→15 (minutes)
+        </div>
+      </div>
+      <div class="fld"><label title="Keeps the engine polling after the session ends. Entries still need fresh bars.">Poll when closed</label>
+        <input id="poll_when_market_closed" type="checkbox" checked>
+      </div>
+      <div class="muted" style="font-size:10px;line-height:1.4;margin:-4px 0 8px">
+        ☑ keeps scanning after the session ends — after hours it polls every 5 min so Yahoo isn't hammered.
+        Untick it to let the engine idle when the market is shut.
+      </div>
+      <div class="fld"><label title="Normally the engine refuses new entries when the last candle is stale. Tick this only for testing.">Allow stale entries</label>
+        <input id="allow_stale_entries" type="checkbox">
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>WaveTrend</h3>
+      <div class="fld"><label>n1</label><input id="wt_n1" type="number" value="15" step="1"></div>
+      <div class="fld"><label>n2</label><input id="wt_n2" type="number" value="27" step="1"></div>
+      <div class="fld"><label>Pending rule</label>
+        <select id="wt_pending_rule">
+          <option value="every" selected>every</option>
+          <option value="same_dir">same_dir</option>
+          <option value="any_dir">any_dir</option>
+        </select>
+      </div>
+      <div class="fld"><label>Buffer pts</label><input id="buffer_pts" type="number" value="0" step="0.05"></div>
+      <div class="fld"><label>Wait bars</label><input id="wait_bars" type="number" value="20" step="1"></div>
+      <div class="fld"><label>Heikin Ashi</label><input id="heikin_ashi" type="checkbox" checked></div>
+    </div>
+
+    <div class="card">
+      <h3>F&amp;O 15:15 filter</h3>
+      <div class="fld"><label>Filter</label>
+        <select id="fno_mode">
+          <option value="all" selected>All symbols</option>
+          <option value="sheet">From sheet</option>
+          <option value="none">Off</option>
+        </select>
+      </div>
+      <div class="fld" id="fnoBookRow"><label>F&amp;O book</label>
+        <input id="fno_book" type="text" value="Backtest scanner" style="width:120px">
+      </div>
+      <div class="fld" id="fnoTabRow"><label>F&amp;O tab</label>
+        <input id="fno_tab" type="text" value="F&amp;O_input" style="width:120px">
+      </div>
+      <div class="hint2" style="font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.35">
+        Drops candles that start at 15:15 IST or later on 5m / 15m / 30m / 1h — exactly like the
+        Backtest page. “All symbols” also hits US/forex symbols (same as Backtest).
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Entry / Exit</h3>
+      <div class="fld"><label id="targetLbl">Target %</label><input id="profit_target_pct" type="number" value="1" step="0.1"></div>
+      <div class="fld"><label>Entry fill</label>
+        <select id="entry_exec">
+          <option value="level" selected>At breakout level (stop order)</option>
+          <option value="market">Market if already past level</option>
+        </select>
+      </div>
+      <div class="row"><label><input id="allow_already_triggered" type="checkbox"> Allow already-triggered if within %</label></div>
+      <div class="row"><label>Max diff %</label><input id="already_triggered_max_pct" type="number" step="0.1" min="0" value="1"></div>
+      <div class="hint2" style="font-size:10.5px;color:var(--muted);margin:-2px 0 6px;line-height:1.35">
+        <b>At breakout level</b> = the backtest's assumption: an SL/stop order sits at
+        <i>level ± buffer</i>, so the fill is always the level.<br>
+        <b>Market if already past</b> = what a human does: price already above the level when the
+        scan sees it → buy at LTP (chases, so results drift from the backtest).
+      </div>
+      <div class="fld"><label>Target mode</label>
+        <select id="profit_target_mode">
+          <option value="pct" selected>% of entry</option>
+          <option value="amount">₹ amount</option>
+        </select>
+      </div>
+      <div class="fld"><label>Stop loss %</label><input id="stop_loss_pct" type="number" value="0.5" step="0.1"></div>
+      <div class="fld"><label>Exit on opposite</label><input id="exit_on_opposite" type="checkbox" checked></div>
+      <div class="fld"><label>Trailing SL</label><input id="trailing_enabled" type="checkbox"></div>
+      <div class="fld"><label>Trail start %</label><input id="trailing_start_pct" type="number" value="1" step="0.1"></div>
+      <div class="fld"><label>Trail step %</label><input id="trailing_step_pct" type="number" value="0.5" step="0.1"></div>
+      <div class="fld"><label>Tighten near target</label><input id="trailing_tighten_enabled" type="checkbox"></div>
+      <div class="fld"><label>Tighten at %</label><input id="trailing_tighten_at" type="number" value="9" step="0.5"></div>
+      <div class="fld"><label>Tighter step %</label><input id="trailing_tighten_step" type="number" value="1" step="0.5"></div>
+      <div class="fld"><label>Side</label>
+        <select id="side_mode">
+          <option value="both" selected>both</option>
+          <option value="long">long only</option>
+          <option value="short">short only</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Filters</h3>
+      <div class="fld"><label>WT extreme</label><input id="wt_filter_enabled" type="checkbox"></div>
+      <div class="fld"><label>WT buy max</label><input id="wt_buy_max" type="number" value="-40" step="1"></div>
+      <div class="fld"><label>WT sell min</label><input id="wt_sell_min" type="number" value="40" step="1"></div>
+      <div class="fld"><label>RSI direction</label><input id="rsi_filter_enabled" type="checkbox"></div>
+      <div class="fld"><label>RSI period</label><input id="rsi_period" type="number" value="14" step="1"></div>
+      <div class="fld"><label>Volume spike</label><input id="vol_filter_enabled" type="checkbox"></div>
+      <div class="fld"><label>Vol multiple</label><input id="vol_mult" type="number" value="1.5" step="0.1"></div>
+      <div class="fld"><label>Vol lookback</label><input id="vol_lookback" type="number" value="20" step="1"></div>
+      <div class="fld"><label>HTF trend</label><input id="htf_filter_enabled" type="checkbox"></div>
+    </div>
+
+    <div class="card">
+      <h3>Sizing &amp; costs</h3>
+      <div class="fld"><label>Size by</label>
+        <select id="sizing_mode">
+          <option value="fixed" selected>Fixed ₹ per trade</option>
+          <option value="qty">Fixed quantity</option>
+          <option value="pct">% of capital</option>
+        </select>
+      </div>
+      <div class="fld" id="amountRow"><label>Amount ₹ / trade</label><input id="position_amount" type="number" value="5000" step="500"></div>
+      <div class="fld" id="qtyRow"><label>Quantity</label><input id="fixed_qty" type="number" value="1" step="1"></div>
+      <div class="fld" id="pctRow"><label>Position %</label><input id="position_pct" type="number" value="100" step="5"></div>
+      <div class="fld"><label>Capital ₹</label><input id="capital" type="number" value="100000" step="10000"></div>
+      <div id="sizeBasis" style="margin:8px 0 10px;padding:9px 10px;border-radius:6px;
+           border:1px solid var(--accent,#4b8bf5);border-left:5px solid var(--accent,#4b8bf5);
+           background:rgba(75,139,245,.10);font-size:11.5px;line-height:1.5"></div>
+      <div class="fld"><label>Commission %</label><input id="commission_pct" type="number" value="0.05" step="0.01"></div>
+      <div class="fld"><label>Slippage %</label><input id="slippage_pct" type="number" value="0.02" step="0.01"></div>
+    </div>
+
+    <div class="card">
+      <h3>Control</h3>
+      <div class="btnRow">
+        <button id="startBtn" class="good">▶ Start</button>
+        <button id="stopBtn" class="danger">■ Stop</button>
+        <button id="scanBtn">⟳ Scan now</button>
+        <button id="verifyBtn" class="primary">🧪 Verify vs backtest</button>
+      </div>
+      <div class="btnRow" style="margin-bottom:6px">
+        <button id="applyBtn" class="good" style="flex:1">✔ Apply settings</button>
+      </div>
+      <div class="muted" id="dirtyMsg" style="font-size:10.5px;margin-bottom:6px">no unsaved changes</div>
+      <div class="btnRow" style="grid-template-columns:1fr">
+        <button id="resetBtn">🗑 Reset positions &amp; history</button>
+      </div>
+      <div id="msg"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ RIGHT: MONITOR ═══════════════ -->
+  <div class="main">
+
+    <div class="card">
+      <h3>Live monitor</h3>
+      <div class="runStrip" id="runStrip">
+        <span class="dot"></span>
+        <b id="runState">STOPPED</b>
+        <span class="muted" id="runDetail">press ▶ Start to begin polling</span>
+      </div>
+      <div class="health" id="healthBox" hidden>
+        <div class="health-head">
+          <span class="health-ico" id="healthIco">✓</span>
+          <b id="healthTitle">Logic check</b>
+          <span class="muted" id="healthSub"></span>
+          <button type="button" id="healthToggle" class="health-tg">details</button>
+        </div>
+        <ul class="health-list" id="healthList" hidden></ul>
+        <div class="recent" id="recentBox" hidden>
+          <div class="recent-head">
+            <b>Recent changes</b>
+            <span class="muted" id="recentSub"></span>
+            <button type="button" id="recentToggle" class="health-tg">all</button>
+          </div>
+          <ul class="health-list recent-list" id="recentList"></ul>
+        </div>
+      </div>
+      <div class="bar">
+        <span class="kv"><label style="cursor:pointer" title="untick to stop the automatic polling — the engine then only scans when you press ⟳ Scan now or ✔ Apply settings"><input type="checkbox" id="auto_poll" checked style="margin-right:3px">auto</label> <b id="pollInfo">—</b></span>
+        <span class="kv" id="nextKv">next scan in <b id="nextInfo">—</b></span>
+        <span class="kv"><label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;margin:0"><input id="ltpPollOn" type="checkbox" checked autocomplete="off" style="width:auto;margin:0"> LTP poll</label> <input id="ltpPollSec" type="number" min="3" step="1" value="15" style="width:46px;padding:1px 4px;font-size:11px">s <button id="fetchLtpBtn" type="button" style="padding:2px 7px;font-size:11px">↻ Fetch LTP</button></span>
+        <span class="kv">last scan <b id="lastScanInfo">—</b></span>
+        <span class="kv" id="scanKv" style="display:none;color:#e3b341">⟳ <b>scanning…</b></span>
+        <span class="kv">cycles <b id="cycInfo">0</b></span>
+        <span class="kv">market <b id="mktInfo">—</b></span>
+        <span class="kv">open P&amp;L <b id="openPnl">0</b></span>
+        <span class="kv">realized <b id="realPnl">0</b></span>
+        <span class="kv">sizing <b id="sizeInfo">—</b></span>
+        <span class="kv" id="feedKv" style="display:none">feed <b id="feedInfo">—</b></span>
+        <span class="kv" id="sheetKv" style="display:none" title="Google Sheet output (dry run)">sheet <b id="sheetInfo">—</b></span>
+        <span class="kv" id="hidKv" style="display:none" title="symbols from an older run that this run is not scanning — press “Reset positions &amp; history” to clear them">hidden <b id="hidInfo">0</b></span>
+        <span class="kv" id="errInfo" style="display:none;color:var(--bad)"></span>
+      </div>
+      <div class="dash" id="dashBar">
+        <div class="dash-card"><div class="dash-lbl">Open Positions</div><div class="dash-val" id="dOpenPos">0</div></div>
+        <div class="dash-card"><div class="dash-lbl">Closed Trades</div><div class="dash-val" id="dClosed">0</div></div>
+        <div class="dash-card"><div class="dash-lbl">Open P&amp;L</div><div class="dash-val" id="dOpenPnl">0</div></div>
+        <div class="dash-card"><div class="dash-lbl">Realized P&amp;L</div><div class="dash-val" id="dRealPnl">0</div></div>
+        <div class="dash-card"><div class="dash-lbl">Total P&amp;L</div><div class="dash-val" id="dTotPnl">0</div></div>
+      </div>
+      <div class="tblwrap">
+        <table class="mon-tbl">
+          <thead><tr>
+            <th class="l">Symbol</th><th>LTP</th><th>Trig Lvl</th><th class="l">Valid</th>
+            <th class="l" title="the timeframe this row's signal runs on (the Interval setting)">TF</th>
+            <th class="l">WT Action</th>
+            <th>Diff</th><th>Diff %</th>
+            <th class="l">Position</th><th>Qty</th><th class="l">Entry</th>
+            <th>Target</th><th>SL</th><th>Opp Lvl</th><th>Live P&amp;L</th><th>P&amp;L %</th>
+            <th>Risk ₹</th><th>Reward ₹</th><th>R:R</th><th>Realized</th><th>Total P&amp;L</th>
+            <th>Trades</th><th class="l">Last action</th><th class="l">Status</th><th class="l">Last closed bar</th>
+          </tr></thead>
+          <tbody id="rowBody">
+            <tr><td class="l muted" colspan="25">not started yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="verifyCard" hidden>
+      <h3>Engine check — Paper Live vs Backtest (same candles, same settings)</h3>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+        <span class="muted" style="font-size:11px">check which symbol</span>
+        <select id="verify_symbol" style="min-width:150px"></select>
+        <span class="muted" style="font-size:10.5px">(one symbol per run — it replays every candle of that symbol)</span>
+      </div>
+      <div class="verdict" id="verdict"></div>
+      <div class="tblwrap" id="verifyWrap" hidden>
+        <table>
+          <thead><tr>
+            <th>#</th><th class="l">Symbol</th><th class="l">Side</th>
+            <th class="l">Engine entry</th><th class="l">Backtest entry</th>
+            <th class="l">Engine exit</th><th class="l">Backtest exit</th>
+            <th>Engine P&amp;L</th><th>Backtest P&amp;L</th><th></th>
+          </tr></thead>
+          <tbody id="verifyBody"></tbody>
+        </table>
+      </div>
+      <div id="verifyMore" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h3 id="tradesTitle">Paper trades <span class="muted" style="font-weight:400;font-size:10.5px">closed only</span></h3>
+      <div class="muted" id="tradeHint" style="font-size:10.5px;margin:-2px 0 6px"></div>
+      <div class="tblwrap">
+        <table>
+          <thead><tr>
+            <th class="l">Exit time</th><th class="l">Symbol</th><th class="l">Side</th>
+            <th>Qty</th><th>Entry</th><th class="l">Entry time</th><th>Exit</th>
+            <th>P&amp;L ₹</th><th>%</th><th class="l">Reason</th>
+          </tr></thead>
+          <tbody id="tradeBody">
+            <tr><td class="l muted" colspan="10">no trades yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card doc">
+      <h3>What this page does (and what it does not)</h3>
+      <ul>
+        <li>Downloads OHLC from yfinance, <b>drops the still-forming candle</b>, runs the WaveTrend
+            detector and the entry/exit rules <b>by calling <code>backtest.py</code>'s own functions</b>
+            (<code>detect_wt_events</code>, <code>_apply_filters</code>, <code>_qty_for</code>,
+            <code>_target_px</code>, <code>_trailing_sl_price</code>).</li>
+        <li>Entry = breakout level <b>± buffer</b> plus slippage — never the live LTP, so it cannot chase.
+            The moment the <b>live price</b> breaks a pending level (inside the running candle), the trade
+            opens — you do not have to wait for the candle to close. This is the Scanner page's
+            <i>"Buy Triggered @ …"</i> moment.</li>
+        <li><b>Logic check</b> (banner under the run strip, badge under every symbol, and the
+            <b>Status</b> column) re-checks the engine on every refresh: prices mixed up between
+            symbols, a level / entry far from the LTP, target / stop / opposite level crossed while
+            the position is still open, a broken pending level with no trade, stale or slow feeds,
+            scans slower than the candle, a stuck loop, and positions on symbols you removed.
+            A problem that does not clear by itself turns red.</li>
+        <li><b>WT Action</b> column = the Scanner page's wording: <i>Buy Pending (BO &gt; level)</i>,
+            <i>Buy Triggered @ price</i>, <i>Sell Pending (BO &lt; level)</i>, <i>Buy Timed Out</i>.
+            Plus <b>Trig Lvl</b>, <b>Valid</b> (which closed candle gave the signal), <b>Diff / Diff %</b>
+            (how far the live price is from the level), WT1 / WT2 and RSI.</li>
+        <li>Exits in backtest order: <b>stop → trailing → target → opposite signal</b>, with commission
+            on both legs.</li>
+        <li><b>Paper only.</b> No Zerodha call, no <code>paper_trades.json</code>, no Auto-Trader state.
+            Its own files: <code>data/paper_live_state.json</code> and
+            <code>data/paper_live_trades.json</code>.</li>
+        <li>Two honest differences from a backtest: exits are checked on the <b>live price</b> (not the
+            bar's high/low, we have no ticks), and the fill happens on the first tick <b>after</b> the
+            breakout candle closed.</li>
+        <li>Press <b>🧪 Verify vs backtest</b> to replay the same candles through both engines and diff
+            every trade. It should say 100% match.</li>
+        <li><b>Runs the "Simple (single position)" strategy mode only.</b> Same-side averaging /
+            alternate flipping, the martingale / incremental multiplier and the recovery-cycle overlay
+            are not on this page yet — if your profitable backtest used them, tell me and I will add
+            them before you run live.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<script>
+var $ = function(id){ return document.getElementById(id); };
+var POLL_MS = 2500, timer = null, RUNNING = false;   /* status refresh, not market polling */
+
+function num(v, d){
+  var n = Number(v);
+  if (!isFinite(n)) return '—';
+  return n.toFixed(d === undefined ? 2 : d);
+}
+function pxFmt(v, sym){
+  var n = Number(v);
+  if (!isFinite(n)) return '—';
+  var isFx = sym && (String(sym).endsWith('=X') || String(sym).endsWith('_FX'));
+  return n.toFixed(isFx ? 5 : 2);
+}
+function money(v){
+  var n = Number(v || 0);
+  return (n > 0 ? '+' : '') + n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+function esc(s){
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escA(s){ return esc(s).replace(/"/g, '&quot;'); }
+function setMsg(t, kind){
+  var el = $('msg');
+  el.textContent = t || '';
+  el.className = kind || '';
+}
+
+/* ---------- config ---------- */
+var NUM_FIELDS = ['wt_n1','wt_n2','buffer_pts','wait_bars','profit_target_pct','stop_loss_pct',
+  'trailing_start_pct','trailing_step_pct','trailing_tighten_at','trailing_tighten_step',
+  'wt_buy_max','wt_sell_min','rsi_period','vol_mult','vol_lookback',
+  'position_amount','fixed_qty','position_pct','capital','commission_pct','slippage_pct'];
+var BOOL_FIELDS = ['heikin_ashi','exit_on_opposite','trailing_enabled','trailing_tighten_enabled',
+  'wt_filter_enabled','rsi_filter_enabled','vol_filter_enabled','htf_filter_enabled',
+  'poll_when_market_closed','allow_stale_entries','allow_already_triggered'];
+var STR_FIELDS = ['market','exchange','interval','period','wt_pending_rule','side_mode','fno_mode',
+  'sizing_mode','profit_target_mode','entry_exec'];
+
+/* the Market dropdown decides the ticker suffix AND which clock the engine uses to
+   decide "market closed" — the old NSE-only check idled the whole US / forex session */
+var MARKET_INFO = {
+  IN:     { exch: '.NS',     hint: 'Indian tickers get <b>.NS</b> — type <b>HAL</b>, not HAL.NS. Session 09:15–15:30 IST, Mon–Fri.' },
+  US:     { exch: '',        hint: 'US tickers need <b>no suffix</b> — type <b>AAPL</b>, MSFT. Session 09:30–16:00 New York, Mon–Fri.' },
+  FX:     { exch: '_FX',     hint: 'Forex / commodity get <b>=X</b> — type <b>EURUSD</b>, XAUUSD. Session Sun 22:00 – Fri 22:00 UTC.' },
+  CRYPTO: { exch: '_CRYPTO', hint: 'Crypto gets <b>-USD</b> — type <b>BTC</b>. Session 24 × 7.' }
+};
+function applyMarket(setExch){
+  var sel = $('market');
+  var mk = sel ? sel.value : 'IN';
+  var info = MARKET_INFO[mk] || MARKET_INFO.IN;
+  if (setExch && $('exchange')) $('exchange').value = info.exch;
+  var el = $('mktHint');
+  if (el) el.innerHTML = info.hint +
+    '<br>Applies to <b>new</b> rows — rows already in the table keep the suffix they were added with.';
+}
+function marketTag(d){
+  var lbl = d.market_label || 'market';
+  if (d.market_open) return ' · ' + lbl + ' open';
+  return ' · ' + lbl + ' closed' +
+    (d.poll_when_market_closed ? ' — still scanning' : ' — idle (tick “Poll when closed”)');
+}
+var TXT_FIELDS = ['symbols','fno_book','fno_tab'];
+
+/* 🔒 rows are the working set: they are what runs, what gets scanned and what
+   gets saved. With no lock at all, the whole table is the working set. */
+function runRows(){
+  var locked = SYMS.filter(function(r){ return r.locked; });
+  return locked.length ? locked : SYMS;
+}
+function syncRunSetMsg(){
+  var el = $('runSetMsg');
+  if (!el) return;
+  var rws = runRows();
+  if (!SYMS.length){ el.innerHTML = '<span class="warn">no symbols</span>'; return; }
+  var nLock = SYMS.filter(function(r){ return r.locked; }).length;
+  if (nLock === 0)
+    el.innerHTML = '▶ engine scans <b>all ' + SYMS.length + '</b> (nothing is 🔒 — lock rows to narrow it)';
+  else if (rws.length === SYMS.length)
+    el.innerHTML = '▶ engine scans <b>all ' + SYMS.length + '</b> (every row is 🔒)';
+  else
+    el.innerHTML = '▶ engine scans <b>' + rws.length + ' of ' + SYMS.length +
+                   '</b> — only the 🔒 rows · ' + (SYMS.length - rws.length) + ' unlocked row(s) are ignored';
+}
+
+function readCfg(){
+  var c = {};
+  TXT_FIELDS.forEach(function(k){ c[k] = $(k).value; });
+  STR_FIELDS.forEach(function(k){ c[k] = $(k).value; });
+  NUM_FIELDS.forEach(function(k){ c[k] = $(k).value; });
+  BOOL_FIELDS.forEach(function(k){ c[k] = $(k).checked; });
+  var mins = Number($('poll_minutes').value);
+  c.poll_seconds = (isFinite(mins) && mins > 0) ? Math.round(mins * 60) : 0;
+  if ($('auto_poll')) c.auto_poll = !!$('auto_poll').checked;
+  var rws = runRows();
+  c.symbols = rws.map(function(r){ return r.sym; }).join(', ');   /* 🔒 rows win over the box */
+  c.alloc = rws.map(function(r){
+    return { symbol: r.sym, amount: r.amount, capital: r.capital };
+  });
+  c.symbol_exch = {};
+  rws.forEach(function(r){ if (r.exch) c.symbol_exch[r.sym] = r.exch; });
+  return c;
+}
+function writeCfg(c){
+  if (!c) return;
+  TXT_FIELDS.concat(STR_FIELDS).forEach(function(k){
+    if (c[k] !== undefined && $(k)) $(k).value = c[k];
+  });
+  NUM_FIELDS.forEach(function(k){ if (c[k] !== undefined && $(k)) $(k).value = c[k]; });
+  BOOL_FIELDS.forEach(function(k){ if (c[k] !== undefined && $(k)) $(k).checked = !!c[k]; });
+  if (c.poll_seconds !== undefined && $('poll_minutes'))
+    $('poll_minutes').value = (Number(c.poll_seconds) / 60) || 0;
+  if (SYMS.length) $('symbols').value = SYMS.map(function(r){ return r.sym; }).join(', ');
+  syncSizing();   /* keep the visible sizing/target inputs in step with the mode */
+  syncFno();
+  applyMarket(false);   /* refresh the suffix hint without clobbering a restored exchange */
+}
+
+/* ---------- actions ---------- */
+/* every request gets a hard timeout: the built-in dev server is single threaded,
+   so one stalled keep-alive connection can otherwise leave a button spinning forever */
+function fetchT(url, opts, ms){
+  opts = opts || {};
+  ms = ms || 15000;
+  var ctl = null, timer = null;
+  try {
+    ctl = new AbortController();
+    opts.signal = ctl.signal;
+    timer = setTimeout(function(){ try { ctl.abort(); } catch(e){} }, ms);
+  } catch (e) { /* very old browser: no timeout, still works */ }
+  function done(p){
+    if (timer) clearTimeout(timer);
+    return p;
+  }
+  return done(fetch(url, opts)).then(function(r){ return r.json(); },
+    function(e){ throw (e && e.name === 'AbortError') ? 'server busy (no answer in ' + Math.round(ms/1000) + 's)' : e; });
+}
+
+function post(url, body){
+  return fetchT(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  }, 30000);
+}
+
+/* the settings the engine was last given (▶ Start / ✔ Apply / auto-poll tick) — a page
+   refresh shows these, not the defaults */
+var CFG_RESTORED = false, BOOT_CFG_SYNCED = false, ENGINE_TF = '';
+function saveCfgLocal(cfg){
+  try { localStorage.setItem('paper_live_cfg', JSON.stringify(cfg)); } catch(e){}
+}
+
+function start(){
+  setMsg('starting…');
+  $('startBtn').disabled = true;
+  var cfg;
+  try { cfg = readCfg(); }
+  catch (e){ $('startBtn').disabled = false; setMsg('cannot read the panel: ' + e, 'err'); return; }
+  saveCfgLocal(cfg);
+
+  /* safety net: whatever happens to the request, confirm through /status */
+  setTimeout(function(){ poll(); }, 1200);
+  var t1 = setTimeout(function(){ if (!RUNNING) setMsg('still starting — checking the engine…', 'warn'); poll(); }, 6000);
+  var t2 = setTimeout(function(){
+    if (!RUNNING) setMsg('start did not take. Press ■ Stop, then ▶ Start again. (see the strip)', 'err');
+    poll();
+  }, 20000);
+
+  post('/api/paper-live/start', cfg).then(function(d){
+    $('startBtn').disabled = false;
+    clearTimeout(t1); clearTimeout(t2);
+    if (!d.ok){ setMsg(d.error || 'start failed', 'err'); return; }
+    RUNNING = true;
+    try { syncVerifySymbols(); } catch (e) {}
+    $('runPill').textContent = 'running · ' + d.symbols.length + ' symbols';
+    $('runPill').className = 'pill live';
+    $('runStrip').className = 'runStrip on';
+    $('runState').textContent = 'RUNNING';
+    $('runDetail').textContent = 'started · first scan is running now…';
+    setMsg('started · polling every ' + (d.poll_seconds / 60) + ' min', 'ok');
+    startTimer();
+    poll();
+  }).catch(function(e){
+    $('startBtn').disabled = false;
+    clearTimeout(t1); clearTimeout(t2);
+    setMsg('start failed: ' + e, 'err');
+  });
+}
+
+function stop(){
+  post('/api/paper-live/stop', {}).then(function(){
+    RUNNING = false;
+    $('runPill').textContent = 'stopped';
+    $('runPill').className = 'pill off';
+    $('runStrip').className = 'runStrip';
+    $('runState').textContent = 'STOPPED';
+    $('runDetail').textContent = 'stopped — press ▶ Start to resume';
+    setMsg('stopped', 'ok');
+    clearTimer();
+    poll();
+  });
+}
+
+function scanNow(){
+  setMsg('scanning…');
+  $('scanBtn').disabled = true;
+  $('runStrip').className = 'runStrip busy';
+  $('runState').textContent = 'SCANNING…';
+  $('runDetail').textContent = 'manual scan of ' + SYMS.length + ' symbol(s) — downloading candles';
+  if (!timer) startTimer();
+  post('/api/paper-live/scan', readCfg()).then(function(d){
+    $('scanBtn').disabled = false;
+    if (!d.ok){ setMsg(d.error || 'scan failed', 'err'); poll(); return; }
+    setMsg('scan done · ' + d.symbols + ' symbols in ' + (d.ms / 1000).toFixed(1) + 's', 'ok');
+    poll();
+  }).catch(function(e){
+    $('scanBtn').disabled = false;
+    setMsg('scan failed: ' + e, 'err');
+    poll();
+  });
+}
+
+function verify(){
+  setMsg('running engine check…');
+  $('verifyBtn').disabled = true;
+  $('verifyCard').hidden = false;
+  $('verdict').innerHTML = '<span class="muted">downloading candles and replaying both engines…</span>';
+  var vcfg = readCfg();
+  vcfg.verify_symbol = ($('verify_symbol') ? $('verify_symbol').value : '') || '';
+  post('/api/paper-live/verify', vcfg).then(function(d){
+    $('verifyBtn').disabled = false;
+    if (!d.ok){
+      $('verdict').innerHTML = '<b class="bad">✕ ' + esc(d.error || 'failed') + '</b>';
+      setMsg(d.error || 'verify failed', 'err');
+      return;
+    }
+    var okCls = d.matched ? 'good' : 'bad';
+    $('verdict').innerHTML =
+      '<b class="' + okCls + '">' + (d.matched ? '✅ 100% MATCH' : '❌ DIFFERENCES FOUND') + '</b>' +
+      '<span class="chip">symbol <b>' + esc(d.symbol) + '</b></span>' +
+      '<span class="chip">bars <b>' + d.bars + '</b></span>' +
+      '<span class="chip">engine <b>' + d.engine.trades + '</b> trades · net <b>' + money(d.engine.net) + '</b></span>' +
+      '<span class="chip">backtest <b>' + d.backtest.trades + '</b> trades · net <b>' + money(d.backtest.net) + '</b></span>' +
+      '<span class="chip muted">' + esc(d.from) + ' → ' + esc(d.to) + '</span>';
+
+    VERIFY_DATA = d;
+    renderVerifyTrades(false);
+    if (d.matched){
+      setMsg('engine logic == backtest logic ✅ (every trade identical)', 'ok');
+    } else {
+      setMsg('differences found — the ✕ rows show them', 'err');
+    }
+  }).catch(function(e){
+    $('verifyBtn').disabled = false;
+    $('verdict').innerHTML = '<b class="bad">✕ ' + esc(String(e)) + '</b>';
+    setMsg('verify failed', 'err');
+  });
+}
+
+var VERIFY_DATA = null, VERIFY_ALL = false;
+
+function shortT(v){
+  if (!v) return '—';
+  var t = String(v).replace('T', ' ');
+  return t.length >= 16 ? t.slice(5, 16) : t;          /* MM-DD HH:MM */
+}
+function f2(v){ return (isNaN(Number(v)) ? '—' : Number(v).toFixed(2)); }
+function sameTrade(a, b){
+  function k(t){
+    if (!t) return '';
+    return [t.side, String(t.entry_t || '').slice(0, 16), String(t.exit_t || '').slice(0, 16),
+            f2(t.entry), f2(t.exit), f2(t.pnl)].join('|');
+  }
+  return k(a) === k(b);
+}
+function cellT(t, key){
+  if (!t) return '<span class="muted">—</span>';
+  var tm = shortT(t[key + '_t']);
+  var px = f2(t[key]);
+  return '<span class="muted">' + esc(tm) + '</span> @ <b>' + px + '</b>';
+}
+function renderVerifyTrades(all){
+  if (!VERIFY_DATA) return;
+  var d = VERIFY_DATA;
+  var e = d.engine_trade_list || [], b = d.backtest_trade_list || [];
+  var n = Math.max(e.length, b.length);
+  var limit = all ? n : Math.min(n, 30);
+  var rows = [];
+  for (var i = 0; i < limit; i++){
+    var ea = e[i], eb = b[i];
+    var ok = sameTrade(ea, eb);
+    var side = (ea && ea.side) || (eb && eb.side) || '—';
+    rows.push('<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td class="l"><b>' + esc((ea && ea.symbol) || (eb && eb.symbol) || d.symbol || '') + '</b></td>' +
+      '<td class="l ' + (side === 'long' ? 'good' : 'bad') + '">' + esc(String(side).toUpperCase()) + '</td>' +
+      '<td class="l">' + cellT(ea, 'entry') + '</td>' +
+      '<td class="l">' + cellT(eb, 'entry') + '</td>' +
+      '<td class="l">' + cellT(ea, 'exit') + '</td>' +
+      '<td class="l">' + cellT(eb, 'exit') + '</td>' +
+      '<td class="' + (ea && ea.pnl > 0 ? 'good' : (ea && ea.pnl < 0 ? 'bad' : '')) + '">' +
+        (ea ? money(ea.pnl) : '—') + '</td>' +
+      '<td class="' + (eb && eb.pnl > 0 ? 'good' : (eb && eb.pnl < 0 ? 'bad' : '')) + '">' +
+        (eb ? money(eb.pnl) : '—') + '</td>' +
+      '<td>' + (ok ? '<span class="good">✓</span>' : '<span class="bad">✕</span>') + '</td>' +
+    '</tr>');
+  }
+  $('verifyBody').innerHTML = rows.length ? rows.join('')
+    : '<tr><td class="l muted" colspan="10">no trades in this window</td></tr>';
+  $('verifyWrap').hidden = false;
+  var more = n > 30
+    ? '<button type="button" id="verifyMoreBtn">' + (all ? 'show first 30' : 'show all ' + n + ' trades') + '</button>'
+    : '';
+  $('verifyMore').innerHTML = '<span class="muted" style="font-size:10.5px">showing ' + limit + ' of ' + n +
+    ' trades · ✓ = identical entry/exit time, price and P&L</span> ' + more;
+  if ($('verifyMoreBtn')) $('verifyMoreBtn').onclick = function(){
+    VERIFY_ALL = !all; renderVerifyTrades(VERIFY_ALL);
+  };
+}
+
+function resetAll(){
+  if (!confirm('Clear all paper positions and the trade history?')) return;
+  post('/api/paper-live/reset', {}).then(function(){
+    setMsg('cleared', 'ok');
+    poll();
+  });
+}
+
+/* ---------- polling ---------- */
+function startTimer(){
+  if (timer) clearInterval(timer);
+  timer = setInterval(poll, POLL_MS);
+}
+function clearTimer(){
+  if (timer){ clearInterval(timer); timer = null; }
+}
+
+function updateRunStrip(d){
+  var el = $('runStrip'), state = $('runState'), det = $('runDetail');
+  if (!el) return;
+  var busy = !!d.scanning;
+  if (d.stopping){
+    el.className = 'runStrip busy';
+    state.textContent = 'STOPPING…';
+    det.textContent = busy
+      ? 'scan is aborting at the next symbol — one moment'
+      : 'finishing the current cycle…';
+    return;
+  }
+  el.className = 'runStrip' + (busy ? ' busy' : (d.running ? ' on' : ''));
+  if (busy){
+    state.textContent = 'SCANNING…';
+    det.textContent = (d.last_scan_kind === 'manual' ? 'manual scan' : 'poll cycle') +
+      ' · ' + (d.last_scan_at || '') + (d.last_scan_ms ? ' · previous took ' +
+      (d.last_scan_ms / 1000).toFixed(1) + 's' : '');
+  } else if (d.running){
+    state.textContent = 'RUNNING';
+    det.textContent = 'polling every ' + (Number(d.poll_seconds) / 60).toFixed(2).replace(/\.00$/, '') +
+      ' min · last scan ' + (d.last_scan_at || '—') + ' (' + (d.last_scan_ms / 1000).toFixed(1) +
+      's, ' + (d.last_scan_n || 0) + ' symbols' + (scanSplit(d) ? ': ' + scanSplit(d) : '') +
+      ') · next in ' + d.next_scan_in + 's' + marketTag(d);
+  } else {
+    state.textContent = 'STOPPED';
+    det.textContent = d.last_scan_at
+      ? ('last scan ' + d.last_scan_at + ' (' + (d.last_scan_ms / 1000).toFixed(1) + 's, ' +
+         (d.last_scan_n || 0) + ' symbols) — press ▶ Start to resume')
+      : 'press ▶ Start to begin polling';
+  }
+}
+
+function scanSplit(d){
+  var p = d.scan_parts || {};
+  if (!p.total) return '';
+  var dlc = (Number(p.candles) || 0) + (Number(p.candles_wait) || 0);
+  var dlp = (Number(p.prices) || 0) + (Number(p.prices_wait) || 0);
+  var t = 'Yahoo candles ' + dlc.toFixed(0) + 's · live prices ' + dlp.toFixed(0) +
+          's · strategy maths ' + (Number(p.maths) || 0).toFixed(0) + 's';
+  if (p.slowest && p.slowest.length)
+    t += ' (slowest: ' + p.slowest.map(function(x){ return x[0] + ' ' + x[1] + 's'; }).join(', ') + ')';
+  return t;
+}
+
+function poll(){
+  var answered = false;
+  fetchT('/api/paper-live/status?ltp_poll=' + ltpPollParam(), {}, 8000).then(function(d){
+    answered = true;
+    if (!d.ok) return;
+    STATUS_FAILS = 0;
+
+    RUNNING = !!d.running;
+    ENGINE_TF = (d.config && d.config.interval) || '';
+    if (!BOOT_CFG_SYNCED){
+      BOOT_CFG_SYNCED = true;
+      /* page (re)loaded while the engine runs: show the settings it is really using */
+      if (RUNNING && d.config && d.config.interval){
+        var ec = {};
+        Object.keys(d.config).forEach(function(k){
+          if (d.config[k] !== null && d.config[k] !== undefined) ec[k] = d.config[k];
+        });
+        writeCfg(ec);
+        saveCfgLocal(ec);
+        CFG_RESTORED = true;
+        clearDirty();
+      }
+    }
+    $('runPill').textContent = RUNNING ? 'running' : 'stopped';
+    $('runPill').className = 'pill ' + (RUNNING ? 'live' : 'off');
+    $('pollInfo').textContent = (Number(d.poll_seconds) / 60).toFixed(2).replace(/\.00$/, '') + ' min';
+    $('nextInfo').textContent = RUNNING ? (d.next_scan_in + 's') : '—';
+    if ($('auto_poll') && d.auto_poll !== undefined && !AUTOPOLL_TOUCH)
+      $('auto_poll').checked = !!d.auto_poll;
+    if ($('hidKv')){
+      var hid = Number(d.hidden_rows || 0);
+      $('hidKv').style.display = hid ? '' : 'none';
+      if (hid) $('hidInfo').textContent = hid + ' old symbol' + (hid === 1 ? '' : 's');
+    }
+    if ($('feedKv') && $('feedInfo')){
+      var nLive = Number(d.ltp_live || 0), nCandle = Number(d.ltp_candle || 0);
+      if (nLive + nCandle === 0){
+        $('feedKv').style.display = 'none';
+      } else {
+        $('feedKv').style.display = '';
+        var t = nLive + ' live';
+        if (nCandle) t += ' · ' + nCandle + ' candle';
+        if (d.ltp_age_max !== null && d.ltp_age_max !== undefined) t += ' · ' + d.ltp_age_max + 'm';
+        $('feedInfo').textContent = t;
+        $('feedKv').style.color = nCandle ? 'var(--warn)' : '';
+      }
+    }
+    $('lastScanInfo').textContent = d.last_scan_at
+        ? (d.last_scan_at + ' · ' + (d.last_scan_ms / 1000).toFixed(1) + 's · ' +
+           (d.last_scan_n || 0) + ' symbols')
+        : '—';
+    $('lastScanInfo').title = scanSplit(d) ? ('where the scan time went: ' + scanSplit(d)) : '';
+    var scanning = !!d.scanning;
+    $('scanKv').style.display = scanning ? '' : 'none';
+    $('nextKv').style.display = scanning ? 'none' : '';
+    if (scanning){
+      $('nextInfo').textContent = '…';
+      $('scanKv').innerHTML = '⟳ <b>scanning ' + (d.last_scan_n || '') + ' symbols…</b>';
+    }
+    updateRunStrip(d);
+    $('cycInfo').textContent = d.cycles;
+    $('mktInfo').textContent = d.market_open ? 'open' : 'closed';
+    $('mktInfo').className = d.market_open ? 'good' : 'muted';
+    $('clock').textContent = 'IST ' + d.server_time;
+
+    if (d.fno_mode === 'sheet' && d.fno_error){
+      $('errInfo').style.display = '';
+      $('errInfo').textContent = 'F&O sheet: ' + d.fno_error;
+    } else if (d.last_error){
+      $('errInfo').style.display = '';
+      $('errInfo').textContent = 'error: ' + d.last_error;
+    } else {
+      $('errInfo').style.display = 'none';
+    }
+
+    var openPnl = 0, real = 0;
+    (d.rows || []).forEach(function(r){
+      openPnl += Number(r.live_pnl || 0);
+      real += Number(r.realized || 0);
+    });
+    $('openPnl').textContent = money(openPnl);
+    if ($('dOpenPos')){
+      var openCnt = (d.rows || []).filter(function(r){ return r.position && r.position !== '—'; }).length;
+      var tot = openPnl + real;
+      $('dOpenPos').textContent = openCnt;
+      $('dOpenPnl').textContent = money(openPnl);
+      $('dOpenPnl').className = 'dash-val ' + (openPnl > 0 ? 'good' : (openPnl < 0 ? 'bad' : ''));
+      $('dRealPnl').textContent = money(real);
+      $('dRealPnl').className = 'dash-val ' + (real > 0 ? 'good' : (real < 0 ? 'bad' : ''));
+      $('dTotPnl').textContent = money(tot);
+      $('dTotPnl').className = 'dash-val ' + (tot > 0 ? 'good' : (tot < 0 ? 'bad' : ''));
+      var tr = d.trades || [];
+      var wins = tr.filter(function(t){ return Number(t.pnl || 0) > 0; }).length;
+      $('dClosed').textContent = tr.length + (tr.length ? ' (' + wins + 'W / ' + (tr.length - wins) + 'L)' : '');
+    }
+    $('openPnl').className = openPnl > 0 ? 'good' : (openPnl < 0 ? 'bad' : '');
+    $('realPnl').textContent = money(real);
+    $('realPnl').className = real > 0 ? 'good' : (real < 0 ? 'bad' : '');
+
+    renderRows(d.rows || []);
+    renderTrades(d.trades || []);
+    var openN = (d.rows || []).filter(function(r){ return r.position && r.position !== '—'; }).length;
+    if ($('tradeHint'))
+      $('tradeHint').innerHTML = openN
+        ? openN + ' position(s) still open — they show up here the moment they exit (target / stop / opposite signal).'
+        : 'A trade appears here after it closes; open positions live in the monitor above.';
+    renderHealth(d);
+    checkEngineVersion(d);
+    if (IS_LIVE) renderSheetKv(d.sheet_out);
+    if (!RUNNING) clearTimer();
+  }).catch(function(e){
+    var m = (e && e.message) ? e.message : String(e);
+    if (answered){ renderHealthDown('page script error while drawing the monitor: ' + m); return; }
+    STATUS_FAILS++;
+    if (STATUS_FAILS >= 3)
+      renderHealthDown('no answer from the engine ' + STATUS_FAILS + '× in a row (' + m +
+                       ') — is paper_live_engine.py still running?');
+  });
+}
+
+function signalCell(r){
+  var p = r.pending;
+  if (!p) return '<span class="muted">—</span>';
+  var dirCls = p.dir === 'buy' ? 'good' : 'bad';
+  var st = r.pending_state || '';
+  var stCls = st === 'expired' ? 'muted' : 'warn';
+  return '<span class="' + dirCls + '">' + esc(String(p.dir).toUpperCase()) + '</span>' +
+         ' @ ' + num(p.level) +
+         '<span class="muted"> · ' + p.age + ' bars</span>' +
+         '<br><span class="' + stCls + '" style="font-size:10.5px">' + esc(st) + '</span>';
+}
+
+/* the LTP is a Yahoo 1-minute close; say how fresh it is, and shout when the
+   engine had to fall back to the last candle close (that price is up to a bar old) */
+function ltpTag(r){
+  var src = r.ltp_src || '', age = r.ltp_age_min;
+  if (src === 'last close')
+    return '<br><span class="warn" style="font-size:10px" title="Yahoo had no 1-minute ' +
+           'price for this symbol, so the last candle close is used — it can be older than ' +
+           'the real price">candle close ⚠</span>';
+  if (src !== 'live') return '';
+  var txt = 'live', cls = 'muted';
+  if (age !== null && age !== undefined){
+    var a = Number(age);
+    if (a > 120) { txt = 'live · stale ⚠'; cls = 'warn'; }
+    else { txt = 'live · ' + a + 'm old'; if (a > 10) cls = 'warn'; }
+  }
+  return '<br><span class="' + cls + '" style="font-size:10px" title="Yahoo 1-minute close ' +
+         '(NSE feed, normally 1–15 min behind the broker)">' + esc(txt) + '</span>';
+}
+
+/* TF column: the timeframe this row's signal ran on in its last scan (the Interval
+   setting), the higher-timeframe trend that gates entries when the HTF filter is on,
+   and an open position that was opened before the Interval was changed */
+function tfCell(r){
+  var tf = r.tf || ENGINE_TF;
+  if (!tf) return '<span class="muted">—</span>';
+  var h = '<b>' + esc(tf) + '</b>';
+  if (r.htf && r.htf.tf){
+    var up = r.htf.up;
+    h += '<br><span class="muted" style="font-size:10px" title="HTF filter: buy signals pass only ' +
+         'while the ' + esc(r.htf.tf) + ' EMA50 is above its EMA200, sell signals only while below">' +
+         esc(r.htf.tf) + ' trend ' + (up === true ? '↑ buys only' : (up === false ? '↓ sells only'
+                                                               : 'unknown — signals blocked')) + '</span>';
+  }
+  if (r.pos_tf && r.pos_tf !== tf)
+    h += '<br><span class="warn" style="font-size:10px" title="the Interval was changed while this ' +
+         'position was open — its opposite-signal exit now follows ' + esc(r.tf) + ' signals">' +
+         'position from ' + esc(r.pos_tf) + '</span>';
+  return h;
+}
+
+function wtActionCell(r){
+  var ind0 = '';
+  var t = r.wt_action || '—';
+  var st = r.signal_state || 'none';
+  var cls = 'muted';
+  if (st === 'live') cls = (r.wt_side === 'buy' ? 'good' : 'bad');
+  else if (st === 'pending') cls = 'warn';
+  else if (st === 'expired' || st === 'done') cls = 'muted';
+  if (r.no_fill)
+    ind0 = '<br><span class="muted" style="font-size:10px">no entry: ' + esc(r.no_fill) + '</span>';
+  else ind0 = '';
+  /* the engine sends the age as `bars_since` (older builds said `signal_age`) */
+  var age = (r.bars_since !== undefined && r.bars_since !== null) ? r.bars_since : r.signal_age;
+  var vt = (r.valid_t !== undefined && r.valid_t !== null && r.valid_t !== '')
+             ? r.valid_t : (r.signal_valid_t || '');
+  /* "already taken" = that break happened on an older bar, not live — say so */
+  if (st === 'done' && (!r.position || r.position === '—') &&
+      age !== null && age !== undefined)
+    ind0 += '<br><span class="muted" style="font-size:10px">' +
+            (r.latest_note ? 'latest cross ' + esc(r.latest_note)
+                           : 'broke ' + age + ' bars ago — no live entry now') + '</span>';
+  /* a pending on the SAME side as the open position is not what the position came from */
+  var posSide = /^LONG/.test(r.position || '') ? 'buy' : (/^SHORT/.test(r.position || '') ? 'sell' : '');
+  if (posSide && st === 'pending' && r.wt_side === posSide)
+    ind0 += '<br><span class="muted" style="font-size:10px" title="one position at a time: a ' +
+            'second ' + (posSide === 'buy' ? 'buy' : 'sell') + ' signal is ignored while the ' +
+            (posSide === 'buy' ? 'LONG' : 'SHORT') + ' is open">another ' +
+            (posSide === 'buy' ? 'buy' : 'sell') + ' signal — only used after the open ' +
+            (posSide === 'buy' ? 'LONG' : 'SHORT') + ' closes</span>';
+  var ind = '';
+  if (r.wt1 !== null && r.wt1 !== undefined)
+    ind = '<br><span class="muted" style="font-size:10px">WT ' + num(r.wt1) + ' / ' + num(r.wt2) +
+          (r.rsi !== null && r.rsi !== undefined ? ' · RSI ' + num(r.rsi, 1) : '') + '</span>';
+  /* the Scanner page shows the LATEST cross; this page shows the latest cross
+     that is still waiting to break. When they differ, name the latest cross. */
+  if (r.pending && r.pending.dir && r.pending.level !== null && r.pending.level !== undefined){
+    var same = (r.pending.dir === r.wt_side) &&
+               (String(r.pending.valid_t || '') === String(vt));
+    if (!same)
+      ind += '<br><span class="muted" style="font-size:10px" title="newest WT cross on the ' +
+             'closed bars — this is the one the Scanner page shows">latest cross: ' +
+             (r.pending.dir === 'buy' ? 'BUY' : 'SELL') + ' @ ' + num(r.pending.level) +
+             ' (' + esc(String(r.pending.valid_t || '').slice(11, 16)) + ')' +
+             (r.pending_state ? ' · ' + esc(r.pending_state) : '') +
+             (r.latest_note ? ' ' + esc(r.latest_note) : '') + '</span>';
+  }
+  return '<span class="' + cls + '"><b>' + esc(t) + '</b></span>' + ind0 + ind;
+}
+
+/* ==================== LOGIC CHECK (the self-check "agent") ==================== */
+var HEALTH_ICON = { ok: '✓', info: 'ℹ', warn: '⚠', error: '⛔' };
+var HEALTH_RANK = { error: 3, warn: 2, info: 1, ok: 0 };
+var RECENT_ALL = false, LAST_HEALTH = null;           /* false = newest 5, true = everything in the window */
+var HEALTH_OPEN = null;          /* null = auto: the list opens while something is wrong */
+var STATUS_FAILS = 0;
+var LTP_TICK_AT = 0, LTP_GAP_S = 0, LTP_LAST_ERR = '';
+
+function ltpPollParam(){
+  if (!$('ltpPollOn') || !$('ltpPollOn').checked) return 0;
+  return Math.max(3, Number($('ltpPollSec') ? $('ltpPollSec').value : 15) || 15);
+}
+
+function healthBadge(h){
+  if (!h || !h.level) return '';
+  var iss = h.issues || [];
+  var probs = iss.filter(function(i){ return i.lvl === 'warn' || i.lvl === 'error'; }).length;
+  var tip = iss.length
+    ? iss.map(function(i){ return (HEALTH_ICON[i.lvl] || '') + ' ' + i.msg; }).join('\n')
+    : 'all logic checks passed';
+  var txt = h.level === 'ok' ? '✓ ok' : (h.level === 'info' ? 'ℹ note' : HEALTH_ICON[h.level] + ' ' + probs);
+  return '<br><span class="hb ' + escA(h.level) + '" title="' + escA(tip) + '">' + txt + '</span>';
+}
+
+function healthStatusCell(r){
+  if (!r.health)                  /* older engine without the check: plain status */
+    return '<td class="l ' + (r.status === 'OK' ? 'muted' : 'warn') + '">' + esc(r.status) + '</td>';
+  var iss = r.health.issues || [];
+  if (!iss.length) return '<td class="l muted">✓ OK</td>';
+  var top = iss[0];
+  var cls = top.lvl === 'error' ? 'bad' : (top.lvl === 'warn' ? 'warn' : 'muted');
+  var more = iss.slice(1).map(function(i){ return (HEALTH_ICON[i.lvl] || '') + ' ' + i.msg; }).join('\n');
+  return '<td class="l ' + cls + '" style="white-space:normal;min-width:220px;max-width:320px;font-size:10.5px">' +
+    (HEALTH_ICON[top.lvl] || '') + ' ' + esc(top.msg) +
+    (iss.length > 1 ? '<br><span class="muted" title="' + escA(more) + '">+' + (iss.length - 1) + ' more</span>' : '') +
+    '</td>';
+}
+
+function clientHealth(){
+  var out = [], sec = ltpPollParam();
+  if (sec && LTP_GAP_S > 2 * sec + 5)
+    out.push({ lvl: 'warn', msg: 'LTP poll actually ran ' + Math.round(LTP_GAP_S) + ' s apart instead of every ' +
+      sec + ' s — the browser slows timers in a background tab (Chrome: about once a minute after ~5 min ' +
+      'hidden). Keep this tab visible, e.g. in its own window.' });
+  if (sec && LTP_LAST_ERR)
+    out.push({ lvl: 'warn', msg: 'the last LTP poll request did not complete: ' + LTP_LAST_ERR +
+      ' — exits / flips wait for the next poll or full scan' });
+  return out;
+}
+
+function renderRecent(h){
+  var box = $('recentBox');
+  if (!box) return;
+  var items = (h && h.recent) || [];
+  if (!items.length){ box.hidden = true; return; }
+  box.hidden = false;
+  var trades = items.filter(function(i){ return i.kind === 'trade'; });
+  var nNew = items.filter(function(i){ return i.new; }).length;
+  var nBad = items.filter(function(i){ return i.lvl === 'warn' || i.lvl === 'error'; }).length;
+  $('recentSub').textContent = 'last ' + (h.recent_window_min || 60) + ' min, newest first · ' +
+    items.length + ' change' + (items.length === 1 ? '' : 's') + (nNew ? ' · ' + nNew + ' new' : '') +
+    (trades.length ? (nBad ? ' · ' + nBad + ' with a problem' : ' · every trade verified ✓') : '');
+  $('recentToggle').style.display = items.length > 5 ? '' : 'none';
+  $('recentToggle').textContent = RECENT_ALL ? 'fewer' : ('all ' + items.length);
+  var show = RECENT_ALL ? items : items.slice(0, 5);
+  $('recentList').innerHTML = show.map(function(i){
+    var probs = (i.issues || []).map(function(x){ return (HEALTH_ICON[x.lvl] || '') + ' ' + x.msg; });
+    var tip = (i.checks || []).concat(probs).join('\n');
+    var ico = i.lvl === 'ok' ? '✓' : (HEALTH_ICON[i.lvl] || '');
+    var nOk = (i.checks || []).filter(function(c){ return c.indexOf('✓') === 0; }).length;
+    return '<li class="' + escA(i.lvl) + '" title="' + escA(tip || i.text) + '">' +
+      '<span class="hi">' + ico + '</span>' +
+      '<span class="rt">' + esc(i.time || '') + '</span>' +
+      '<span class="sym">' + esc(i.sym || 'engine') + '</span>' + esc(i.text) +
+      (i.src ? ' <span class="muted">· ' + esc(i.src) + '</span>' : '') +
+      (i.kind === 'trade' && i.lvl === 'ok' && nOk ? ' <span class="muted">· ✓ ' + nOk + ' checks (hover)</span>' : '') +
+      (i.new ? '<span class="new">NEW</span>' : '') +
+      (probs.length ? '<span class="why ' + (i.lvl === 'error' ? 'bad' : 'warn') + '">' + esc(probs.join(' · ')) + '</span>' : '') +
+      '</li>';
+  }).join('');
+}
+
+function renderHealthDown(msg){
+  var box = $('healthBox');
+  if (!box) return;
+  box.hidden = false;
+  box.className = 'health error';
+  $('healthIco').textContent = HEALTH_ICON.error;
+  $('healthTitle').textContent = 'Logic check: no answer';
+  $('healthSub').textContent = msg;
+  $('healthToggle').style.display = 'none';
+  $('healthList').hidden = true;
+}
+
+/* ---------- Live Trade profile (python paper_live_engine.py --live) ---------- */
+var PROFILE = '{{ profile|default("paper") }}';
+var IS_LIVE = PROFILE === 'live';
+/* first visit of the Live page: your 1h backtest settings (check SL etc. against it) */
+var LIVE_DEFAULTS = { interval: '1h', wt_pending_rule: 'same_dir', profit_target_pct: 10,
+                      trailing_enabled: true, trailing_start_pct: 10, trailing_step_pct: 1 };
+function soMsg(t, cls){
+  var el = $('soMsg'); if (!el) return;
+  el.textContent = t || ''; el.className = cls === 'err' ? 'bad' : (cls === 'ok' ? 'good' : 'muted');
+}
+function soFill(d){
+  var st = (d && d.status) || {};
+  $('so_enabled').checked = !!st.enabled;
+  $('so_book').value = st.book || '';
+  $('so_orders_tab').value = st.orders_tab || 'live_orders';
+  $('so_positions_tab').value = st.positions_tab || 'live_positions';
+  if ($('soCsv') && st.csv) $('soCsv').textContent = st.csv;
+  if ($('so_books')) $('so_books').innerHTML = (d.books || []).map(function(b){
+    return '<option value="' + escA(b) + '">'; }).join('');
+  if (d.service_account) $('so_book').title = 'share the sheet with ' + d.service_account + ' (Editor)';
+}
+function loadSheetOut(){
+  fetchT('/api/paper-live/sheet-out', {}, 15000).then(function(d){
+    if (d && d.ok) soFill(d);
+  }).catch(function(e){ soMsg('could not read the sheet settings: ' + e, 'err'); });
+}
+function saveSheetOut(){
+  post('/api/paper-live/sheet-out', { enabled: $('so_enabled').checked, book: $('so_book').value,
+        orders_tab: $('so_orders_tab').value, positions_tab: $('so_positions_tab').value }).then(function(d){
+    if (!d.ok){ soMsg(d.error || 'save failed', 'err'); return; }
+    soFill(d);
+    var st = d.status || {};
+    soMsg(!st.enabled ? 'saved — sheet output is OFF (rows wait in the queue)'
+          : (!st.book ? 'saved — type the Google Sheet name to start writing'
+                      : 'saved — writing to “' + st.book + '” › ' + st.orders_tab + ' and ' + st.positions_tab), 'ok');
+    poll();
+  }).catch(function(e){ soMsg('save failed: ' + e, 'err'); });
+}
+function testSheetOut(){
+  soMsg('writing a test row…');
+  post('/api/paper-live/sheet-out/test', {}).then(function(d){
+    soMsg(d.ok ? (d.message + ' ✓') : (d.error || 'test failed'), d.ok ? 'ok' : 'err');
+  }).catch(function(e){ soMsg('test failed: ' + e, 'err'); });
+}
+function renderSheetKv(so){
+  if (!IS_LIVE || !so || !$('sheetInfo')) return;
+  var t, c = '';
+  if (!so.enabled){ t = 'off' + (so.queued ? ' · ' + so.queued + ' waiting' : ''); c = 'var(--warn)'; }
+  else if (!so.book){ t = 'no sheet name' + (so.queued ? ' · ' + so.queued + ' waiting' : ''); c = 'var(--warn)'; }
+  else if (so.last_error){ t = '⚠ failing · retry ' + so.retry_in + 's'; c = 'var(--bad)'; }
+  else {
+    t = so.written + ' row' + (so.written === 1 ? '' : 's') + (so.queued ? ' · ' + so.queued + ' waiting' : '') +
+        (so.last_write ? ' · ' + String(so.last_write).slice(11, 16) : '');
+  }
+  $('sheetInfo').textContent = t;
+  $('sheetKv').style.color = c;
+  $('sheetKv').title = so.last_error ? ('Google Sheet output: ' + so.last_error)
+                                     : ('Google Sheet output → ' + (so.book || '(no sheet)') + ' › ' + so.orders_tab);
+}
+function setupProfile(){
+  if (!IS_LIVE) return;
+  document.title = 'Live Trade — dry run → Google Sheet';
+  $('brandName').textContent = 'Live Trade';
+  $('modePill').textContent = 'dry run → Google Sheet · same logic as Paper Live · no broker';
+  $('sheetCard').hidden = false;
+  $('sheetKv').style.display = '';
+  if ($('tradesTitle') && $('tradesTitle').firstChild) $('tradesTitle').firstChild.nodeValue = 'Closed trades ';
+  $('soSaveBtn').addEventListener('click', saveSheetOut);
+  $('soTestBtn').addEventListener('click', testSheetOut);
+  loadSheetOut();
+}
+
+var PAGE_BUILD = 'build v18 · logic check + recent changes', ENGINE_MIN = 16;
+function checkEngineVersion(d){
+  var el = $('verPill');
+  if (!el) return;
+  var v = '';
+  if (!('health' in d)) v = 'old';
+  else if (d.health && d.health.coverage) v = String(d.health.coverage.version || 'old');
+  else return;
+  var n = Number((v.match(/\d+/) || [0])[0]);
+  if (n >= ENGINE_MIN){
+    el.textContent = PAGE_BUILD; el.style.color = ''; el.style.borderColor = '';
+    return;
+  }
+  el.textContent = PAGE_BUILD + ' · ⚠ engine file is ' + v + ' (needs v' + ENGINE_MIN +
+                   '+) — copy paper_live_engine.py and restart';
+  el.style.color = 'var(--bad)'; el.style.borderColor = 'var(--bad)';
+}
+
+function renderHealth(d){
+  var box = $('healthBox');
+  if (!box) return;
+  if (!d.health){
+    box.hidden = false;
+    box.className = 'health warn';
+    $('healthIco').textContent = HEALTH_ICON.warn;
+    $('healthTitle').textContent = 'Logic check unavailable';
+    $('healthSub').textContent = 'the running engine is an older version — restart paper_live_engine.py';
+    $('healthToggle').style.display = 'none';
+    $('healthList').hidden = true;
+    if ($('recentBox')) $('recentBox').hidden = true;
+    return;
+  }
+  var h = d.health, items = [];
+  LAST_HEALTH = h;
+  (h.global || []).concat(clientHealth()).forEach(function(i){
+    items.push({ sym: '', lvl: i.lvl, msg: i.msg, since: i.since_s });
+  });
+  (d.rows || []).forEach(function(r){
+    ((r.health || {}).issues || []).forEach(function(i){
+      items.push({ sym: r.symbol, lvl: i.lvl, msg: i.msg, since: i.since_s });
+    });
+  });
+  items.sort(function(a, b){ return (HEALTH_RANK[b.lvl] || 0) - (HEALTH_RANK[a.lvl] || 0); });
+  var n = { error: 0, warn: 0, info: 0 }, bad = {};
+  items.forEach(function(i){
+    n[i.lvl] = (n[i.lvl] || 0) + 1;
+    if (i.sym && (i.lvl === 'error' || i.lvl === 'warn')) bad[i.sym] = 1;
+  });
+  var lvl = n.error ? 'error' : (n.warn ? 'warn' : 'ok');
+  var total = (d.rows || []).length, nBad = Object.keys(bad).length;
+  box.hidden = false;
+  box.className = 'health ' + lvl;
+  $('healthIco').textContent = HEALTH_ICON[lvl];
+  $('healthTitle').textContent = lvl === 'ok' ? 'Logic check: everything consistent'
+    : (lvl === 'error' ? 'Logic check: problems found' : 'Logic check: needs attention');
+  var sub = total ? ((total - nBad) + ' / ' + total + ' symbols OK') : 'no symbols scanned yet';
+  if (n.error) sub += ' · ' + n.error + ' error' + (n.error === 1 ? '' : 's');
+  if (n.warn) sub += ' · ' + n.warn + ' warning' + (n.warn === 1 ? '' : 's');
+  if (n.info) sub += ' · ' + n.info + ' note' + (n.info === 1 ? '' : 's');
+  var cv = h.coverage;
+  if (cv) sub += ' · ' + cv.checks + ' checks · ' + cv.entry_kinds + ' entry / ' + cv.exit_reasons +
+    ' exit rules' + (cv.reviewed ? '' : ' · ⚠ logic changed, check not reviewed');
+  $('healthSub').textContent = sub + ' · checked ' + (h.checked_at || d.server_time || '');
+  var open = HEALTH_OPEN === null ? (lvl !== 'ok') : HEALTH_OPEN;
+  $('healthToggle').style.display = items.length ? '' : 'none';
+  $('healthToggle').textContent = open ? 'hide' : ('details (' + items.length + ')');
+  $('healthList').hidden = !open || !items.length;
+  $('healthList').innerHTML = items.map(function(i){
+    return '<li class="' + escA(i.lvl) + '"><span class="hi">' + (HEALTH_ICON[i.lvl] || '') + '</span>' +
+      '<span class="sym">' + esc(i.sym || 'engine') + '</span>' + esc(i.msg) +
+      (i.since >= 60 && i.lvl !== 'info' ? ' <span class="muted">(for ' + Math.floor(i.since / 60) + ' min)</span>' : '') +
+      '</li>';
+  }).join('');
+  renderRecent(h);
+}
+
+function renderRows(rows){
+  SIZE_SAMPLE = null;
+  for (var i = 0; i < rows.length; i++){
+    var lt = Number(rows[i].ltp);
+    if (isFinite(lt) && lt > 0){ SIZE_SAMPLE = { symbol: rows[i].symbol, ltp: lt }; break; }
+  }
+  syncSizing();
+  if (!rows.length){
+    $('rowBody').innerHTML = '<tr><td class="l muted" colspan="25">no rows yet — press “Start” or “Scan now”</td></tr>';
+    return;
+  }
+  $('rowBody').innerHTML = rows.map(function(r){
+    var lp = Number(r.live_pnl || 0);
+    var posCls = r.position && r.position !== '—'
+      ? (r.position.indexOf('LONG') === 0 ? 'good' : 'bad') : 'muted';
+    var statusCls = r.status === 'OK' ? 'muted' : 'warn';
+    var hasPos = r.position && r.position !== '—';
+    var pc = Number(r.pnl_pct || 0);
+    var diff = (r.diff === null || r.diff === undefined) ? null : Number(r.diff);
+    var diffCls = diff === null ? 'muted' : (diff > 0 ? 'good' : (diff < 0 ? 'bad' : 'muted'));
+    var hl = (r.health || {}).level;
+    return '<tr class="' + (hl === 'error' || hl === 'warn' ? 'h-' + hl : '') + '">' +
+      '<td class="l"><b>' + esc(r.symbol) + '</b>' + healthBadge(r.health) + '</td>' +
+      '<td>' + pxFmt(r.ltp, r.symbol) + ltpTag(r) + '</td>' +
+      '<td>' + (r.trig_lvl === null || r.trig_lvl === undefined ? '—' : pxFmt(r.trig_lvl, r.symbol)) + '</td>' +
+      '<td class="l muted" style="font-size:10.5px">' + esc(r.valid_t || '—') +
+        (r.bars_since !== null && r.bars_since !== undefined
+          ? '<br><span style="font-size:10px">' + esc(r.bars_since) + ' bars ago</span>' : '') + '</td>' +
+      '<td class="l" style="white-space:nowrap">' + tfCell(r) + '</td>' +
+      '<td class="l">' + wtActionCell(r) + '</td>' +
+
+      '<td class="' + diffCls + '">' + (diff === null ? '—' : money(diff)) + '</td>' +
+      '<td class="' + diffCls + '">' + (r.diff_pct === null || r.diff_pct === undefined ? '—' : num(r.diff_pct, 2) + '%') + '</td>' +
+      '<td class="l ' + posCls + '"><b>' + esc(r.position) + '</b>' +
+        (r.size_basis && hasPos
+          ? '<br><span class="muted" style="font-size:10px">size: ' + esc(r.size_basis) + '</span>'
+          : '') +
+        (r.pos_why && hasPos
+          ? '<br><span class="muted" style="font-size:10px" title="the signal that opened this ' +
+            'trade">' + esc(r.pos_why) + '</span>'
+          : '') + '</td>' +
+      '<td>' + (hasPos ? esc(r.qty) : '—') + '</td>' +
+      '<td class="l">' + (r.entry === '—' ? '—' : pxFmt(r.entry, r.symbol)) +
+        (r.entry_t ? '<br><span class="muted" style="font-size:10px">' + esc(r.entry_t) + '</span>' : '') + '</td>' +
+      '<td>' + (r.target === '—' ? '—' : pxFmt(r.target, r.symbol)) + '</td>' +
+      '<td>' + (r.stop === '—' ? '—' : pxFmt(r.stop, r.symbol)) + '</td>' +
+      '<td>' + (r.opp_lvl === null || r.opp_lvl === undefined ? '—' : pxFmt(r.opp_lvl, r.symbol)) + '</td>' +
+      '<td class="' + (lp > 0 ? 'good' : (lp < 0 ? 'bad' : '')) + '">' + money(lp) + '</td>' +
+      '<td class="' + (pc > 0 ? 'good' : (pc < 0 ? 'bad' : '')) + '">' +
+        (hasPos ? num(pc, 2) + '%' : '—') + '</td>' +
+      '<td>' + (r.risk_amt === null || r.risk_amt === undefined ? '—' : num(r.risk_amt, 0)) + '</td>' +
+      '<td>' + (r.reward_amt === null || r.reward_amt === undefined ? '—' : num(r.reward_amt, 0)) + '</td>' +
+      '<td>' + (r.rr === null || r.rr === undefined ? '—' : num(r.rr, 2)) + '</td>' +
+      '<td class="' + (Number(r.realized) > 0 ? 'good' : (Number(r.realized) < 0 ? 'bad' : '')) + '">' + money(r.realized) + '</td>' +
+      '<td class="' + ((Number(r.realized||0)+lp) > 0 ? 'good' : ((Number(r.realized||0)+lp) < 0 ? 'bad' : '')) + '"><b>' + money(Number(r.realized||0) + lp) + '</b></td>' +
+      '<td>' + esc(r.trades) + '</td>' +
+      '<td class="l muted" style="font-size:10.5px">' + esc(r.last_action || '') + '</td>' +
+      healthStatusCell(r) +
+      '<td class="l">' + esc(r.last_bar) +
+        '<span class="' + (r.stale ? 'warn' : 'muted') + '"> · ' + esc(r.bar_age_min) + 'm' +
+        (r.stale ? ' STALE' : '') + '</span>' +
+        (r.fno ? '<br><span class="warn" style="font-size:10px">F&amp;O 15:15</span>' : '') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderTrades(trades){
+  if (!trades.length){
+    $('tradeBody').innerHTML = '<tr><td class="l muted" colspan="10">no trades yet</td></tr>';
+    return;
+  }
+  $('tradeBody').innerHTML = trades.map(function(t){
+    var p = Number(t.pnl || 0);
+    return '<tr>' +
+      '<td class="l">' + esc(String(t.exit_t || '').slice(0, 16)) + '</td>' +
+      '<td class="l">' + esc(t.symbol || '') + '</td>' +
+      '<td class="l ' + (t.side === 'long' ? 'good' : 'bad') + '">' + esc(t.side) + '</td>' +
+      '<td>' + esc(t.qty) + '</td>' +
+      '<td>' + pxFmt(t.entry, t.symbol) + '</td>' +
+      '<td class="l">' + esc(String(t.entry_t || '').slice(0, 16)) + '</td>' +
+      '<td>' + pxFmt(t.exit, t.symbol) + '</td>' +
+      '<td class="' + (p > 0 ? 'good' : (p < 0 ? 'bad' : '')) + '">' + money(p) + '</td>' +
+      '<td class="' + (Number(t.pnl_pct) > 0 ? 'good' : 'bad') + '">' + num(t.pnl_pct) + '%</td>' +
+      '<td class="l">' + esc(t.reason) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+
+var LTP_TIMER = null, LTP_BUSY = false;
+function runLtpFetch(){
+  if (LTP_BUSY) return;
+  LTP_BUSY = true;
+  if ($('fetchLtpBtn')) $('fetchLtpBtn').disabled = true;
+  fetchT('/api/paper-live/ltp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(readCfg())
+  }, 30000).then(function(r){
+    LTP_LAST_ERR = (r && r.ok === false) ? String(r.error || 'failed') : '';
+    if (typeof pollStatus === 'function') pollStatus();
+  }).catch(function(e){
+    LTP_LAST_ERR = String(e || 'no answer');
+  }).finally(function(){
+    LTP_BUSY = false;
+    if ($('fetchLtpBtn')) $('fetchLtpBtn').disabled = false;
+  });
+}
+function syncLtpTimer(){
+  if (LTP_TIMER){ clearInterval(LTP_TIMER); LTP_TIMER = null; }
+  LTP_TICK_AT = 0; LTP_GAP_S = 0;
+  if ($('ltpPollOn') && $('ltpPollOn').checked){
+    var sec = Math.max(3, Number($('ltpPollSec') ? $('ltpPollSec').value : 15) || 15);
+    LTP_TIMER = setInterval(function(){
+      if (!RUNNING){ LTP_TICK_AT = 0; LTP_GAP_S = 0; return; }   /* stopped = no poll, no trades */
+      var now = Date.now();
+      if (LTP_TICK_AT) LTP_GAP_S = (now - LTP_TICK_AT) / 1000;
+      LTP_TICK_AT = now;
+      runLtpFetch();
+    }, sec * 1000);
+  }
+}
+if ($('fetchLtpBtn')) $('fetchLtpBtn').addEventListener('click', runLtpFetch);
+if ($('healthToggle')) $('healthToggle').addEventListener('click', function(){
+  var open = !$('healthList').hidden;
+  HEALTH_OPEN = !open;
+  $('healthList').hidden = open;
+  $('healthToggle').textContent = open ? 'details' : 'hide';
+});
+if ($('recentToggle')) $('recentToggle').addEventListener('click', function(){
+  RECENT_ALL = !RECENT_ALL;
+  if (LAST_HEALTH) renderRecent(LAST_HEALTH);
+});
+if ($('ltpPollOn')) $('ltpPollOn').addEventListener('change', syncLtpTimer);
+if ($('ltpPollSec')) $('ltpPollSec').addEventListener('change', syncLtpTimer);
+syncLtpTimer();   /* LTP poll is ticked by default — start its timer on page load */
+
+/* ---------- wire ---------- */
+$('startBtn').addEventListener('click', start);
+$('stopBtn').addEventListener('click', stop);
+$('scanBtn').addEventListener('click', scanNow);
+$('verifyBtn').addEventListener('click', verify);
+$('resetBtn').addEventListener('click', resetAll);
+
+/* ==================== SYMBOL TABLE (sheet / lock / equal split) ========= */
+var SYMS = [];          /* [{sym, exch, amount, capital, locked}] */
+var SHEET_EXCH = 'NSE';
+
+function exchSuffix(exch){
+  if (exch === 'BSE') return '.BO';
+  if (exch === 'US')  return '';
+  if (exch === 'FX')     return '=X';
+  if (exch === 'CRYPTO') return '-USD';
+  return '.NS';
+}
+function exchLabel(sym, exch){
+  if (/\\.NS$/.test(sym)) return 'NSE';
+  if (/\\.BO$/.test(sym)) return 'BSE';
+  if (/_FX$|=X$/.test(sym)) return 'FX';
+  return exch || 'US';
+}
+function cleanSym(v){
+  return String(v || '').trim().toUpperCase()
+    .replace(/\.NS$/, '').replace(/\.BO$/, '').replace(/_FX$|=X$/, '');
+}
+
+function symAdd(raw, exch){
+  var parts = String(raw || '').split(/[,\n;]/);
+  var added = 0;
+  for (var i = 0; i < parts.length; i++){
+    var tok = parts[i].trim();
+    if (!tok) continue;
+    var exMap = { '.NS': 'NSE', '.BO': 'BSE', '': 'US', '_FX': 'FX', '_CRYPTO': 'CRYPTO' };
+    var defEx = ($('exchange') && exMap[$('exchange').value]) || SHEET_EXCH || 'NSE';
+    var ex = exch || exchLabel(tok, defEx);
+    var base = cleanSym(tok);
+    if (!base) continue;
+    var full = base + exchSuffix(ex);
+    var dup = false;
+    for (var j = 0; j < SYMS.length; j++) if (SYMS[j].sym === full) dup = true;
+    if (dup) continue;
+    SYMS.push({ sym: full, exch: ex, amount: 0, capital: 0, locked: false });
+    added++;
+  }
+  if (added) { recalcAlloc(); renderSyms(); }
+  return added;
+}
+
+function setAmt(i, v){
+  SYMS[i].amount = Number(v) || 0;
+  SYMS[i].capital = 0;
+  if ($('alloc_mode').value !== 'manual') $('alloc_mode').value = 'manual';
+  syncAllocHint();
+  saveSymState();
+}
+function toggleLock(i){
+  SYMS[i].locked = !SYMS[i].locked;
+  recalcAlloc(); renderSyms();
+}
+function delRow(i){
+  SYMS.splice(i, 1);
+  recalcAlloc(); renderSyms();
+}
+function lockAll(){ SYMS.forEach(function(r){ r.locked = true; }); recalcAlloc(); renderSyms(); }
+function unlockAll(){ SYMS.forEach(function(r){ r.locked = false; }); recalcAlloc(); renderSyms(); }
+function removeUnlocked(){
+  SYMS = SYMS.filter(function(r){ return r.locked; });
+  recalcAlloc(); renderSyms();
+}
+
+function recalcAlloc(){
+  var mode = $('alloc_mode').value;
+  var total = Number($('alloc_total').value) || 0;
+  var sz = $('sizing_mode') ? $('sizing_mode').value : 'fixed';
+  var pctMode = (sz === 'pct');
+  if (sz === 'qty'){
+    /* quantity mode ignores money — the split is meaningless, show it as such */
+    SYMS.forEach(function(r){ if (!r.locked) { r.amount = 0; r.capital = 0; } });
+    syncAllocHint(); return;
+  }
+  if (mode === 'manual') { syncAllocHint(); return; }
+  var lockedSum = 0, free = 0;
+  SYMS.forEach(function(r){
+    if (r.locked) lockedSum += (pctMode ? r.capital : r.amount);
+    else free++;
+  });
+  var pool = Math.max(0, total - lockedSum);
+  var share = free ? Math.floor(pool / free) : 0;
+  var rest = free ? pool - share * free : 0;
+  var lastFree = -1;
+  for (var k = SYMS.length - 1; k >= 0; k--) if (!SYMS[k].locked){ lastFree = k; break; }
+  SYMS.forEach(function(r, idx){
+    if (r.locked) return;
+    var v = share + (idx === lastFree ? rest : 0);
+    if (pctMode) { r.capital = v; r.amount = 0; }
+    else { r.amount = v; r.capital = 0; }
+  });
+  syncAllocHint();
+}
+
+function syncAllocHint(){
+  var mode = $('sizing_mode') ? $('sizing_mode').value : 'fixed';
+  var am = $('alloc_mode').value;
+  var total = Number($('alloc_total').value) || 0;
+  var n = SYMS.length, locked = SYMS.filter(function(r){ return r.locked; }).length;
+  var lbl = (mode === 'pct') ? 'Total capital to split ₹' : 'Total to split ₹';
+  if ($('allocTotalLbl')) $('allocTotalLbl').textContent = lbl;
+  var txt;
+  if (mode === 'qty'){
+    txt = 'Quantity mode: each symbol buys the <b>Quantity</b> box — money split is unused.';
+  } else if (mode === 'pct'){
+    txt = am === 'equal'
+      ? 'Each of the ' + n + ' symbols gets its own capital share (' + inr(total) + ' ÷ ' +
+        (n - locked || 1) + '), and <b>Position %</b> applies to that share.'
+      : 'Manual: type each symbol\'s capital ₹ in the table.';
+  } else {
+    txt = am === 'equal'
+      ? '<b>' + inr(total) + '</b> split over ' + n + ' symbol' + (n === 1 ? '' : 's') +
+        ' → ' + inr(n ? total / n : 0) + ' per trade (' + locked + ' locked kept as-is).'
+      : 'Manual: type each symbol\'s ₹ per trade in the table.';
+  }
+  var used = 0;
+  SYMS.forEach(function(r){ used += (mode === 'pct' ? r.capital : r.amount); });
+  var warnTxt = '';
+  if (mode !== 'qty' && am === 'manual' && total > 0 && used > total)
+    warnTxt = '<br><span class="bad">⚠ the rows add up to ' + inr(used) +
+              ' — that is more than your total ' + inr(total) + '.</span>';
+  else if (mode !== 'qty' && am === 'manual' && total > 0)
+    warnTxt = '<br><span class="muted">rows add up to ' + inr(used) + ' of ' + inr(total) + '.</span>';
+  if ($('allocHint'))
+    $('allocHint').innerHTML = txt + ' <span class="muted">Cash per symbol = its own share.</span>' + warnTxt;
+}
+
+function syncVerifySymbols(){
+  var el = $('verify_symbol');
+  if (!el) return;
+  var cur = el.value;
+  var want = SYMS.map(function(r){ return r.sym; });
+  var list = want.length ? want : ['HAL.NS'];
+  el.innerHTML = list.map(function(s){
+    return '<option value="' + esc(s) + '"' + (s === cur ? ' selected' : '') + '>' + esc(s) + '</option>';
+  }).join('');
+  if (!el.value && list.length) el.value = list[0];
+}
+
+function renderSyms(){
+  var el = $('symTable');
+  if (!SYMS.length){
+    el.innerHTML = '<div class="muted" style="font-size:10.5px">no symbols yet — add above or load from the sheet</div>';
+    $('symbols').value = '';
+    syncRunSetMsg();
+    saveSymState();
+    return;
+  }
+  var rows = '';
+  for (var i = 0; i < SYMS.length; i++){
+    var r = SYMS[i];
+    var val = (r.capital > 0 ? r.capital : r.amount);
+    rows += '<div style="display:flex;gap:4px;align-items:center;margin-bottom:3px">' +
+      '<span style="flex:1;font-size:11.5px"><b>' + esc(r.sym) + '</b>' +
+        '<span class="muted" style="font-size:9.5px"> ' + esc(r.exch) + '</span></span>' +
+      '<input type="number" value="' + (val || '') + '" placeholder="₹" style="width:78px" ' +
+        'oninput="setAmt(' + i + ', this.value)">' +
+      '<button type="button" style="padding:2px 6px" onclick="toggleLock(' + i + ')" ' +
+        'title="lock/unlock this amount">' + (r.locked ? '🔒' : '🔓') + '</button>' +
+      '<button type="button" class="danger" style="padding:2px 6px" ' +
+        'onclick="delRow(' + i + ')" title="remove">✕</button></div>';
+  }
+  el.innerHTML = rows;
+  $('symbols').value = SYMS.map(function(r){ return r.sym; }).join(', ');
+  syncRunSetMsg();
+  syncVerifySymbols();
+  saveSymState();
+  applyWhileRunning();
+}
+
+var SYMS_READY = false, APPLY_T = null, AUTOPOLL_TOUCH = false;
+
+function applyWhileRunning(){
+  /* nothing reaches a RUNNING engine on its own any more (the 🔒 rows are the
+     working set now, so an edit could add or drop a symbol). Edits only raise the
+     red dot; ✔ Apply settings is the one that sends them. */
+  if (!SYMS_READY || !RUNNING) return;
+  markDirty();
+}
+
+function saveSymState(){
+  try {
+    localStorage.setItem('paper_live_syms', JSON.stringify({
+      rows: SYMS, mode: $('alloc_mode').value, total: $('alloc_total').value,
+      source: $('sym_source').value, book: $('sheet_book').value,
+      bookOther: ($('sheet_book_other') ? $('sheet_book_other').value : ''),
+      tab: $('sheet_tab').value
+    }));
+  } catch (e) {}
+}
+function loadSymState(){
+  try {
+    var raw = localStorage.getItem('paper_live_syms');
+    if (!raw) return false;
+    var st = JSON.parse(raw);
+    if (!st || !st.rows || !st.rows.length) return false;
+    SYMS = st.rows;
+    if (st.mode) $('alloc_mode').value = st.mode;
+    if (st.total) $('alloc_total').value = st.total;
+    if (st.source) $('sym_source').value = st.source;
+    if (st.book && $('sheet_book')) $('sheet_book').value = st.book;
+    if (st.bookOther && $('sheet_book_other')) $('sheet_book_other').value = st.bookOther;
+    return true;
+  } catch (e) { return false; }
+}
+
+/* ---- the working set: Save allocations (Trade-Setup style) ---- */
+function allocPayload(){
+  return {
+    rows: SYMS.map(function(r){ return {sym:r.sym, exch:r.exch, amount:r.amount,
+                                         capital:r.capital, locked:r.locked}; }),
+    alloc_mode: $('alloc_mode').value,
+    total: $('alloc_total').value,
+    source: $('sym_source').value,
+    book: $('sheet_book').value,
+    exchange: $('exchange').value,
+    interval: $('interval').value,
+    period: $('period').value
+  };
+}
+function saveAllocMsg(t, cls){
+  var el = $('allocSavedMsg');
+  if (!el) return;
+  el.textContent = t || '';
+  el.className = cls === 'err' ? 'bad' : 'muted';
+}
+function saveAllocations(){
+  var all = SYMS.slice(), locked = [];
+  for (var i = 0; i < all.length; i++) if (all[i].locked) locked.push(all[i]);
+  /* the rule the user asked for: the 🔒 rows ARE the allocation. No lock = nothing
+     to save (press 🔒 Lock all first if the whole table is what you want). */
+  if (!locked.length){
+    if (all.length && confirm('No row is 🔒 locked, so nothing would be saved.\n\n' +
+                              'Lock all ' + all.length + ' rows and save them?')){
+      lockAll();
+      return saveAllocations();
+    }
+    saveAllocMsg('NOT saved — lock the rows you want to save first (or press “🔒 Lock all”)', 'err');
+    setMsg('nothing locked — nothing saved', 'err');
+    return;
+  }
+  var payload = allocPayload();
+  payload.rows = locked.map(function(r){ return {sym:r.sym, exch:r.exch, amount:r.amount,
+                                                 capital:r.capital, locked:true}; });
+  post('/api/paper-live/allocations', { data: payload, apply: true }).then(function(d){
+    if (!d.ok){ saveAllocMsg(d.error || 'save failed', 'err'); return; }
+    saveAllocMsg('saved ' + d.count + ' locked of ' + all.length + ' symbol' +
+                 (all.length === 1 ? '' : 's') + ' at ' + d.saved_at +
+                 (d.applied_to_running ? ' · engine now scans these ' + d.count : ''),
+                 'ok');
+    setMsg('allocations saved (' + d.count + ' locked symbol' + (d.count === 1 ? '' : 's') + ')', 'ok');
+    poll();
+  }).catch(function(e){ saveAllocMsg('save failed: ' + e, 'err'); });
+}
+function loadAllocations(done){
+  fetchT('/api/paper-live/allocations', {}, 15000).then(function(d){
+    if (!d.ok || !d.exists || !d.data){ if (done) done(false); return; }
+    var p = d.data;
+    if (!p.rows || !p.rows.length){ if (done) done(false); return; }
+    SYMS = p.rows.map(function(r){
+      return { sym:r.sym, exch:r.exch || exchLabel(r.sym, 'NSE'),
+               amount:Number(r.amount) || 0, capital:Number(r.capital) || 0,
+               locked: !!r.locked };
+    });
+    if (p.alloc_mode) $('alloc_mode').value = p.alloc_mode;
+    if (p.total) $('alloc_total').value = p.total;
+    if (p.source) $('sym_source').value = p.source;
+    /* Timeframe / Lookback / exchange come from ✔ Apply / ▶ Start (or the running engine);
+       the allocation file only fills them in when neither exists */
+    if (!CFG_RESTORED){
+      if (p.exchange) $('exchange').value = p.exchange;
+      if (p.interval) $('interval').value = p.interval;
+      if (p.period) $('period').value = p.period;
+    }
+    renderSyms(); recalcAlloc(); syncSheetBlock(); syncAllocHint();
+    saveAllocMsg('restored ' + SYMS.length + ' symbols from ' + (p.saved_at || 'last save'));
+    if (done) done(true);
+  }).catch(function(){ if (done) done(false); });
+}
+
+/* ---- Apply settings (left panel -> running engine) ---- */
+var DIRTY = false;
+function markDirty(){
+  DIRTY = true;
+  if ($('dirtyMsg')) {
+    $('dirtyMsg').innerHTML = '<span class="warn">● unsaved changes</span> — press <b>✔ Apply settings</b> to send them';
+    $('dirtyMsg').className = 'muted';
+  }
+  if ($('applyBtn')) $('applyBtn').textContent = '✔ Apply settings ●';
+}
+function clearDirty(){
+  DIRTY = false;
+  if ($('dirtyMsg')) $('dirtyMsg').textContent = 'no unsaved changes';
+  if ($('applyBtn')) $('applyBtn').textContent = '✔ Apply settings';
+}
+function applySettings(){
+  var cfg;
+  try { cfg = readCfg(); } catch (e) { setMsg('cannot read the panel: ' + e, 'err'); return; }
+  $('applyBtn').disabled = true;
+  setMsg('applying settings…');
+  post('/api/paper-live/update', cfg).then(function(d){
+    $('applyBtn').disabled = false;
+    if (!d.ok){ setMsg(d.error || 'apply failed', 'err'); return; }
+    saveCfgLocal(cfg);
+    clearDirty();
+    if (!d.running){ setMsg('settings saved — they start with ▶ Start', 'ok'); return; }
+    var bits = [];
+    if (d.added && d.added.length) bits.push('added ' + d.added.join(', '));
+    if (d.removed && d.removed.length) bits.push('removed ' + d.removed.join(', '));
+    if (d.kept && d.kept.length) bits.push('kept ' + d.kept.join(', ') + ' (open position)');
+    if (d.repriced && d.repriced.length)
+      bits.push('re-priced ' + d.repriced.length + ' open position' +
+                (d.repriced.length === 1 ? '' : 's') + ' (new target / stop)');
+    setMsg('applied to the running engine' + (bits.length ? ' · ' + bits.join(' · ') : ''), 'ok');
+    poll();
+  }).catch(function(e){
+    $('applyBtn').disabled = false;
+    setMsg('apply failed: ' + e, 'err');
+  });
+}
+
+/* ---- saved symbol sets (JSON on the server) ---- */
+function presetMsg(t, cls){
+  var el = $('presetMsg');
+  if (!el) return;
+  el.textContent = t || '';
+  el.className = cls === 'err' ? 'bad' : 'muted';
+}
+function presetPayload(){
+  return {
+    rows: SYMS.map(function(r){ return {sym:r.sym, exch:r.exch, amount:r.amount,
+                                         capital:r.capital, locked:r.locked}; }),
+    alloc_mode: $('alloc_mode').value,
+    total: $('alloc_total').value,
+    source: $('sym_source').value,
+    book: $('sheet_book').value,
+    exchange: $('exchange').value,
+    interval: $('interval').value,
+    period: $('period').value
+  };
+}
+function loadPresetList(selectName){
+  fetchT('/api/paper-live/presets', {}, 15000).then(function(d){
+    if (!d.ok || !$('presetList')) return;
+    var cur = selectName || $('presetList').value;
+    $('presetList').innerHTML = '<option value="">— saved sets —</option>' +
+      (d.presets || []).map(function(p){
+        return '<option value="' + esc(p.name) + '"' + (p.name === cur ? ' selected' : '') + '>' +
+               esc(p.name) + ' (' + p.symbols + ')</option>';
+      }).join('');
+    if (!d.presets.length) presetMsg('nothing saved yet');
+  }).catch(function(){});
+}
+function savePreset(){
+  var name = ($('presetName').value || '').trim();
+  if (!name){ presetMsg('give it a name first', 'err'); return; }
+  post('/api/paper-live/presets', { name: name, data: presetPayload() }).then(function(d){
+    if (!d.ok){ presetMsg(d.error || 'save failed', 'err'); return; }
+    presetMsg('saved "' + d.name + '" · ' + d.count + ' symbols', 'ok');
+    loadPresetList(d.name);
+  }).catch(function(e){ presetMsg('save failed: ' + e, 'err'); });
+}
+function loadPreset(){
+  var name = $('presetList').value;
+  if (!name){ presetMsg('pick a saved set', 'err'); return; }
+  fetchT('/api/paper-live/presets?name=' + encodeURIComponent(name), {}, 15000)
+    .then(function(d){
+      if (!d.ok){ presetMsg(d.error || 'load failed', 'err'); return; }
+      var p = d.preset || {};
+      SYMS = (p.rows || []).map(function(r){
+        return { sym:r.sym, exch:r.exch || exchLabel(r.sym, 'NSE'),
+                 amount:Number(r.amount) || 0, capital:Number(r.capital) || 0,
+                 locked: !!r.locked };
+      });
+      if (p.alloc_mode) $('alloc_mode').value = p.alloc_mode;
+      if (p.total) $('alloc_total').value = p.total;
+      if (p.source) $('sym_source').value = p.source;
+      if (p.exchange) $('exchange').value = p.exchange;
+      if (p.interval) $('interval').value = p.interval;
+      renderSyms(); recalcAlloc(); syncSheetBlock(); syncAllocHint();
+      presetMsg('loaded "' + name + '" · ' + SYMS.length + ' symbols — press ▶ Start (or it is already applied)', 'ok');
+      if (!RUNNING) setMsg('loaded "' + name + '" — press ▶ Start', 'ok');
+    }).catch(function(e){ presetMsg('load failed: ' + e, 'err'); });
+}
+function deletePreset(){
+  var name = $('presetList').value;
+  if (!name){ presetMsg('pick a saved set', 'err'); return; }
+  if (!confirm('Delete the saved set "' + name + '"?')) return;
+  post('/api/paper-live/presets/delete', { name: name }).then(function(d){
+    if (!d.ok){ presetMsg(d.error || 'delete failed', 'err'); return; }
+    presetMsg('deleted "' + name + '"');
+    loadPresetList('');
+  }).catch(function(e){ presetMsg('delete failed: ' + e, 'err'); });
+}
+
+/* ---- google sheet ---- */
+function syncSheetBlock(){
+  var on = $('sym_source').value === 'sheet';
+  $('sheetBlock').style.display = on ? '' : 'none';
+  saveSymState();
+}
+function sheetMsg(t, cls){
+  var el = $('sheetMsg');
+  el.textContent = t || '';
+  el.className = cls === 'err' ? 'bad' : 'muted';
+}
+function sheetBook(){
+  var other = ($('sheet_book_other') && $('sheet_book_other').value || '').trim();
+  return other || ($('sheet_book') ? $('sheet_book').value : '');
+}
+function loadBooks(){
+  fetchT('/api/paper-live/sheets/books', {}, 30000).then(function(d){
+    if (!d.books || !$('sheet_book')) return;
+    var cur = $('sheet_book').value;
+    $('sheet_book').innerHTML = d.books.map(function(b){
+      return '<option value="' + esc(b) + '"' + (b === cur ? ' selected' : '') + '>' + esc(b) + '</option>';
+    }).join('');
+  }).catch(function(){});
+}
+function fetchTabs(){
+  var book = sheetBook();
+  if (!book) { sheetMsg('type a book name first', 'err'); return; }
+  sheetMsg('reading tabs…');
+  fetchT('/api/paper-live/sheets/tabs?book=' + encodeURIComponent(book), {}, 45000)
+    .then(function(d){
+      if (!d.ok){ sheetMsg(d.error || 'cannot read tabs', 'err'); return; }
+      $('sheet_tab').innerHTML = d.tabs.map(function(t){
+        return '<option value="' + esc(t) + '">' + esc(t) + '</option>';
+      }).join('');
+      sheetMsg(d.tabs.length + ' tab(s) found');
+    }).catch(function(e){ sheetMsg('tabs failed: ' + e, 'err'); });
+}
+function loadSheetSymbols(){
+  var book = sheetBook(), tab = $('sheet_tab').value;
+  if (!book || !tab){ sheetMsg('pick a book and a tab', 'err'); return; }
+  sheetMsg('loading…');
+  fetchT('/api/paper-live/sheets/symbols?book=' + encodeURIComponent(book) +
+         '&tab=' + encodeURIComponent(tab), {}, 60000)
+    .then(function(d){
+      if (!d.ok){ sheetMsg(d.error || 'load failed', 'err'); return; }
+      var exMap = { '.NS': 'NSE', '.BO': 'BSE', '': 'US', '_FX': 'FX', '_CRYPTO': 'CRYPTO' };
+      var chosen = ($('exchange') && exMap[$('exchange').value]) || d.exchange || 'NSE';
+      SHEET_EXCH = chosen;
+      var added = symAdd(d.symbols.join(', '), chosen);
+      sheetMsg(added + ' added, ' + d.symbols.length + ' in the tab (' + chosen + ')');
+    }).catch(function(e){ sheetMsg('load failed: ' + e, 'err'); });
+}
+
+function inr(v){
+  var n = Number(v);
+  if (!isFinite(n)) return '—';
+  return '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+}
+function syncSizing(){
+  var m = $('sizing_mode').value;
+  if (typeof recalcAlloc === 'function') recalcAlloc();
+  $('amountRow').style.display = (m === 'fixed') ? '' : 'none';
+  $('qtyRow').style.display    = (m === 'qty')   ? '' : 'none';
+  $('pctRow').style.display    = (m === 'pct')   ? '' : 'none';
+  $('targetLbl').textContent = ($('profit_target_mode').value === 'amount')
+      ? 'Target ₹' : 'Target %';
+
+  var amt = Number($('position_amount').value) || 0;
+  var qty = Number($('fixed_qty').value) || 0;
+  var pct = Number($('position_pct').value) || 0;
+  var cap = Number($('capital').value) || 0;
+  var budget, modeTxt, ignored;
+  if (m === 'fixed'){ budget = amt; modeTxt = 'Fixed ₹ per trade'; ignored = 'Quantity and Position %'; }
+  else if (m === 'qty'){ budget = qty; modeTxt = 'Fixed quantity'; ignored = 'Amount ₹ and Position %'; }
+  else { budget = cap * pct / 100; modeTxt = '% of capital'; ignored = 'Amount ₹ and Quantity'; }
+
+  var line;
+  var tblSum = 0, tblRows = [];
+  SYMS.forEach(function(r){
+    var v = (m === 'pct') ? (r.capital || 0) : (r.amount || 0);
+    if (v > 0){ tblSum += v; tblRows.push((r.sym.replace(/\.NS$/, '')) + ' ' + inr(v)); }
+  });
+
+  if (m === 'qty'){
+    line = '<b>USING: ' + qty + ' share' + (qty === 1 ? '' : 's') + ' per trade</b> ' +
+           '(fixed quantity) — every symbol buys exactly ' + qty + ' share' + (qty === 1 ? '' : 's') + '.';
+  } else if (tblRows.length && m === 'fixed'){
+    line = '<b>USING: the table</b> — ' + tblRows.join(' · ') +
+           ' <span style="color:var(--muted)">(total ' + inr(tblSum) + ')</span>.';
+    budget = 0;
+  } else if (tblRows.length && m === 'pct'){
+    line = '<b>USING: the table\'s capital</b> — ' + tblRows.join(' · ') + ' × ' + pct +
+           '% <span style="color:var(--muted)">= ' + inr(tblSum * pct / 100) + ' deployed</span>.';
+    budget = 0;
+  } else if (m === 'pct'){
+    line = '<b>USING: ' + pct + '% of ' + inr(cap) + ' = ' + inr(budget) + ' per trade</b> ' +
+           '— qty = ⌊' + inr(budget) + ' ÷ price⌋.';
+  } else {
+    line = '<b>USING: ' + inr(amt) + ' per trade</b> — qty = ⌊' + inr(amt) + ' ÷ price⌋.';
+  }
+  if (m === 'pct' && tblRows.length){
+    line += ' <span style="color:var(--muted)">Each symbol\'s cash = its own share from the table, ' +
+            'so Position % applies to that share (the global Capital box is ignored here).</span>';
+  } else if (m !== 'qty'){
+    line += ' <span style="color:var(--muted)">Capital ' + inr(cap) +
+            ' is only the cash balance (the trade must fit inside it), it does not set the quantity.</span>';
+  } else {
+    line += ' <span style="color:var(--muted)">Capital ' + inr(cap) +
+            ' is only the cash balance (the trade must fit inside it).</span>';
+  }
+
+  var ex = '';
+  if (SIZE_SAMPLE && SIZE_SAMPLE.ltp > 0){
+    var per = budget;
+    for (var t = 0; t < SYMS.length; t++){
+      if (SYMS[t].sym === SIZE_SAMPLE.symbol){
+        var rowVal = (m === 'pct') ? (SYMS[t].capital || 0) * pct / 100 : (SYMS[t].amount || 0);
+        if (rowVal > 0) per = rowVal;
+        break;
+      }
+    }
+    var q = (m === 'qty') ? Math.max(1, Math.floor(qty))
+                          : Math.floor(per / SIZE_SAMPLE.ltp);
+    ex = '<br><span style="color:var(--muted)">Example from your feed: <b>' + SIZE_SAMPLE.symbol +
+         '</b> @ ' + SIZE_SAMPLE.ltp.toFixed(2) + ' → <b>' + q + ' share' + (q === 1 ? '' : 's') +
+         '</b> (' + inr(q * SIZE_SAMPLE.ltp) + ')</span>';
+  }
+  $('sizeBasis').innerHTML =
+      '<span style="color:var(--muted)">Mode <b>' + modeTxt + '</b> · ignored: ' + ignored +
+      '</span><br>' + line + ex;
+  if ($('sizeInfo')) $('sizeInfo').textContent = (m === 'qty')
+      ? (qty + ' sh') : (m === 'pct' ? (pct + '% of cap') : inr(amt));
+}
+var SIZE_SAMPLE = null;
+$('sizing_mode').addEventListener('change', syncSizing);
+$('profit_target_mode').addEventListener('change', syncSizing);
+
+function syncFno(){
+  var sheet = $('fno_mode').value === 'sheet';
+  $('fnoBookRow').style.display = sheet ? '' : 'none';
+  $('fnoTabRow').style.display  = sheet ? '' : 'none';
+}
+$('fno_mode').addEventListener('change', syncFno);
+syncFno();
+syncSizing();
+
+/* ---------- symbol table wiring ---------- */
+$('symAddBtn').addEventListener('click', function(){
+  var n = symAdd($('symQuick').value);
+  if (n === 0) setMsg('that symbol is already in the list', 'warn');
+  $('symQuick').value = '';
+});
+$('symQuick').addEventListener('keydown', function(e){
+  if (e.key === 'Enter'){ e.preventDefault(); $('symAddBtn').click(); }
+});
+$('sym_source').addEventListener('change', syncSheetBlock);
+$('sheetTabsBtn').addEventListener('click', fetchTabs);
+$('sheetLoadBtn').addEventListener('click', loadSheetSymbols);
+$('alloc_mode').addEventListener('change', function(){ recalcAlloc(); renderSyms(); });
+$('alloc_total').addEventListener('input', recalcAlloc);
+$('lockAllBtn').addEventListener('click', lockAll);
+$('unlockAllBtn').addEventListener('click', unlockAll);
+$('rmUnlockedBtn').addEventListener('click', removeUnlocked);
+
+$('presetSaveBtn').addEventListener('click', savePreset);
+$('presetLoadBtn').addEventListener('click', loadPreset);
+$('presetDelBtn').addEventListener('click', deletePreset);
+loadPresetList();
+loadBooks();
+/* instant: last state in this browser (or the default pair) */
+if (!loadSymState()){
+  symAdd($('symbols').value || 'HAL, RELIANCE');
+} else {
+  renderSyms();
+  recalcAlloc();
+}
+/* then the set saved on the server (💾 Save allocations) wins, if there is one */
+loadAllocations(function(){ /* replaced rows already rendered */ });
+syncSheetBlock();
+syncAllocHint();
+SYMS_READY = true;
+
+/* ---------- collapsible cards (click the title) ---------- */
+(function(){
+  var FoldState = {};
+  try { FoldState = JSON.parse(localStorage.getItem('paper_live_folds') || '{}'); } catch (e) {}
+  function saveFolds(){ try { localStorage.setItem('paper_live_folds', JSON.stringify(FoldState)); } catch (e) {} }
+  var cards = document.querySelectorAll ? document.querySelectorAll('.card') : [];
+  for (var i = 0; i < cards.length; i++){
+    (function(card){
+      var h = null, kids = card.children || [];
+      for (var k = 0; k < kids.length; k++){
+        if (kids[k].tagName && kids[k].tagName.toLowerCase() === 'h3'){ h = kids[k]; break; }
+      }
+      if (!h && card.querySelector) h = card.querySelector('h3');   /* fallback */
+      if (!h) return;
+      var key = (h.textContent || '').trim().slice(0, 40);
+      if (FoldState[key]) card.classList.add('collapsed');
+      h.addEventListener('click', function(){
+        card.classList.toggle('collapsed');
+        FoldState[key] = card.classList.contains('collapsed');
+        saveFolds();
+      });
+    })(cards[i]);
+  }
+})();
+
+/* ---------- unsaved-changes tracking on the left panel ---------- */
+function watchEdits(){
+  var panel = $('leftPanel');
+  if (!panel || !panel.addEventListener) return;
+  var onChange = function(ev){
+    var t = ev.target;
+    if (!t || !t.id) return;
+    if (t.id === 'symbols' || t.id === 'symQuick') return;   /* symbols auto-apply */
+    if (t.id.indexOf('so_') === 0) return;                    /* sheet output has its own Save */
+    markDirty();
+  };
+  panel.addEventListener('input', onChange);
+  panel.addEventListener('change', onChange);
+}
+watchEdits();
+/* the auto-poll tick is an explicit act, so it goes to the engine at once */
+if ($('auto_poll')){
+  $('auto_poll').addEventListener('change', function(){
+    AUTOPOLL_TOUCH = true;
+    var on = !!$('auto_poll').checked;
+    if (!RUNNING){ setMsg(on ? 'auto polling on (from the next Start)' : 'auto polling off (Scan now only)', 'ok'); return; }
+    var c2 = readCfg();
+    post('/api/paper-live/update', c2).then(function(d){
+      if (!d.ok){ setMsg(d.error || 'could not change polling', 'err'); return; }
+      saveCfgLocal(c2);
+      setMsg(on ? 'auto polling ON — every ' + $('pollInfo').textContent
+                : 'auto polling OFF — the engine will not scan by itself; press ⟳ Scan now', 'ok');
+      clearDirty();
+      poll();
+    }).catch(function(e){ setMsg('polling change failed: ' + e, 'err'); });
+  });
+}
+$('applyBtn').addEventListener('click', applySettings);
+$('saveAllocBtn').addEventListener('click', saveAllocations);
+
+/* restore saved settings, then show current state */
+(function boot(){
+  try {
+    var saved = JSON.parse(localStorage.getItem('paper_live_cfg') || 'null');
+    if (saved){ writeCfg(saved); CFG_RESTORED = true; }
+    else if (IS_LIVE){ writeCfg(LIVE_DEFAULTS); CFG_RESTORED = true; }
+  } catch (e) {}
+  syncSizing();
+  syncFno();
+  applyMarket(false);
+  setupProfile();
+  poll();
+  setInterval(function(){
+    if (!RUNNING) poll();          /* refresh the clock / market status */
+  }, 60000);
+})();
+</script>
+</body>
+</html>
