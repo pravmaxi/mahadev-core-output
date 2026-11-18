@@ -1,0 +1,47 @@
+{
+  "rows": [
+    {
+      "sym": "EURUSD=X",
+      "exch": "FX",
+      "amount": 0,
+      "capital": 71428,
+      "locked": true
+    },
+    {
+      "sym": "GBPUSD=X",
+      "exch": "FX",
+      "amount": 0,
+      "capital": 71428,
+      "locked": true
+    },
+    {
+      "sym": "USDJPY=X",
+      "exch": "FX",
+      "amount": 0,
+      "capital": 71428,
+      "locked": true
+    },
+    {
+      "sym": "USDCAD=X",
+      "exch": "FX",
+      "amount": 0,
+      "capital": 71428,
+      "locked": true
+    },
+    {
+      "sym": "USDCHF=X",
+      "exch": "FX",
+      "amount": 0,
+      "capital": 71432,
+      "locked": true
+    }
+  ],
+  "alloc_mode": "equal",
+  "total": "500000",
+  "source": "sheet",
+  "book": "Backtest scanner",
+  "exchange": "_FX",
+  "interval": "15m",
+  "period": "1mo",
+  "saved_at": "2026-11-18 15:42:25"
+}

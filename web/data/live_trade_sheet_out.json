@@ -1,0 +1,13 @@
+{
+ "cfg": {
+  "enabled": true,
+  "book": "",
+  "orders_tab": "live_orders",
+  "positions_tab": "live_positions"
+ },
+ "baselined": true,
+ "seen_pos": [],
+ "seen_trades": [],
+ "seen_sigs": [],
+ "outbox": []
+}
