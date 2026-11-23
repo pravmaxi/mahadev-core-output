@@ -1,38 +1,66 @@
 {
   "rows": [
     {
+      "sym": "AMD",
+      "exch": "US",
+      "amount": 0,
+      "capital": 55555,
+      "locked": true
+    },
+    {
+      "sym": "AAPL",
+      "exch": "US",
+      "amount": 0,
+      "capital": 55555,
+      "locked": true
+    },
+    {
+      "sym": "ABBV",
+      "exch": "US",
+      "amount": 0,
+      "capital": 55555,
+      "locked": true
+    },
+    {
+      "sym": "AMZN",
+      "exch": "US",
+      "amount": 0,
+      "capital": 55555,
+      "locked": true
+    },
+    {
+      "sym": "AVGO",
+      "exch": "US",
+      "amount": 0,
+      "capital": 55555,
+      "locked": true
+    },
+    {
+      "sym": "COST",
+      "exch": "US",
+      "amount": 0,
+      "capital": 55555,
+      "locked": true
+    },
+    {
+      "sym": "CTSH",
+      "exch": "US",
+      "amount": 0,
+      "capital": 55555,
+      "locked": true
+    },
+    {
+      "sym": "HAL.NS",
+      "exch": "NSE",
+      "amount": 0,
+      "capital": 55555,
+      "locked": true
+    },
+    {
       "sym": "EURUSD=X",
       "exch": "FX",
       "amount": 0,
-      "capital": 71428,
-      "locked": true
-    },
-    {
-      "sym": "GBPUSD=X",
-      "exch": "FX",
-      "amount": 0,
-      "capital": 71428,
-      "locked": true
-    },
-    {
-      "sym": "USDJPY=X",
-      "exch": "FX",
-      "amount": 0,
-      "capital": 71428,
-      "locked": true
-    },
-    {
-      "sym": "USDCAD=X",
-      "exch": "FX",
-      "amount": 0,
-      "capital": 71428,
-      "locked": true
-    },
-    {
-      "sym": "USDCHF=X",
-      "exch": "FX",
-      "amount": 0,
-      "capital": 71432,
+      "capital": 55560,
       "locked": true
     }
   ],
@@ -41,7 +69,7 @@
   "source": "sheet",
   "book": "Backtest scanner",
   "exchange": "_FX",
-  "interval": "15m",
+  "interval": "5m",
   "period": "1mo",
-  "saved_at": "2026-11-18 15:42:25"
+  "saved_at": "2026-11-18 23:38:29"
 }

@@ -1,44 +1,14 @@
 [
   {
-    "sym": "EURUSD",
-    "amt": 7142857,
-    "tf": "1m",
-    "exch": "FX"
+    "sym": "BANKBEES",
+    "amt": 25000000,
+    "tf": "1h",
+    "exch": "NSE"
   },
   {
-    "sym": "USDJPY",
-    "amt": 7142857,
-    "tf": "1m",
-    "exch": "FX"
-  },
-  {
-    "sym": "USDCHF",
-    "amt": 7142857,
-    "tf": "1m",
-    "exch": "FX"
-  },
-  {
-    "sym": "AMD",
-    "amt": 865800,
-    "tf": "1m",
-    "exch": "US"
-  },
-  {
-    "sym": "ABBV",
-    "amt": 865800,
-    "tf": "1m",
-    "exch": "US"
-  },
-  {
-    "sym": "AVGO",
-    "amt": 865800,
-    "tf": "1m",
-    "exch": "US"
-  },
-  {
-    "sym": "CTSH",
-    "amt": 865800,
-    "tf": "1m",
-    "exch": "US"
+    "sym": "AARTIIND",
+    "amt": 25000000,
+    "tf": "1h",
+    "exch": "NSE"
   }
 ]

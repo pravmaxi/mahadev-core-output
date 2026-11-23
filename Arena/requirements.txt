@@ -1,0 +1,8 @@
+Flask
+pandas
+numpy
+pytz
+requests
+yfinance
+gspread
+oauth2client
