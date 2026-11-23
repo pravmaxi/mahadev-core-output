@@ -1,37 +1,12 @@
 {
-  "EURUSD=X|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-14 03:43",
-    "level": 1.1
-  },
-  "USDJPY=X|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-14 03:20",
-    "level": 159.68
-  },
-  "USDCHF=X|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-14 03:25",
-    "level": 0.84
-  },
-  "AMD|wt": {
+  "BANKBEES.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-14 02:12",
-    "level": 531.0
+    "datetime": "2026-11-19 10:15",
+    "level": 648.45
   },
-  "ABBV|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-14 02:20",
-    "level": 294.82
-  },
-  "AVGO|wt": {
+  "AARTIIND.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-14 02:27",
-    "level": 346.32
-  },
-  "CTSH|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-14 02:27",
-    "level": 63.02
+    "datetime": "2026-11-12 09:15",
+    "level": 482.4
   }
 }

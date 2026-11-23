@@ -1,33 +1,33 @@
 {
   "HAL.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 4973.0
+    "datetime": "2026-11-19 09:15",
+    "level": 4738.0
   },
   "WIPRO.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-16 14:20",
-    "level": 192.46
+    "direction": "sell",
+    "datetime": "2026-11-11 13:15",
+    "level": 196.77
   },
   "RELIANCE.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:45",
-    "level": 1321.0
+    "datetime": "2026-11-19 09:15",
+    "level": 1350.0
   },
   "TCS.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 2463.0
+    "direction": "sell",
+    "datetime": "2026-11-18 09:15",
+    "level": 2383.0
   },
   "INFY.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:40",
-    "level": 1150.1
+    "datetime": "2026-11-16 12:15",
+    "level": 1139.5
   },
   "SBIN.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 13:45",
-    "level": 1036.0
+    "datetime": "2026-11-18 13:15",
+    "level": 1132.05
   },
   "HAL.NS|ce": {
     "direction": "buy",
@@ -65,19 +65,19 @@
     "level": 1026.9
   },
   "HDFCBANK.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 13:45",
-    "level": 794.95
+    "direction": "sell",
+    "datetime": "2026-11-17 14:15",
+    "level": 812.55
   },
   "ICICIBANK.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:55",
-    "level": 1585.7
+    "datetime": "2026-11-18 10:15",
+    "level": 1599.4
   },
   "IRFC.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:20",
-    "level": 82.23
+    "datetime": "2026-11-19 10:15",
+    "level": 83.26
   },
   "IRFC.NS|ce": {
     "direction": "buy",
@@ -240,9 +240,9 @@
     "level": 278.67
   },
   "ITC.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:10",
-    "level": 278.85
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 300.05
   },
   "HAL.NS|st": {
     "direction": "buy",
@@ -640,24 +640,24 @@
     "level": 39.08
   },
   "APOLLOHOSP.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 14:50",
-    "level": 8494.5
+    "direction": "sell",
+    "datetime": "2026-11-17 12:15",
+    "level": 8770.0
   },
   "AARTIPHARM.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:20",
-    "level": 920.1
+    "datetime": "2026-11-17 13:15",
+    "level": 1007.15
   },
   "PFC.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:55",
-    "level": 337.25
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 328.35
   },
   "JIOFIN.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 229.2
+    "datetime": "2026-11-19 11:15",
+    "level": 225.61
   },
   "AMZN.NS|wt": {
     "direction": "buy",
@@ -671,528 +671,528 @@
   },
   "^NSEI|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:15",
-    "level": 25003.65
+    "datetime": "2026-11-19 11:15",
+    "level": 25373.6
   },
   "AARTIIND.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-16 13:45",
-    "level": 474.5
+    "direction": "sell",
+    "datetime": "2026-11-12 09:15",
+    "level": 482.4
   },
   "ACC.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:45",
-    "level": 1234.7
+    "datetime": "2026-11-19 10:15",
+    "level": 1246.0
   },
   "ALKEM.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:55",
-    "level": 5362.5
+    "datetime": "2026-11-19 11:15",
+    "level": 5170.5
   },
   "AMBUJACEM.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:45",
-    "level": 387.6
+    "datetime": "2026-11-19 10:15",
+    "level": 389.35
   },
   "APOLLOTYRE.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:10",
-    "level": 415.4
+    "datetime": "2026-11-19 10:15",
+    "level": 419.95
   },
   "APTECHT.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:10",
-    "level": 82.98
+    "datetime": "2026-11-19 10:15",
+    "level": 85.19
   },
   "ASHOKLEY.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:10",
-    "level": 174.5
+    "datetime": "2026-11-18 14:15",
+    "level": 162.09
   },
   "AURUM.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:20",
-    "level": 206.5
+    "direction": "buy",
+    "datetime": "2026-11-19 11:15",
+    "level": 216.66
   },
   "AXISBANK.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:05",
-    "level": 1305.7
+    "direction": "sell",
+    "datetime": "2026-11-18 10:15",
+    "level": 1362.0
   },
   "BANKBEES.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:20",
-    "level": 615.79
+    "direction": "buy",
+    "datetime": "2026-11-19 10:15",
+    "level": 648.45
   },
   "BEL.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:00",
-    "level": 393.9
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 402.6
   },
   "BERGEPAINT.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:10",
-    "level": 472.3
+    "direction": "sell",
+    "datetime": "2026-11-18 10:15",
+    "level": 467.2
   },
   "BHARTIARTL.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:55",
-    "level": 2060.4
+    "direction": "buy",
+    "datetime": "2026-11-19 11:15",
+    "level": 2148.2
   },
   "BPCL.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:35",
-    "level": 315.65
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 307.9
   },
   "BUTTERFLY.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 588.95
+    "direction": "sell",
+    "datetime": "2026-11-18 12:15",
+    "level": 572.5
   },
   "CDSL.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 13:45",
-    "level": 1354.9
+    "direction": "sell",
+    "datetime": "2026-11-17 13:15",
+    "level": 1437.0
   },
   "CHOLAFIN.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:05",
-    "level": 1780.5
+    "datetime": "2026-11-19 11:15",
+    "level": 1870.6
   },
   "CIPLA.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 1404.9
+    "datetime": "2026-11-18 10:15",
+    "level": 1424.9
   },
   "COALINDIA.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:40",
-    "level": 401.05
+    "direction": "buy",
+    "datetime": "2026-11-18 14:15",
+    "level": 389.1
   },
   "COCHINSHIP.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 1285.2
+    "direction": "buy",
+    "datetime": "2026-11-18 14:15",
+    "level": 1143.0
   },
   "CYIENT.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:50",
-    "level": 1092.1
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 1109.8
   },
   "DABUR.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:25",
-    "level": 374.95
+    "datetime": "2026-11-19 09:15",
+    "level": 390.5
   },
   "DIAMONDYD.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 1040.0
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 1044.5
   },
   "DIVISLAB.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:55",
-    "level": 11506.0
+    "datetime": "2026-11-18 11:15",
+    "level": 11119.5
   },
   "DOLLAR.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:15",
-    "level": 269.82
+    "datetime": "2026-11-19 09:15",
+    "level": 254.0
   },
   "EQUITASBNK.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:15",
-    "level": 56.06
+    "datetime": "2026-11-18 09:15",
+    "level": 56.61
   },
   "EXIDEIND.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:50",
-    "level": 384.35
+    "datetime": "2026-11-17 09:15",
+    "level": 389.4
   },
   "FEDERALBNK.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 13:45",
-    "level": 339.1
+    "direction": "sell",
+    "datetime": "2026-11-17 12:15",
+    "level": 361.8
   },
   "GABRIEL.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 1417.4
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 1565.0
   },
   "GAIL.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:10",
-    "level": 187.42
+    "direction": "buy",
+    "datetime": "2026-11-18 09:15",
+    "level": 191.3
   },
   "GIPCL.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:20",
-    "level": 163.9
+    "datetime": "2026-11-18 14:15",
+    "level": 155.8
   },
   "GODREJCP.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 849.85
+    "datetime": "2026-11-18 14:15",
+    "level": 900.4
   },
   "GOLDBEES.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:05",
-    "level": 116.95
+    "direction": "sell",
+    "datetime": "2026-11-18 09:15",
+    "level": 107.55
   },
   "GRASIM.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:30",
-    "level": 3167.4
+    "direction": "buy",
+    "datetime": "2026-11-18 14:15",
+    "level": 3073.5
   },
   "GSFC.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 142.09
+    "datetime": "2026-11-12 14:15",
+    "level": 147.12
   },
   "HAVELLS.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:20",
-    "level": 1150.8
+    "datetime": "2026-11-19 10:15",
+    "level": 1189.8
   },
   "HCLTECH.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 14:35",
-    "level": 1406.0
+    "direction": "sell",
+    "datetime": "2026-11-19 09:15",
+    "level": 1311.5
   },
   "HINDUNILVR.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:30",
-    "level": 1985.3
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 2036.0
   },
   "ICICIGI.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:05",
-    "level": 1656.1
+    "datetime": "2026-11-19 11:15",
+    "level": 1682.0
   },
   "ICICIPRULI.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-10-22 14:35",
-    "level": 428.25
+    "datetime": "2026-10-22 11:15",
+    "level": 430.4
   },
   "IDFCFIRSTB.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 77.44
+    "direction": "buy",
+    "datetime": "2026-11-19 10:15",
+    "level": 85.8
   },
   "INDIGO.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 5427.5
+    "datetime": "2026-11-18 09:15",
+    "level": 5543.1
   },
   "INDUSINDBK.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 14:10",
-    "level": 889.7
+    "direction": "sell",
+    "datetime": "2026-11-18 09:15",
+    "level": 909.05
   },
   "INDUSTOWER.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:55",
-    "level": 381.2
+    "datetime": "2026-11-16 12:15",
+    "level": 394.2
   },
   "IOC.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:05",
-    "level": 147.37
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 146.43
   },
   "IRCTC.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 459.45
+    "direction": "buy",
+    "datetime": "2026-11-19 10:15",
+    "level": 447.6
   },
   "ITBEES.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:50",
-    "level": 35.98
+    "datetime": "2026-11-17 13:15",
+    "level": 35.2
   },
   "ITCHOTELS.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 13:50",
-    "level": 175.3
+    "datetime": "2026-11-19 09:15",
+    "level": 184.06
   },
   "JAMNAAUTO.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:15",
-    "level": 133.44
+    "datetime": "2026-11-13 13:15",
+    "level": 149.55
   },
   "JKTYRE.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:00",
-    "level": 356.7
+    "direction": "buy",
+    "datetime": "2026-11-19 11:15",
+    "level": 369.55
   },
   "JUNIORBEES.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:20",
-    "level": 783.52
+    "direction": "buy",
+    "datetime": "2026-11-19 10:15",
+    "level": 784.39
   },
   "KIRLOSBROS.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:25",
-    "level": 1637.5
+    "direction": "buy",
+    "datetime": "2026-11-18 13:15",
+    "level": 1584.6
   },
   "KPITTECH.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 13:35",
-    "level": 540.1
+    "direction": "sell",
+    "datetime": "2026-11-18 14:15",
+    "level": 523.95
   },
   "KPRMILL.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:10",
-    "level": 1156.7
+    "direction": "sell",
+    "datetime": "2026-11-18 11:15",
+    "level": 1216.7
   },
   "LAURUSLABS.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:20",
-    "level": 2440.0
+    "datetime": "2026-11-19 09:15",
+    "level": 2289.0
   },
   "LICI.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 13:40",
-    "level": 398.15
+    "datetime": "2026-11-19 09:15",
+    "level": 404.45
   },
   "LINCOLN.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 518.65
+    "datetime": "2026-11-17 09:15",
+    "level": 518.0
   },
   "LT.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 4183.8
+    "direction": "buy",
+    "datetime": "2026-11-19 11:15",
+    "level": 4180.4
   },
   "LTF.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:50",
-    "level": 273.09
+    "datetime": "2026-11-17 14:15",
+    "level": 279.0
   },
   "MAHABANK.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 13:50",
-    "level": 86.66
+    "datetime": "2026-11-19 10:15",
+    "level": 98.71
   },
   "MANAPPURAM.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:05",
-    "level": 323.3
+    "datetime": "2026-11-19 10:15",
+    "level": 282.9
   },
   "MARICO.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:40",
-    "level": 898.85
+    "datetime": "2026-11-18 10:15",
+    "level": 905.05
   },
   "MON100.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:35",
-    "level": 298.27
+    "datetime": "2026-11-19 10:15",
+    "level": 298.5
   },
   "MOTILALOFS.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:00",
-    "level": 1146.25
+    "datetime": "2026-11-17 14:15",
+    "level": 1234.1
   },
   "MSUMI.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:15",
-    "level": 38.99
+    "datetime": "2026-11-19 09:15",
+    "level": 41.37
   },
   "MUKANDLTD.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 147.4
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 139.77
   },
   "NATCOPHARM.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:05",
-    "level": 804.8
+    "direction": "sell",
+    "datetime": "2026-11-17 14:15",
+    "level": 821.8
   },
   "NEWGEN.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:20",
-    "level": 437.65
+    "datetime": "2026-11-12 13:15",
+    "level": 440.5
   },
   "NIFTYBEES.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:15",
-    "level": 285.08
+    "datetime": "2026-11-19 11:15",
+    "level": 289.47
   },
   "NUCLEUS.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 14:25",
-    "level": 631.55
+    "direction": "sell",
+    "datetime": "2026-11-18 10:15",
+    "level": 620.0
   },
   "NV20IETF.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:50",
-    "level": 14.11
+    "direction": "buy",
+    "datetime": "2026-11-19 11:15",
+    "level": 14.28
   },
   "ONGC.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:40",
-    "level": 233.91
+    "direction": "buy",
+    "datetime": "2026-11-18 12:15",
+    "level": 224.65
   },
   "PETRONET.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:25",
-    "level": 320.2
+    "direction": "buy",
+    "datetime": "2026-11-19 11:15",
+    "level": 329.15
   },
   "PHARMABEES.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:05",
-    "level": 29.74
+    "direction": "sell",
+    "datetime": "2026-11-19 10:15",
+    "level": 28.94
   },
   "POWERGRID.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:55",
-    "level": 257.5
+    "direction": "buy",
+    "datetime": "2026-11-18 14:15",
+    "level": 258.95
   },
   "PTC.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:40",
-    "level": 140.8
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 136.89
   },
   "RAIN.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:55",
-    "level": 161.86
+    "datetime": "2026-11-18 11:15",
+    "level": 162.22
   },
   "RECLTD.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 304.0
+    "datetime": "2026-11-19 10:15",
+    "level": 295.95
   },
   "RVNL.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 13:45",
-    "level": 195.5
+    "datetime": "2026-11-19 11:15",
+    "level": 192.67
   },
   "SAGCEM.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:20",
-    "level": 139.3
+    "direction": "buy",
+    "datetime": "2026-11-19 09:15",
+    "level": 140.0
   },
   "SBILIFE.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:05",
-    "level": 1736.9
+    "direction": "buy",
+    "datetime": "2026-11-19 11:15",
+    "level": 1809.6
   },
   "SENSEXETF.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:15",
-    "level": 83.69
+    "datetime": "2026-11-18 09:15",
+    "level": 84.75
   },
   "SHRIRAMFIN.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:55",
-    "level": 960.45
+    "datetime": "2026-11-18 09:15",
+    "level": 969.5
   },
   "SILVERBEES.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:10",
-    "level": 176.35
+    "direction": "sell",
+    "datetime": "2026-11-19 09:15",
+    "level": 151.62
   },
   "SOUTHBANK.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:15",
-    "level": 58.77
+    "direction": "sell",
+    "datetime": "2026-11-13 14:15",
+    "level": 61.71
   },
   "SUNPHARMA.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 13:55",
-    "level": 1907.2
+    "datetime": "2026-11-18 14:15",
+    "level": 1883.1
   },
   "SUNTV.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:15",
-    "level": 604.45
+    "datetime": "2026-11-18 10:15",
+    "level": 683.6
   },
   "TATACHEM.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 15:20",
-    "level": 604.5
+    "direction": "buy",
+    "datetime": "2026-11-19 10:15",
+    "level": 652.7
   },
   "TATACONSUM.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:15",
-    "level": 1080.4
+    "datetime": "2026-11-18 12:15",
+    "level": 1121.1
   },
   "TATAGOLD.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 15:05",
-    "level": 13.75
+    "direction": "sell",
+    "datetime": "2026-11-18 09:15",
+    "level": 12.68
   },
   "TATAINVEST.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 13:50",
-    "level": 574.75
+    "direction": "sell",
+    "datetime": "2026-11-19 09:15",
+    "level": 585.05
   },
   "TATAPOWER.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 358.4
+    "datetime": "2026-11-19 10:15",
+    "level": 342.9
   },
   "TATASTEEL.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:50",
-    "level": 185.65
+    "direction": "buy",
+    "datetime": "2026-11-19 10:15",
+    "level": 181.45
   },
   "TECHM.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 14:45",
-    "level": 1802.7
+    "datetime": "2026-11-16 12:15",
+    "level": 1758.9
   },
   "TIINDIA.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:30",
-    "level": 2199.3
+    "direction": "buy",
+    "datetime": "2026-11-19 10:15",
+    "level": 2223.9
   },
   "TIRUMALCHM.NS|wt": {
-    "direction": "buy",
-    "datetime": "2026-11-09 13:45",
-    "level": 119.42
+    "direction": "sell",
+    "datetime": "2026-11-17 13:15",
+    "level": 121.0
   },
   "TMB.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 13:55",
-    "level": 831.65
+    "datetime": "2026-11-19 10:15",
+    "level": 904.3
   },
   "TMCV.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 437.2
+    "datetime": "2026-11-19 09:15",
+    "level": 449.7
   },
   "TMPV.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:45",
-    "level": 295.25
+    "datetime": "2026-11-19 09:15",
+    "level": 263.0
   },
   "TVSMOTOR.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 15:00",
-    "level": 4482.1
+    "datetime": "2026-11-19 09:15",
+    "level": 4508.0
   },
   "UBL.NS|wt": {
     "direction": "buy",
-    "datetime": "2026-11-09 14:55",
-    "level": 1226.6
+    "datetime": "2026-11-18 11:15",
+    "level": 1203.9
   },
   "UJJIVANSFB.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:15",
-    "level": 60.1
+    "datetime": "2026-11-18 14:15",
+    "level": 61.3
   },
   "UPL.NS|wt": {
-    "direction": "sell",
-    "datetime": "2026-11-09 14:25",
-    "level": 538.5
+    "direction": "buy",
+    "datetime": "2026-11-19 10:15",
+    "level": 572.5
   },
   "VSTIND.NS|wt": {
     "direction": "sell",
-    "datetime": "2026-11-09 15:10",
-    "level": 196.4
+    "datetime": "2026-11-11 14:15",
+    "level": 198.74
   },
   "USDJPY.NS|wt": {
     "direction": "sell",

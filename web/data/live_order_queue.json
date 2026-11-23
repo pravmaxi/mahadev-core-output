@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": "upd_1795157180331_BANKBEES",
+    "action": "UPDATE_RISK",
+    "symbol": "BANKBEES",
+    "tf": "1h",
+    "target_val": "682.48",
+    "sl_val": "640.15"
+  },
+  {
+    "id": "upd_1795157210840_BANKBEES",
+    "action": "UPDATE_RISK",
+    "symbol": "BANKBEES",
+    "tf": "1h",
+    "target_val": "682.48",
+    "sl_val": "640.15"
+  },
+  {
+    "id": "upd_1795157210841_AARTIIND",
+    "action": "UPDATE_RISK",
+    "symbol": "AARTIIND",
+    "tf": "5m",
+    "target_val": "433.49",
+    "sl_val": "\u2014"
+  }
+]

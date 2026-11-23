@@ -1,0 +1,17 @@
+<style>
+  .arena-nav{display:flex;gap:8px;align-items:center;margin-left:20px}
+  .arena-nav-link{color:#aaa;padding:10px;text-decoration:none}
+  .arena-nav-link.active{color:#58a6ff;border-bottom:2px solid #58a6ff}
+</style>
+<header>
+  <b>Arena · Trading</b>
+  <nav class="arena-nav" aria-label="Trading pages">
+    <a href="/paper/paper-live" class="arena-nav-link{% if profile == 'paper' %} active{% endif %}">Paper Trading</a>
+    <a href="/live/live-trade" class="arena-nav-link{% if profile == 'live' %} active{% endif %}">Live Trading</a>
+  </nav>
+  <span class="pill" id="runPill">stopped</span>
+  <span class="pill" id="modePill">same logic as Backtest · paper only · no broker</span>
+  <span class="pill" id="verPill">{{ 'build v20 · centred tables' if profile == 'paper' else 'build v18 · logic check + recent changes' }}</span>
+  <span id="brandName" hidden>Paper Live</span>
+  <div class="spacer"></div><span class="pill" id="clock">—</span>
+</header>
