@@ -218,7 +218,7 @@
     <button type="button" id="sessionLoad">Load</button>
     <button type="button" id="sessionDelete" title="Permanently delete the selected profile and its backup">Delete selected</button>
     <button type="button" id="sessionSave">Save now</button>
-    <span id="sessionNotice" role="status" aria-live="polite">Profiles load stopped. Missed market moves are not recreated.</span>
+    <span id="sessionNotice" role="status" aria-live="polite">Profiles load stopped. Offline breakouts are not replayed on Start.</span>
   </div>
   <!-- The original settings, moved above the monitor. -->
   <div class="side" id="leftPanel" hidden>
@@ -406,8 +406,9 @@
         <input id="fno_tab" type="text" value="F&amp;O_input" style="width:120px">
       </div>
       <div class="hint2" style="font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.35">
-        Drops candles that start at 15:15 IST or later on 5m / 15m / 30m / 1h — exactly like the
-        Backtest page. “All symbols” also hits US/forex symbols (same as Backtest).
+        From sheet applies the F&amp;O candle filter only to NSE/BSE rows; US/forex rows do not read
+        the sheet or use this filter. “All symbols” applies it to every market. The sheet is cached
+        for 10 minutes; Verify uses the same per-symbol filter decision as Paper.
       </div>
     </div>
 
@@ -423,6 +424,9 @@
       <div class="row"><label><input id="allow_already_triggered" type="checkbox" checked> Allow already-triggered if within %</label></div>
       <div class="row"><label>Max diff %</label><input id="already_triggered_max_pct" type="number" step="0.1" min="0" value="1"></div>
       <div class="hint2" style="font-size:10.5px;color:var(--muted);margin:-2px 0 6px;line-height:1.35">
+        <b>Profile resume:</b> Offline and Start-overlapping candles are not replayed as entries or opposite exits.
+        An older already-triggered signal can enter only with this option on, within its limit, and a fresh post-Start quote.
+        Existing positions remain; current-price exits still apply.<br>
         <b>At breakout level</b> = the backtest's assumption: an SL/stop order sits at
         <i>level ± buffer</i>, so the fill is always the level.<br>
         <b>Market if already past</b> = what a human does: price already above the level when the
@@ -514,6 +518,13 @@
         <b id="runState">STOPPED</b>
         <span class="muted" id="runDetail">press ▶ Start to begin polling</span>
       </div>
+      <div id="resumeEngineWarning" role="alert" hidden style="border:1px solid var(--bad);color:var(--bad);padding:8px;margin-bottom:8px;border-radius:7px">Profile resume safety is not available in the running engine. Stop, copy the updated paper_engine.py and restart Arena before resuming a profile.</div>
+      <section class="applied-summary" aria-label="Applied settings summary" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:11.5px;line-height:1.6">
+        <b>Applied settings</b> <span class="muted" id="appliedState">—</span>
+        <div id="appliedMain">Waiting for engine settings…</div>
+        <div id="appliedRules" class="muted"></div>
+        <div class="muted" style="font-size:10.5px">Engine settings, not edits waiting for Apply. Symbol counts are configured scan symbols, not open positions.</div>
+      </section>
       <div class="health" id="healthBox" hidden>
         <div class="health-head">
           <span class="health-ico" id="healthIco">✓</span>
@@ -1067,6 +1078,59 @@ function scanSplit(d){
   return t;
 }
 
+/* Applied configuration comes from /status, never from editable controls. */
+function appliedSymbolCounts(c){
+  var raw=Array.isArray(c.symbols) ? c.symbols.join(',') : String(c.symbols||'');
+  var map=c.symbol_exch && typeof c.symbol_exch==='object' ? c.symbol_exch : {};
+  var exmap={NSE:'.NS',BSE:'.BO',US:'',FX:'_FX',CRYPTO:'_CRYPTO'};
+  var fallback=c.exchange;
+  if (fallback===undefined || fallback===null) fallback=({IN:'.NS',US:'',FX:'_FX',CRYPTO:'_CRYPTO'})[c.market] || (c.market==='US' ? '' : '.NS');
+  var counts={NSE:0,BSE:0,US:0,FX:0,CRYPTO:0,Other:0}, seen=new Set();
+  raw.replace(/[;\n]/g,',').split(',').forEach(function(token){
+    var s=token.trim().toUpperCase(); if (!s) return;
+    var badge=map[token.trim()] || map[s], ex=Object.prototype.hasOwnProperty.call(exmap,badge) ? exmap[badge] : String(fallback);
+    var norm=s;
+    if (s.endsWith('_FX')) norm=s.slice(0,-3)+'=X';
+    else if (!(s.indexOf('.')>=0 || s.startsWith('^') || s.indexOf('=')>=0)){
+      if(ex==='_FX') norm=s+'=X';
+      else if(ex==='_CRYPTO') norm=s.endsWith('-USD') ? s : s+'-USD';
+      else norm=s+ex;
+    }
+    if (seen.has(norm)) return; seen.add(norm);
+    var kind;
+    if(norm.endsWith('.NS')) kind='NSE';
+    else if(norm.endsWith('.BO')) kind='BSE';
+    else if(norm.endsWith('=X')) kind='FX';
+    else if(norm.endsWith('-USD') || norm.endsWith('-USDT')) kind='CRYPTO';
+    else if(badge && Object.prototype.hasOwnProperty.call(counts,badge)) kind=badge;
+    else if(norm.startsWith('^NSE')) kind='NSE';
+    else if(norm.startsWith('^BSE')) kind='BSE';
+    else if(norm.indexOf('.')<0 && norm.indexOf('=')<0) kind='US';
+    else kind='Other';
+    counts[kind]++;
+  });
+  return {count:seen.size,counts:counts};
+}
+function appliedBool(v){return v===true || v===1 || (typeof v==='string' && /^(true|1|yes|on)$/i.test(v));}
+function appliedValue(v){return v===undefined || v===null || v==='' ? '—' : String(v);}
+function renderAppliedSummary(d){
+  var c=d.config || {};
+  if (!c.interval && !c.symbols){
+    $('appliedState').textContent='· not configured'; $('appliedMain').textContent='No engine settings applied yet.'; $('appliedRules').textContent=''; return;
+  }
+  var x=appliedSymbolCounts(c), groups=Object.keys(x.counts).filter(function(k){return x.counts[k];}).map(function(k){return k+' '+x.counts[k];});
+  var market={IN:'India',US:'US',FX:'Forex/commodity',CRYPTO:'Crypto'}[c.market] || appliedValue(c.market);
+  var scan=d.auto_poll===false ? 'auto scan off' : ('scan every '+appliedValue(d.poll_seconds)+'s');
+  $('appliedState').textContent='· '+(d.running?'running':'stopped');
+  $('appliedMain').textContent='TF: '+appliedValue(c.interval)+' · Configured symbols: '+x.count+' ('+(groups.join(' / ')||'none')+') · Market clock: '+market+' · '+scan;
+  var target=(Number(c.profit_target_pct)>0) ? appliedValue(c.profit_target_pct)+(c.profit_target_mode==='amount'?' amount':'%') : 'off';
+  var sl=Number(c.stop_loss_pct)>0 ? appliedValue(c.stop_loss_pct)+'%' : 'off';
+  var trail=appliedBool(c.trailing_enabled) ? ('on ('+appliedValue(c.trailing_start_pct)+'% start / '+appliedValue(c.trailing_step_pct)+'% step)') : 'off';
+  var size=c.sizing_mode==='pct' ? appliedValue(c.position_pct)+'% of capital' : (c.sizing_mode==='qty' ? 'qty '+appliedValue(c.fixed_qty) : (c.sizing_mode==='fixed' ? 'fixed amount '+appliedValue(c.position_amount) : appliedValue(c.sizing_mode)));
+  var already=appliedBool(c.allow_already_triggered) ? ('on ≤ '+appliedValue(c.already_triggered_max_pct)+'%') : 'off';
+  $('appliedRules').textContent='Side: '+appliedValue(c.side_mode)+' · WT pending: '+appliedValue(c.wt_pending_rule)+' · Entry fill: '+appliedValue(c.entry_exec)+' · Already triggered: '+already+' · Target: '+target+' · Stop: '+sl+' · Trailing: '+trail+' · Sizing: '+size+' (row overrides may apply) · F&O: '+appliedValue(c.fno_mode);
+}
+
 function poll(){
   var answered = false;
   fetchT('/paper/api/paper-live/status?ltp_poll=' + ltpPollParam(), {}, 8000).then(function(d){
@@ -1075,6 +1139,7 @@ function poll(){
     STATUS_FAILS = 0;
 
     RUNNING = !!d.running;
+    $('resumeEngineWarning').hidden = IS_LIVE || !d.session_profile || d.resume_guard === 1;
     if (d.session_error) $('sessionNotice').textContent = d.session_error;
     if (!IS_LIVE && !d.session_profile && SESSION_ACTIVE) {
       SESSION_ACTIVE=''; $('sessionActive').textContent='Unprofiled';
@@ -1089,6 +1154,7 @@ function poll(){
       $('sessionActive').textContent = SESSION_ACTIVE;
       sessionList();
     }
+    renderAppliedSummary(d);
     ENGINE_TF = (d.config && d.config.interval) || '';
     if (!BOOT_CFG_SYNCED){
       BOOT_CFG_SYNCED = true;
@@ -1480,6 +1546,7 @@ function renderRecent(h){
 }
 
 function renderHealthDown(msg){
+  if ($("appliedState")) $("appliedState").textContent="· status unavailable; last settings shown";
   var box = $('healthBox');
   if (!box) return;
   box.hidden = false;
@@ -1563,7 +1630,7 @@ function setupProfile(){
   loadSheetOut();
 }
 
-var PAGE_BUILD = 'build v36 · delete active profile', ENGINE_MIN = 16;
+var PAGE_BUILD = 'build v39 · safe profile resume', ENGINE_MIN = 16;
 function checkEngineVersion(d){
   var el = $('verPill');
   if (!el) return;

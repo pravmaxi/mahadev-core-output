@@ -1,0 +1,2886 @@
+{% extends "research_base.html" %}
+{% block title %}Backtest · Trading App{% endblock %}
+
+{% block content %}
+<div id="backtestPageMode" data-continuation="{{ '1' if continuation else '0' }}" hidden></div>
+{% if continuation %}
+<h1>Backtest Continuation</h1>
+<p class="sub">Recalculates the backtest from the selected historical period. Simulation only — no orders or paper trades. History may change when data or the rolling period changes; results are not a persistent live ledger.</p>
+<div style="padding:10px;margin-bottom:12px;border:1px solid var(--border);border-radius:8px">
+  <strong id="continuationState" role="status" style="display:inline-block;padding:4px 9px;border:1px solid var(--border);border-radius:6px;margin-right:8px">STOPPED</strong>
+  <label><input type="checkbox" id="continuationAuto"> Enable continuous recalculation</label>
+  <button type="button" id="continuationStop" class="pillBtn" style="margin:0 8px">■ Stop</button>
+  <label style="margin-right:8px"><input type="checkbox" id="continuationSound"> Sound on changes</label>
+  <button type="button" id="continuationUnlockSound" class="pillBtn" hidden>Enable sound in browser</button>
+  <span id="continuationSoundStatus" style="color:var(--muted);font-size:11px"></span>
+  <label>Full scan interval <select id="continuationInterval" class="inp"><option value="60">1 min</option><option value="240" selected>4 min</option><option value="300">5 min</option><option value="900">15 min</option></select></label>
+  <label style="margin-left:8px"><input type="checkbox" id="continuationLtpPoll"> LTP poll</label>
+  <label>every <select id="continuationLtpInterval" class="inp"><option value="15" selected>15 sec</option><option value="30">30 sec</option><option value="60">60 sec</option><option value="120">2 min</option></select></label>
+  <span id="continuationStatus">Off. Press Scan now or enable continuous recalculation.</span>
+  <div id="continuationLtpState" style="margin-top:5px;color:var(--muted)">LTP poll off.</div>
+  <div style="margin-top:6px"><b>Last successful scan (device time):</b> <span id="continuationLastScan">—</span> · <b>Quote:</b> <span id="continuationQuoteStatus">Not checked yet</span></div>
+  <div>Automatic LTP polling runs only while continuous recalculation is on and the full scan is idle. Polls update the displayed quote only, not simulated trades or P&amp;L. Refresh runs in this browser tab only; background tabs may be delayed. Last candle may be incomplete or delayed. LTP is a Yahoo estimate; its time is unknown and it may be delayed or a prior close. Open P&amp;L is a hypothetical close estimate including assumed exit costs, not a live fill. Disabling stops future refreshes; an in-flight request may finish.</div>
+</div>
+{% else %}<h1>Backtest</h1>
+<p class="sub">Valid-candle → trigger-breakout backtest. Same logic as the scanner.</p>{% endif %}
+
+<div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            padding:14px;margin-bottom:14px">
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+    <label class="lbl">Symbol</label>
+    <input type="text" id="symbol" class="inp" style="width:110px" value="HAL">
+    <select id="exchange" class="inp">
+      <option value=".NS" selected>NSE</option>
+      <option value=".BO">BSE</option>
+      <option value="">US (AAPL, NVDA…)</option>
+      <option value="_FX">Forex/Commodity (EURUSD, XAUUSD…)</option>
+    </select>
+
+    <label class="lbl">TF</label>
+    <select id="tf" class="inp">
+      <option value="1m">1m</option><option value="2m">2m</option>
+      <option value="5m">5m</option><option value="15m">15m</option>
+      <option value="30m">30m</option><option value="60m">60m</option>
+      <option value="90m">90m</option><option value="1h" selected>1h</option>
+      <option value="4h">4h</option><option value="1d">1d</option>
+      <option value="5d">5d</option><option value="1wk">1wk</option>
+      <option value="1mo">1mo</option><option value="3mo">3mo</option>
+    </select>
+
+    <label class="lbl">Period</label>
+    <select id="period" class="inp">
+      <option>1mo</option><option>3mo</option>
+      <option selected>6mo</option><option>1y</option><option>2y</option>
+    </select>
+
+    <span style="color:var(--muted);font-size:11px;font-weight:700;
+                 letter-spacing:.06em;margin-left:8px">USE</span>
+    <label class="runChk"><input type="checkbox" id="src_wt" checked> WaveTrend</label>
+    <label class="runChk"><input type="checkbox" id="src_ce"> Chandelier</label>
+    <label class="runChk"><input type="checkbox" id="src_st"> ST (S/R)</label>
+
+    <span style="width:14px"></span>
+    <label class="runChk" {% if continuation %}hidden{% endif %}><input type="checkbox" id="batchMode"> Batch (sheet)</label>
+    <label class="runChk" {% if continuation %}hidden{% endif %}><input type="checkbox" id="autoTestMode"> 🧪 Auto-Test</label>
+
+    <span style="flex:1"></span>
+    <button id="runSRDiag" class="pillBtn" style="margin-right:6px">📐 S/R diagnostic</button>
+    {% if continuation %}<button type="button" id="applyContinuation" class="pillBtn">✓ Apply changed settings</button>
+    <span id="continuationAppliedStatus" style="color:var(--muted);font-size:11px">Settings not yet applied</span>{% endif %}
+    <button id="run" class="btnPrimary">▶ {{ 'Scan now' if continuation else 'Run Backtest' }}</button>
+    <button id="runBatch" class="btnPrimary" hidden>▶ Run Batch</button>
+    <button id="stopBatch" hidden
+            style="background:#f85149;border:none;color:#fff;border-radius:6px;
+                   padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px">■ Stop</button>
+    <span id="status" style="color:var(--muted);font-size:11.5px">idle</span>
+  </div>
+
+  <!-- Batch source row (only shows in batch mode) -->
+  <div id="batchSourceRow" hidden
+       style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+              padding-top:12px;margin-top:12px;border-top:1px solid var(--border)">
+    <label class="lbl">Source</label>
+    <select id="bSource" class="inp">
+      <option value="sheet" selected>Google Sheet</option>
+      <option value="manual">Manual symbols</option>
+    </select>
+    <label class="lbl" id="bBookLbl">Book</label>
+    <select id="bBook" class="inp" style="width:200px">
+      <option value="Backtest scanner" selected>Backtest scanner</option>
+      <option value="Stock Price Scraper">Stock Price Scraper</option>
+      <option value="scanner output">scanner output</option>
+    </select>
+    <label class="lbl" id="bTabLbl">Symbols tab</label>
+    <select id="bTab" class="inp" style="width:170px">
+      <option value="zero_input">zero_input</option>
+    </select>
+    <input type="text" id="bManual" class="inp" style="flex:1;min-width:240px;display:none"
+           placeholder="HAL, TCS, RELIANCE…" value="HAL, TCS, RELIANCE, INFY, SBIN">
+    <span id="batchProgress" style="color:var(--muted);font-size:11.5px"></span>
+  </div>
+
+  <!-- Output sheet name (batch mode only) -->
+  <div id="batchOutputRow" hidden
+       style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+              padding-top:10px">
+    <label class="lbl">Output tab</label>
+    <input type="text" id="bOutputTab" class="inp" style="width:220px"
+           placeholder="auto (e.g. zero_WT_1h)">
+    <button type="button" id="bResetOutput" class="pillBtn"
+            style="flex:none">↻ auto</button>
+    <span style="color:var(--muted);font-size:11px">
+      Leave blank for auto-name, or type a custom name.
+    </span>
+  </div>
+
+  <!-- Load previously-saved results (batch mode only) -->
+  <div id="batchLoadRow" hidden
+       style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+              padding-top:10px;margin-top:10px;
+              border-top:1px solid var(--border)">
+    <label class="lbl">Load saved tab</label>
+    <select id="bLoadTab" class="inp" style="width:220px">
+      <option value="">(pick a tab)</option>
+    </select>
+    <button type="button" id="bLoadBtn" class="pillBtn primary"
+            style="flex:none">📂 Load results</button>
+    <span id="bLoadStatus" style="color:var(--muted);font-size:11px"></span>
+  </div>
+
+  <!-- ===== AUTO TEST PANEL ===== -->
+  <div id="autoTestPanel" hidden
+       style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border)">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <span style="font-weight:600; color:var(--fg)">Select settings to vary (Tick to test all possible values):</span>
+      <span style="color:var(--accent); font-size:16px; font-weight:700;">
+        Total Runs: <span id="atCount">1</span>
+      </span>
+    </div>
+    
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; margin-bottom:14px;">
+      <!-- Strategy & Side -->
+      <label class="chk"><input type="checkbox" class="at-var" data-key="strategy_mode" data-count="3"> Strategy Mode (3)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="side_mode" data-count="3"> Order Side (3)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="heikin_ashi" data-count="2"> Candle Source (2)</label>
+      
+      <!-- WT & ST -->
+      <label class="chk"><input type="checkbox" class="at-var" data-key="wt_pending_rule" data-count="3"> WT Pending Rule (3)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="st_entry_mode" data-count="2"> ST Entry Mode (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="st_exit_mode" data-count="2"> ST Exit Mode (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="st_reentry_mode" data-count="3"> ST Re-entry (3)</label>
+
+      <!-- Exits -->
+      <label class="chk"><input type="checkbox" class="at-var" data-key="recovery" data-count="3"> Recovery Mode (3)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="trailing_enabled" data-count="2"> Trailing SL (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="exit_on_opposite" data-count="2"> Exit on Opposite (2)</label>
+
+      <!-- Filters -->
+      <label class="chk"><input type="checkbox" class="at-var" data-key="wt_filter_enabled" data-count="2"> WT Extreme (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="htf_filter_enabled" data-count="2"> HTF Trend (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="rsi_filter_enabled" data-count="2"> RSI Filter (2)</label>
+      <label class="chk"><input type="checkbox" class="at-var" data-key="vol_filter_enabled" data-count="2"> Volume (2)</label>
+    </div>
+    
+    <div style="display:flex; gap:10px; align-items:center;">
+        <button id="runAutoBtn" class="btnPrimary">▶ Run Auto-Test</button>
+        <button id="stopAutoBtn" hidden class="btnDanger" style="background:#f85149; border:none; color:#fff; padding:8px 20px; border-radius:6px;">■ Stop</button>
+        <span id="atProgress" style="font-size:12px; color:var(--muted);"></span>
+    </div>
+  </div>
+</div>
+
+<div id="batchResultsWrap" hidden
+     style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+            padding:12px;margin-bottom:14px">
+  <button type="button" id="batchToggle"
+          style="background:transparent;border:none;color:var(--muted);
+                 font-size:11px;cursor:pointer;margin-bottom:8px;
+                 text-transform:uppercase;letter-spacing:.06em;font-weight:600">
+    ▾ BATCH RESULTS
+  </button>
+  <div id="batchPanelBody" style="width:100%;min-width:0">
+    <div class="chartCap">Batch results — click a row to open that symbol's full backtest</div>
+    <div id="batchSummary" style="display:grid;
+         grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+         gap:8px;margin-bottom:12px"></div>
+    <div class="tblwrap">
+      <table class="tlog" id="batchTable">
+        <thead>
+          <tr id="batchSumRow">
+            <th>#</th><th>SUM</th><th></th><th></th>
+            <th></th><th></th><th></th><th></th>
+            <th class="buy" id="batchSumNet"></th>
+            <th class="buy" id="batchSumWin"></th>
+            <th class="sell" id="batchSumLoss"></th>
+            <th></th><th></th>
+          </tr>
+          <tr>
+            <th data-bsort="i">#</th>
+            <th data-bsort="symbol">Symbol</th>
+            <th data-bsort="return_pct">Return %</th>
+            <th data-bsort="buy_hold_pct">B&amp;H %</th>
+            <th data-bsort="trades">Trades</th>
+            <th data-bsort="win_rate">Win %</th>
+            <th data-bsort="profit_factor">PF</th>
+            <th data-bsort="max_dd_pct">Max DD %</th>
+            <th data-bsort="net_pnl">Net ₹</th>
+            <th data-bsort="max_win">Max win ₹</th>
+            <th data-bsort="max_loss">Max loss ₹</th>
+            <th data-bsort="sharpe">Sharpe</th>
+            <th data-bsort="ms">Time</th>
+          </tr>
+        </thead>
+        <tbody id="batchBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="autoTestResultsWrap" hidden
+     style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:14px;">
+  <div class="chartCap">Auto-Test Results — sorted by highest return</div>
+  <div class="tblwrap">
+    <table class="tlog">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th style="width:40%; text-align:left;">Settings</th>
+          <th>Return %</th>
+          <th>Max DD %</th>
+          <th>Trades</th>
+          <th>Win %</th>
+          <th>PF</th>
+          <th>Net ₹</th>
+        </tr>
+      </thead>
+      <tbody id="autoTestBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="{{ 'continuation-layout' if continuation else '' }}" style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start">
+
+  <aside style="background:var(--panel);border:1px solid var(--border);
+                border-radius:8px;padding:14px">
+    <div class="setHead">Backtest preset</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input type="text" id="btPresetName" class="inp" placeholder="e.g. HAL WT 1h long"
+             style="flex:1;min-width:0">
+      <button id="btPresetSave" class="pillBtn primary" style="flex:none">Save</button>
+    </div>
+    <button type="button" id="btPresetToggle"
+            style="background:transparent;border:none;color:var(--muted);
+                   font-size:10.5px;cursor:pointer;padding:0;margin-bottom:6px;
+                   text-transform:uppercase;letter-spacing:.06em;font-weight:600">
+      ▸ SAVED PRESETS (<span id="btPresetCount">0</span>)
+    </button>
+    <div id="btPresetList" hidden
+         style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px"></div>
+
+    <div class="setHead">Strategy mode</div>
+    <label class="chk"><input type="radio" name="strat_mode" value="simple" checked> Simple (single position)</label>
+    <label class="chk"><input type="radio" name="strat_mode" value="same_side"> Same-side averaging</label>
+    <label class="chk"><input type="radio" name="strat_mode" value="alternate"> Alternate (flip sides)</label>
+
+    <div id="multBlock" hidden>
+      <div class="setHead" style="margin-top:14px">Multiplier</div>
+      <label class="chk"><input type="radio" name="mult_type" value="martingale" checked> Martingale (1, 2, 4, 8, 16…)</label>
+      <label class="chk"><input type="radio" name="mult_type" value="incremental"> Incremental (1, 2, 3, 4, 5…)</label>
+      <label class="chk"><input type="radio" name="mult_type" value="constant"> Constant (1, 1, 1, 1…)</label>
+      <div class="numRow"><span>Max levels</span><input type="number" id="cfg_max_levels" value="5" step="1"></div>
+      <div style="color:var(--muted);font-size:10.5px;margin-bottom:6px">
+        Base qty = <b>Quantity</b> from Position sizing below.
+      </div>
+    </div>
+
+    <div id="recoveryBlock">
+      <div class="setHead" style="margin-top:14px">Recovery cycle (overlay)</div>
+      <div class="numRow">
+        <span>Mode</span>
+        <select id="cfg_rec_mode" class="inp" style="width:150px">
+          <option value="off" selected>Off</option>
+          <option value="last">Last trade only</option>
+          <option value="cumulative">Cumulative</option>
+        </select>
+      </div>
+      <div id="recoveryInputs" style="display:none">
+        <div class="numRow"><span>Buffer ₹ after loss</span>
+          <input type="number" id="cfg_rec_buffer" value="20" step="1"></div>
+        <label class="chk" style="margin-top:6px">
+          <input type="checkbox" id="cfg_rec_trail"> Trail after target + premium
+        </label>
+        <div class="numRow"><span>Trail premium ₹</span>
+          <input type="number" id="cfg_rec_premium" value="40" step="5"></div>
+        <div class="numRow"><span>Trail step ₹</span>
+          <input type="number" id="cfg_rec_step" value="5" step="1"></div>
+      </div>
+      <div style="color:var(--muted);font-size:10.5px;margin-top:6px">
+        Next trade's target becomes the pending loss + buffer (in ₹),
+        ignoring the normal profit target. Cleared once the cycle recovers.
+        <b>Last</b> = only the most recent loss. <b>Cumulative</b> = all
+        losses since the last recovery win.
+      </div>
+    </div>
+
+    <div class="setHead" style="margin-top:14px">Order side</div>
+    <label class="chk"><input type="radio" name="side" value="both" checked> Both buy &amp; sell</label>
+    <label class="chk"><input type="radio" name="side" value="long"> Buy only</label>
+    <label class="chk"><input type="radio" name="side" value="short"> Sell only</label>
+
+    <div class="setHead" style="margin-top:14px">Trigger</div>
+    <div class="numRow"><span>Buffer (points)</span><input type="number" id="cfg_buffer" value="1" step="0.01"></div>
+    <div class="numRow"><span>Wait max (bars)</span><input type="number" id="cfg_wait" value="20" step="1"></div>
+
+    <div class="setHead" style="margin-top:14px">Exits</div>
+    <div class="numRow">
+      <span>Profit target</span>
+      <select id="cfg_target_mode" class="inp" style="width:60px">
+        <option value="pct" selected>%</option>
+        <option value="amount">₹</option>
+      </select>
+      <input type="number" id="cfg_target" value="1" step="0.5" style="width:70px">
+    </div>
+    <div class="numRow"><span>Stop loss %</span><input type="number" id="cfg_stop" value="3" step="0.5"></div>
+    <label class="chk" style="margin-top:6px"><input type="checkbox" id="cfg_opp" checked> Exit on opposite signal</label>
+
+    <div class="setHead" style="margin-top:14px">Trailing stop loss</div>
+    <label class="chk"><input type="checkbox" id="cfg_trail_on"> Enable trailing SL</label>
+    <div class="numRow"><span>Start at profit %</span><input type="number" id="cfg_trail_start" value="3" step="0.5"></div>
+    <div class="numRow"><span>Step %</span><input type="number" id="cfg_trail_step" value="2" step="0.5"></div>
+    <label class="chk" style="margin-top:6px"><input type="checkbox" id="cfg_trail_tighten"> Tighten near target</label>
+    <div class="numRow"><span>Tighten at profit %</span><input type="number" id="cfg_trail_tighten_at" value="9" step="0.5"></div>
+    <div class="numRow"><span>Tighter step %</span><input type="number" id="cfg_trail_tighten_step" value="1" step="0.5"></div>
+
+    <div class="setHead" style="margin-top:14px">Capital &amp; costs</div>
+    <div class="numRow"><span>Initial ₹</span><input type="number" id="cfg_capital" value="100000" step="10000"></div>
+    <div class="numRow"><span>Commission %</span><input type="number" id="cfg_comm" value="0.05" step="0.01"></div>
+    <div class="numRow"><span>Slippage %</span><input type="number" id="cfg_slip" value="0.02" step="0.01"></div>
+
+    <div class="setHead" style="margin-top:14px">Position sizing</div>
+    <label class="chk"><input type="radio" name="pos_mode" value="fixed" checked> Fixed ₹ per trade</label>
+    <label class="chk"><input type="radio" name="pos_mode" value="qty"> Fixed quantity</label>
+    <label class="chk"><input type="radio" name="pos_mode" value="pct"> % of capital</label>
+    <div class="numRow"><span>Fixed ₹ amount</span><input type="number" id="cfg_amount" value="5000" step="500"></div>
+    <div class="numRow"><span>Quantity</span><input type="number" id="cfg_qty" value="1" step="1"></div>
+    <div class="numRow"><span>Position %</span><input type="number" id="cfg_position" value="100" step="5"></div>
+
+    <div class="setHead" style="margin-top:14px">Candle source</div>
+    <label class="chk"><input type="radio" name="candle_src" value="ha" checked> Heikin Ashi</label>
+    <label class="chk"><input type="radio" name="candle_src" value="real"> Real candles</label>
+    <div class="numRow" style="margin-top:6px">
+      <span>F&O 15:15 Filter</span>
+      <select id="cfg_fno_mode" class="inp" style="width:110px">
+        <option value="all" selected>All symbols</option>
+        <option value="sheet">From sheet</option>
+        <option value="none">Off</option>
+      </select>
+    </div>
+    <div class="numRow" id="fnoSheetRow" style="display:none">
+      <span>F&O Book</span>
+      <input type="text" id="cfg_fno_book" value="Backtest scanner" style="width:110px">
+    </div>
+    <div class="numRow" id="fnoTabRow" style="display:none">
+      <span>F&O Sheet Tab</span>
+      <input type="text" id="cfg_fno_sheet" value="F&O_input" style="width:110px">
+    </div>
+
+    <div id="secWTParams">
+      <div class="setHead" style="margin-top:14px">WT params</div>
+      <div class="numRow"><span>n1</span><input type="number" id="cfg_wt_n1" value="15" step="1"></div>
+      <div class="numRow"><span>n2</span><input type="number" id="cfg_wt_n2" value="27" step="1"></div>
+
+      <div class="setHead" style="margin-top:14px">Pending candle rule</div>
+      <div class="numRow">
+        <span>WT Rule</span>
+        <select id="cfg_wt_pending_rule" class="inp" style="width:160px">
+          <option value="every" selected>Every Cross</option>
+          <option value="same_dir">Newest Same-Direction</option>
+          <option value="any_dir">Newest Any-Direction</option>
+        </select>
+      </div>
+      <div style="color:var(--muted);font-size:10.5px;margin-bottom:6px">
+        <b>Every:</b> All crosses stay alive.<br>
+        <b>Same-Direction:</b> New buy kills old buy. New sell kills old sell.<br>
+        <b>Any-Direction:</b> New buy kills old buy AND old sell.
+      </div>
+
+      <div class="setHead" style="margin-top:14px">Confirmation filters</div>
+
+      <label class="chk"><input type="checkbox" id="cfg_wt_filter"> WT extreme</label>
+      <div class="numRow"><span>Buy max WT val</span><input type="number" id="cfg_wt_buy_max" value="-40" step="5"></div>
+      <div class="numRow"><span>Sell min WT val</span><input type="number" id="cfg_wt_sell_min" value="40" step="5"></div>
+
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="cfg_htf_filter"> HTF trend (auto)</label>
+      <div style="color:var(--muted);font-size:10.5px;margin-bottom:6px">
+        Buy allowed only if HTF EMA50 &gt; EMA200, sell only if reverse.
+      </div>
+
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="cfg_rsi_filter"> RSI rising (buy) / falling (sell)</label>
+      <div class="numRow"><span>RSI period</span><input type="number" id="cfg_rsi_period" value="14" step="1"></div>
+
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="cfg_vol_filter"> Volume spike</label>
+      <div class="numRow"><span>× average</span><input type="number" id="cfg_vol_mult" value="1.5" step="0.1"></div>
+      <div class="numRow"><span>Lookback bars</span><input type="number" id="cfg_vol_lookback" value="20" step="1"></div>
+    </div>
+
+    <div id="secCEParams">
+      <div class="setHead" style="margin-top:14px">CE params</div>
+      <div class="numRow"><span>Length</span><input type="number" id="cfg_ce_len" value="22" step="1"></div>
+      <div class="numRow"><span>Multiplier</span><input type="number" id="cfg_ce_mult" value="3.0" step="0.1"></div>
+    </div>
+
+    <div id="secSTParams">
+      <div class="setHead" style="margin-top:14px">ST params</div>
+      <div class="numRow"><span>Left bars</span><input type="number" id="cfg_st_left" value="15" step="1"></div>
+      <div class="numRow"><span>Right bars</span><input type="number" id="cfg_st_right" value="15" step="1"></div>
+      <div class="numRow">
+        <span>Entry mode</span>
+        <select id="cfg_st_entry_mode" class="inp" style="width:100px">
+          <option value="strict" selected>Strict</option>
+          <option value="loose">Loose</option>
+        </select>
+      </div>
+      <div class="numRow">
+        <span>Exit mode</span>
+        <select id="cfg_st_exit_mode" class="inp" style="width:100px">
+          <option value="strict" selected>Strict</option>
+          <option value="loose">Loose</option>
+        </select>
+      </div>
+      <div class="numRow">
+        <span>Re-entry mode</span>
+        <select id="cfg_st_reentry_mode" class="inp" style="width:150px">
+          <option value="standard" selected>Standard</option>
+          <option value="one_per_opposite">One per opposite</option>
+          <option value="fresh_r">Wait fresh R</option>
+        </select>
+        <button type="button" id="stReentryInfo" class="infoBtn">i</button>
+      </div>
+      <div style="color:var(--muted);font-size:10.5px;margin-top:6px">
+        <b>Standard</b>: after a close, take the next valid signal.<br>
+        <b>One per opposite</b>: after a buy close, wait for a sell signal
+        before the next buy (and vice versa).<br>
+        For <b>same-side add-on</b>, use Same-side strategy mode with ST only.
+      </div>
+      <div style="color:var(--muted);font-size:10.5px;margin-top:6px">
+        <b>Strict</b>: valid candle needs H &amp; C beyond R/S, then a later bar must break it.<br>
+        <b>Loose</b>: any cross = valid + trigger on the same bar.<br>
+        Entry opens positions, exit closes them. Independently configured.
+      </div>
+    </div>
+  </aside>
+
+  <div>
+    <div id="cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+                          gap:8px;margin-bottom:16px"></div>
+
+    <div id="latestSig" style="background:var(--panel);border:1px solid var(--border);
+                border-radius:8px;padding:12px;margin-bottom:12px;display:none">
+      <div class="chartCap">Latest signal in backtest (compare with Scanner page)</div>
+      <div id="latestSigBody" style="display:grid;
+                    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+                    gap:10px;font-size:12px"></div>
+    </div>
+
+    {% if continuation %}
+    <section style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px" aria-label="In Process">
+      <b>In Process · WaveTrend monitoring only</b>
+      <label style="margin-left:12px"><input type="checkbox" id="monitorAlreadyTriggered"> Check already-triggered distance</label>
+      <label>Max difference % <input id="monitorMaxDiff" type="number" min="0" step="0.1" value="1" style="width:65px" class="inp"></label>
+      <p style="color:var(--muted);margin:5px 0">Monitoring only: no orders are placed. Signals use closed bars; the newest bar is excluded. An LTP crossing alone does not create a trade. Prices may be delayed; position and filter rules are not fully checked. Breakout triggers need stop-triggered orders, not ordinary limit orders.</p>
+      <div id="inProcessPosition" style="margin:5px 0">Position: waiting for a scan.</div>
+      <div id="inProcessStatus">Run a scan to view pending signals.</div>
+      <div class="tblwrap"><table class="tlog"><thead><tr><th>Signal</th><th>Level</th><th>Valid candle</th><th>LTP</th><th>Potential order · not placed</th><th>Status</th></tr></thead><tbody id="inProcessBody"></tbody></table></div>
+    </section>
+    <section style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px" aria-label="Recent changes">
+      <b>Recent changes</b> <span class="mut">· compared with previous successful scan · simulation only</span>
+      <div id="continuationChanges" aria-live="polite" style="margin-top:6px;color:var(--muted)">Waiting for the first successful scan to establish a baseline.</div>
+    </section>
+    {% endif %}
+    <!-- Trades + Events moved ABOVE charts -->
+    {% if continuation %}<p class="sub">Open P&amp;L uses the strategy candle close, not the Yahoo LTP; with Heikin Ashi it can be synthetic. Equity chart still uses the backtest’s hypothetical end-of-data close. Completed-trade WT analysis excludes open cycles.</p>{% endif %}
+    <div id="tradesWrap"></div>
+    <div id="eventsWrap" style="margin-top:20px"></div>
+    <div id="wtAnalyticsWrap" style="margin-top:20px"></div> <!-- ✅ NEW WT PANEL -->
+
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+                padding:12px;margin-top:20px">
+      <button type="button" id="togglePrice"
+              style="background:transparent;border:none;color:var(--muted);
+                     font-size:11px;cursor:pointer;margin-bottom:8px;padding:0;
+                     text-transform:uppercase;letter-spacing:.06em;font-weight:600">
+        ▸ PRICE + TRADES
+      </button>
+      <div id="priceWrap" hidden>
+        <canvas id="priceChart" style="display:block;width:100%;height:300px"></canvas>
+      </div>
+    </div>
+
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;
+                padding:12px;margin-top:12px">
+      <button type="button" id="toggleEquity"
+              style="background:transparent;border:none;color:var(--muted);
+                     font-size:11px;cursor:pointer;margin-bottom:8px;padding:0;
+                     text-transform:uppercase;letter-spacing:.06em;font-weight:600">
+        ▸ EQUITY CURVE
+      </button>
+      <div id="equityWrap" hidden>
+        <canvas id="equityChart" style="display:block;width:100%;height:200px"></canvas>
+      </div>
+    </div>
+
+    <!-- S/R diagnostic panel -->
+    <div id="srDiagWrap" hidden
+         style="background:var(--panel);border:1px solid var(--border);
+                border-radius:8px;padding:12px;margin-top:20px">
+      <div class="chartCap">
+        S/R segments — each row is a period where R (or S) held the same value.
+        Verify against TradingView.
+      </div>
+      <canvas id="srDiagChart"
+              style="display:block;width:100%;height:340px;margin-bottom:12px"></canvas>
+      <div id="srDiagSummary"
+           style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+                  gap:8px;margin-bottom:12px"></div>
+      <div class="tblwrap" style="max-height:320px">
+        <table class="tlog">
+          <thead>
+            <tr>
+              <th>#</th><th>Type</th><th>Level</th>
+              <th>Start</th><th>End</th><th>Bars</th>
+              <th>Usable from</th>
+            </tr>
+          </thead>
+          <tbody id="srDiagBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Info modal (used by info buttons) -->
+<div id="infoModal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+            z-index:999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--panel);border:1px solid var(--border);
+              border-radius:10px;width:min(600px,100%);max-height:80vh;
+              overflow:auto">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);
+                display:flex;align-items:center;gap:10px">
+      <span id="infoTitle" style="font-weight:700;font-size:14px;flex:1">
+        Setting info
+      </span>
+      <button type="button" id="infoClose" class="ghost"
+              style="padding:2px 8px;font-size:12px">✕</button>
+    </div>
+    <div id="infoBody"
+         style="padding:16px 18px;font-size:13px;line-height:1.75;
+                color:var(--fg);white-space:pre-wrap"></div>
+  </div>
+</div>
+
+<style>
+  [hidden]{display:none !important}
+  .infoBtn{background:transparent;border:1px solid var(--border);
+           color:var(--muted);border-radius:50%;width:18px;height:18px;
+           font-size:11px;cursor:pointer;padding:0;line-height:1;
+           font-weight:700;font-style:italic}
+  .infoBtn:hover{color:var(--fg);border-color:var(--accent)}
+  .inp{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+       border-radius:6px;padding:5px 8px;font-size:12px}
+  .lbl{color:var(--muted);font-size:12px}
+  .btnPrimary{background:var(--accent);border:none;color:#04121f;border-radius:6px;
+              padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px}
+  .btnPrimary:disabled{opacity:.5;cursor:wait}
+  .pillBtn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+           border-radius:20px;padding:4px 12px;font-size:11.5px;cursor:pointer}
+  .pillBtn:hover{color:var(--fg);border-color:var(--accent)}
+  .pillBtn.primary{background:var(--accent);border-color:var(--accent);color:#04121f;font-weight:600}
+  .runChk{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px}
+  .setHead{color:var(--muted);font-size:10.5px;letter-spacing:.06em;
+           text-transform:uppercase;font-weight:600;margin-bottom:8px}
+  .chk{display:flex;align-items:center;gap:6px;font-size:12px;
+       color:var(--fg);margin-bottom:6px;cursor:pointer}
+  .numRow{display:flex;align-items:center;justify-content:space-between;
+          gap:8px;margin-bottom:6px}
+  .numRow span{color:var(--muted);font-size:12px}
+  .numRow input{width:90px;background:var(--panel2);border:1px solid var(--border);
+                color:var(--fg);border-radius:5px;padding:4px 7px;font-size:12px;text-align:right}
+  .chartCap{color:var(--muted);font-size:11px;margin-bottom:8px;
+            text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+        padding:9px 11px}
+  .card .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;
+           letter-spacing:.05em}
+  .card .v{font-size:16px;font-weight:600;margin-top:3px;
+           font-variant-numeric:tabular-nums}
+  .buy{color:var(--good)} .sell{color:var(--bad)} .mut{color:var(--muted)}
+
+  .tblwrap{border:1px solid var(--border);border-radius:8px;
+           overflow-x:auto;overflow-y:auto;max-height:420px;
+           background:var(--panel)}
+  table.tlog{width:max-content;min-width:100%;border-collapse:collapse;
+             font-size:11.5px;font-variant-numeric:tabular-nums}
+  table.tlog th, table.tlog td{padding:6px 9px;border-bottom:1px solid var(--border);
+             text-align:right;white-space:nowrap}
+  table.tlog th{color:var(--muted);font-weight:600;font-size:10.5px;
+             text-transform:uppercase;letter-spacing:.05em;
+             position:sticky;top:0;background:var(--bg);z-index:1}
+  table.tlog th:first-child, table.tlog td:first-child{text-align:left}
+
+  /* sortable headers */
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{color:var(--fg)}
+  th.sortable .sortMark{color:var(--accent);font-size:10px;margin-left:2px}
+  th.sortable .sortMark sup{font-size:8px;font-weight:700}
+
+  tr.tradeRow.hasDetail{cursor:pointer}
+  tr.tradeRow.hasDetail:hover{background:#141c28}
+  .expander{display:inline-block;width:12px;color:var(--accent);font-weight:700}
+  .detLine{padding:2px 0;line-height:1.5}
+  .detTag{display:inline-block;min-width:30px;color:var(--accent);
+          font-weight:700;font-size:10px;letter-spacing:.04em}
+
+  .presetRow{display:flex;align-items:center;gap:10px;
+             background:var(--panel2);border:1px solid var(--border);
+             border-radius:6px;font-size:12px}
+  .presetRow .name{flex:1;color:var(--fg)}
+  .presetRow .lil{background:transparent;border:1px solid var(--border);color:var(--muted);
+                  border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer}
+  .presetRow .lil:hover{color:var(--fg);border-color:var(--accent)}
+  .presetRow .lil.del:hover{color:var(--bad);border-color:var(--bad)}
+</style>
+{% endblock %}
+
+{% block scripts %}
+{% if continuation %}
+<style>
+.continuation-layout {grid-template-columns:280px minmax(0,1fr) !important;}
+#tradesWrap .tblwrap, #eventsWrap .tblwrap, section[aria-label="In Process"] .tblwrap {max-width:100%;}
+#tradesWrap table.tlog, #eventsWrap table.tlog, section[aria-label="In Process"] table.tlog {width:100%;min-width:0;table-layout:auto;}
+#tradesWrap table.tlog th, #tradesWrap table.tlog td, #eventsWrap table.tlog th, #eventsWrap table.tlog td, section[aria-label="In Process"] table.tlog th, section[aria-label="In Process"] table.tlog td {padding:5px 4px;white-space:normal;overflow-wrap:anywhere;font-size:10.5px;}
+</style>
+{% endif %}
+<script>
+const $ = id => document.getElementById(id);
+
+/* ===== page state persistence ===== */
+const CONTINUATION = $('backtestPageMode').dataset.continuation === '1';
+const BT_STATE_KEY  = CONTINUATION ? 'continuation_state_v1' : 'backtest_page_state_v1';
+const BT_RESULT_KEY = CONTINUATION ? 'continuation_result_v1' : 'backtest_result_v1';
+const CONTINUATION_APPLIED_KEY = 'continuation_applied_config_v1';
+let continuationBooting = CONTINUATION;
+let continuationApplied = null;
+let continuationRenderedConfig = null;
+
+function collectBtState(){
+  const state = {};
+  document.querySelectorAll('input[id], select[id], textarea[id], input[type="radio"][name]').forEach(el => {
+    if (el.type === 'file') return;
+    if (el.id) {
+      if (el.type === 'checkbox' || el.type === 'radio') state[el.id] = el.checked;
+      else state[el.id] = el.value;
+    }
+    if (el.type === 'radio' && el.checked) state['__radio_' + el.name] = el.value;
+  });
+  return state;
+}
+function saveBtState(){
+  if (CONTINUATION && continuationBooting) return;
+  try { (CONTINUATION ? localStorage : sessionStorage).setItem(BT_STATE_KEY, JSON.stringify(collectBtState())); } catch(e){}
+  if (CONTINUATION) updateAppliedStatus();
+}
+function applyBtState(state){
+  if (!state) return;
+  for (const [id, val] of Object.entries(state)){
+    if (id.startsWith('__radio_')){
+      const name = id.slice(8);
+      document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+        if (r.value === val) r.checked = true;
+      });
+      continue;
+    }
+    const el = document.getElementById(id);
+    if (!el || el.type === 'file') continue;
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!val;
+    else el.value = val;
+  }
+}
+function restoreBtState(){
+  try {
+    const raw = CONTINUATION ? (localStorage.getItem(BT_STATE_KEY) || sessionStorage.getItem(BT_STATE_KEY)) : sessionStorage.getItem(BT_STATE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    if (CONTINUATION && state.tf != null) { $('tf').value = state.tf; refreshPeriods(); }
+    applyBtState(state);
+  } catch(e){}
+}
+function saveBtResult(data){
+  try { sessionStorage.setItem(BT_RESULT_KEY, JSON.stringify({data, ts: Date.now()})); } catch(e){}
+}
+function tryRestoreBtResult(){
+  try {
+    const raw = sessionStorage.getItem(BT_RESULT_KEY);
+    if (!raw) return false;
+    const {data, ts} = JSON.parse(raw);
+    if (!data || !data.ok) return false;
+    if (Date.now() - ts > 30*60*1000) return false;
+    renderBacktest(data);
+    if (CONTINUATION && data.continuation?.applied_cfg) updateInProcess(data, data.continuation.applied_cfg);
+    const mins = Math.round((Date.now() - ts) / 60000);
+    setStatus(`restored (${mins}m ago) · ${data.bars} bars · ${data.trades.length} trades`, 'ok');
+    return true;
+  } catch(e){ return false; }
+}
+async function tryFetchServerLastBacktest(){
+  try {
+    const r = await fetch('/research/api/backtest/last');
+    const d = await r.json();
+    if (!d.ok) return false;
+    renderBacktest(d);
+    setStatus(`server cache · ${d.bars} bars · ${d.trades.length} trades`, 'ok');
+    return true;
+  } catch(e){ return false; }
+}
+document.body.addEventListener('change', saveBtState);
+document.body.addEventListener('input',  saveBtState);
+
+/* extract the render logic so restore can reuse it */
+let continuationQuote = null;
+let continuationPendingSignals = [];
+function renderBacktest(data){
+  if (CONTINUATION) {
+    continuationRenderedConfig = data.continuation?.applied_cfg || null;
+    continuationQuote = data.continuation?.ltp ?? null;
+    continuationPendingSignals = data.in_process?.status === 'ok' ? (data.in_process.signals || []).filter(q => q.kind === 'pending') : [];
+    const scanAt = data.continuation?.client_scan_at;
+    const date = scanAt ? new Date(scanAt) : null;
+    $('continuationLastScan').textContent = date && !isNaN(date.getTime()) ? date.toLocaleString() : 'unknown (older saved result)';
+    const c = data.continuation || {};
+    const quoteStatus = $('continuationQuoteStatus');
+    if (!Object.prototype.hasOwnProperty.call(c, 'ltp')) {
+      quoteStatus.textContent = 'Not supplied by engine — copy the updated research_routes.py and restart Arena, then scan again.';
+      quoteStatus.style.color = 'var(--bad)';
+    } else if (continuationQuote == null) {
+      quoteStatus.textContent = `Unavailable${c.ltp_symbol ? ' for ' + c.ltp_symbol : ''}; Yahoo returned no usable quote. Retry a scan; see terminal for errors.`;
+      quoteStatus.style.color = 'var(--bad)';
+    } else {
+      quoteStatus.textContent = `${continuationQuote}${c.ltp_symbol ? ' · ' + c.ltp_symbol : ''} · fetched with last scan; quote time unknown`;
+      quoteStatus.style.color = 'var(--muted)';
+    }
+  }
+  if (CONTINUATION && data.continuation) {
+    const c = data.continuation;
+    const fmt = n => Number(n || 0).toLocaleString(undefined, {maximumFractionDigits:2});
+    $('cards').innerHTML = [['Completed trades',c.completed_trades],['Open positions',c.open_positions],['Realised P&L (incl. closed cycle legs)',fmt(c.realized_pnl)],['Estimated open P&L',fmt(c.estimated_open_pnl)],['Last data candle',c.valuation_time || '—'],['Last strategy candle close',c.valuation_price ?? '—']].map(([k,v]) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  } else renderCards(data.metrics, data.trades);
+  renderLatestSignal(data.events);
+  renderTrades(data.trades, data.strategy_mode || 'simple');
+  renderWTAnalytics(CONTINUATION ? data.trades.filter(t => t.reason !== 'open (estimate)') : data.trades);
+  renderEvents(data.events);
+  if (priceChartOpen)  drawPriceChart(data.candles, data.events, CONTINUATION ? data.trades.filter(t => t.reason !== 'open (estimate)') : data.trades);
+  if (equityChartOpen) drawEquityChart(data.equity, data.metrics.capital);
+  window._lastBT = {
+    candles: data.candles, events: data.events, trades: CONTINUATION ? data.trades.filter(t => t.reason !== 'open (estimate)') : data.trades,
+    equity: data.equity, metrics: data.metrics,
+  };
+}
+
+function setStatus(txt, kind){
+  $('status').textContent = txt;
+  $('status').style.color = kind === 'err' ? '#f85149'
+                          : kind === 'ok'  ? '#3fb950' : '#8b949e';
+}
+
+/* Indian-format short amounts: 1k / 1.5L / 1Cr */
+function fmtAmt(v){
+  if (v == null || v === '' || v === '—') return '—';
+  const n = Number(v);
+  if (isNaN(n) || !isFinite(n)) return '—';
+  const a = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (a >= 1e7){ const x = a/1e7; return sign + x.toFixed(x >= 10 ? 1 : 2).replace(/\.?0+$/,'') + 'Cr'; }
+  if (a >= 1e5){ const x = a/1e5; return sign + x.toFixed(x >= 10 ? 1 : 2).replace(/\.?0+$/,'') + 'L';  }
+  if (a >= 1e3){ const x = a/1e3; return sign + x.toFixed(x >= 10 ? 0 : 1).replace(/\.?0+$/,'') + 'k';  }
+  return sign + Math.round(a);
+}
+
+/* TF → allowed yfinance periods */
+const TF_PERIODS = {
+  "1m":["1d","5d"], "2m":["1d","5d","1mo"],
+  "5m":["1d","5d","1mo","60d"], "15m":["1d","5d","1mo","60d"], "30m":["1d","5d","1mo","60d"],
+  "60m":["1d","5d","1mo","3mo","6mo","1y","2y"], "90m":["1d","5d","1mo","3mo","6mo","1y","2y"],
+  "1h":["5d","1mo","3mo","6mo","1y","2y"], "4h":["1mo","3mo","6mo","1y","2y"],
+  "1d":["1mo","3mo","6mo","1y","2y","5y","10y"], "5d":["1mo","3mo","6mo","1y","2y","5y","10y"],
+  "1wk":["1mo","3mo","6mo","1y","2y","5y","10y"], "1mo":["1y","2y","5y","10y"], "3mo":["2y","5y","10y"],
+};
+const TF_DEFAULT_PERIOD = {
+  "1m":"1d","2m":"1d","5m":"5d","15m":"1mo","30m":"1mo",
+  "60m":"3mo","90m":"3mo","1h":"6mo","4h":"6mo",
+  "1d":"1y","5d":"1y","1wk":"1y","1mo":"2y","3mo":"5y",
+};
+function refreshPeriods(){
+  const tf = $('tf').value;
+  const list = TF_PERIODS[tf] || ["1y"];
+  const sel = $('period');
+  const prev = sel.value;
+  sel.innerHTML = list.map(p => `<option value="${p}">${p}</option>`).join('');
+  sel.value = list.includes(prev) ? prev : (TF_DEFAULT_PERIOD[tf] || list[list.length-1]);
+}
+$('tf').addEventListener('change', refreshPeriods);
+refreshPeriods();
+
+/* show only the active indicator's params */
+function syncIndicatorParams(){
+  $('secWTParams').style.display = $('src_wt').checked ? '' : 'none';
+  $('secCEParams').style.display = $('src_ce').checked ? '' : 'none';
+  $('secSTParams').style.display = $('src_st').checked ? '' : 'none';
+}
+$('src_wt').addEventListener('change', syncIndicatorParams);
+$('src_ce').addEventListener('change', syncIndicatorParams);
+$('src_st').addEventListener('change', syncIndicatorParams);
+syncIndicatorParams();
+
+/* ===== backtest presets ===== */
+const BT_PRESET_KEY = 'scanner_bt_presets_v1';
+function loadBtPresets(){ try { return JSON.parse(localStorage.getItem(BT_PRESET_KEY) || '{}'); } catch { return {}; } }
+function saveBtPresets(o){ localStorage.setItem(BT_PRESET_KEY, JSON.stringify(o)); }
+
+function captureBtPreset(){
+  return {
+    symbol:   $('symbol').value,
+    exchange: $('exchange').value,
+    tf:       $('tf').value,
+    period:   $('period').value,
+    indicators: { wt: $('src_wt').checked, ce: $('src_ce').checked,
+                  st: $('src_st').checked },
+    strat_mode: document.querySelector('input[name="strat_mode"]:checked').value,
+    mult_type:  document.querySelector('input[name="mult_type"]:checked')?.value || 'martingale',
+    side_mode:  document.querySelector('input[name="side"]:checked').value,
+    pos_mode:   document.querySelector('input[name="pos_mode"]:checked').value,
+    candle_src: document.querySelector('input[name="candle_src"]:checked').value,
+    buffer:     $('cfg_buffer').value,
+    wait:       $('cfg_wait').value,
+    target_mode:$('cfg_target_mode').value,
+    target:     $('cfg_target').value,
+    stop:       $('cfg_stop').value,
+    opp:        $('cfg_opp').checked,
+    capital:    $('cfg_capital').value,
+    comm:       $('cfg_comm').value,
+    slip:       $('cfg_slip').value,
+    amount:     $('cfg_amount').value,
+    qty:        $('cfg_qty').value,
+    position:   $('cfg_position').value,
+    max_levels: $('cfg_max_levels').value,
+    wt_n1:      $('cfg_wt_n1').value,
+    wt_n2:      $('cfg_wt_n2').value,
+    wt_pending_rule: $('cfg_wt_pending_rule').value,
+    ce_len:     $('cfg_ce_len').value,
+    ce_mult:    $('cfg_ce_mult').value,
+    st_left:        $('cfg_st_left').value,
+    st_right:       $('cfg_st_right').value,
+    st_entry_mode:  $('cfg_st_entry_mode').value,
+    st_exit_mode:   $('cfg_st_exit_mode').value,
+    st_reentry_mode: $('cfg_st_reentry_mode').value,
+    fno_mode:   $('cfg_fno_mode').value,
+    fno_sheet:  $('cfg_fno_sheet').value,
+    trail_on:   $('cfg_trail_on').checked,
+    trail_start:$('cfg_trail_start').value,
+    trail_step: $('cfg_trail_step').value,
+    trail_tighten:    $('cfg_trail_tighten').checked,
+    trail_tighten_at: $('cfg_trail_tighten_at').value,
+    trail_tighten_step: $('cfg_trail_tighten_step').value,
+    wt_filter:      $('cfg_wt_filter').checked,
+    wt_buy_max:     $('cfg_wt_buy_max').value,
+    wt_sell_min:    $('cfg_wt_sell_min').value,
+    htf_filter:     $('cfg_htf_filter').checked,
+    rsi_filter:     $('cfg_rsi_filter').checked,
+    rsi_period:     $('cfg_rsi_period').value,
+    vol_filter:     $('cfg_vol_filter').checked,
+    vol_mult:       $('cfg_vol_mult').value,
+    vol_lookback:   $('cfg_vol_lookback').value,
+    rec_mode:       $('cfg_rec_mode').value,
+    rec_buffer:     $('cfg_rec_buffer').value,
+    rec_trail:      $('cfg_rec_trail').checked,
+    rec_premium:    $('cfg_rec_premium').value,
+    rec_step:       $('cfg_rec_step').value,
+  };
+}
+
+function applyBtPreset(p){
+  const setRadio = (name, val) => {
+    const el = document.querySelector(`input[name="${name}"][value="${val}"]`);
+    if (el) el.checked = true;
+  };
+  const setVal = (id, val) => { if (val != null) $(id).value = val; };
+  const setChk = (id, val) => { if (val != null) $(id).checked = val; };
+
+  setVal('symbol', p.symbol);
+  setVal('exchange', p.exchange);
+  setVal('tf', p.tf); refreshPeriods();
+  setVal('period', p.period);
+  setChk('src_wt', p.indicators?.wt);
+  setChk('src_ce', p.indicators?.ce);
+  setChk('src_st', p.indicators?.st);
+  if (p.strat_mode) setRadio('strat_mode', p.strat_mode);
+  if (p.mult_type)  setRadio('mult_type',  p.mult_type);
+  if (p.side_mode)  setRadio('side',       p.side_mode);
+  if (p.pos_mode)   setRadio('pos_mode',   p.pos_mode);
+  if (p.candle_src) setRadio('candle_src', p.candle_src);
+  setVal('cfg_buffer', p.buffer);
+  setVal('cfg_wait', p.wait);
+  setVal('cfg_target_mode', p.target_mode);
+  setVal('cfg_target', p.target);
+  setVal('cfg_stop', p.stop);
+  setChk('cfg_opp', p.opp);
+  setVal('cfg_capital', p.capital);
+  setVal('cfg_comm', p.comm);
+  setVal('cfg_slip', p.slip);
+  setVal('cfg_amount', p.amount);
+  setVal('cfg_qty', p.qty);
+  setVal('cfg_position', p.position);
+  setVal('cfg_max_levels', p.max_levels);
+  setVal('cfg_wt_n1', p.wt_n1);
+  setVal('cfg_wt_n2', p.wt_n2);
+  setVal('cfg_wt_pending_rule', p.wt_pending_rule);
+  setVal('cfg_ce_len', p.ce_len);
+  setVal('cfg_ce_mult', p.ce_mult);
+  setVal('cfg_st_left', p.st_left);
+  setVal('cfg_st_right', p.st_right);
+  setVal('cfg_st_entry_mode', p.st_entry_mode);
+  setVal('cfg_st_exit_mode',  p.st_exit_mode);
+  setVal('cfg_st_reentry_mode', p.st_reentry_mode);
+  setVal('cfg_fno_mode', p.fno_mode);
+  setVal('cfg_fno_sheet', p.fno_sheet);
+  setChk('cfg_trail_on', p.trail_on);
+  setVal('cfg_trail_start', p.trail_start);
+  setVal('cfg_trail_step', p.trail_step);
+  setChk('cfg_trail_tighten', p.trail_tighten);
+  setVal('cfg_trail_tighten_at', p.trail_tighten_at);
+  setVal('cfg_trail_tighten_step', p.trail_tighten_step);
+  setChk('cfg_wt_filter',   p.wt_filter);
+  setVal('cfg_wt_buy_max',  p.wt_buy_max);
+  setVal('cfg_wt_sell_min', p.wt_sell_min);
+  setChk('cfg_htf_filter',  p.htf_filter);
+  setChk('cfg_rsi_filter',  p.rsi_filter);
+  setVal('cfg_rsi_period',  p.rsi_period);
+  setChk('cfg_vol_filter',  p.vol_filter);
+  setVal('cfg_vol_mult',    p.vol_mult);
+  setVal('cfg_vol_lookback',p.vol_lookback);
+  setVal('cfg_rec_mode',    p.rec_mode);
+  setVal('cfg_rec_buffer',  p.rec_buffer);
+  setChk('cfg_rec_trail',   p.rec_trail);
+  setVal('cfg_rec_premium', p.rec_premium);
+  setVal('cfg_rec_step',    p.rec_step);
+  syncRecoveryInputs();
+  syncStratMode();
+  syncIndicatorParams();
+  syncBatchSource();
+  if (CONTINUATION) saveBtState();
+}
+
+function renderBtPresetList(){
+  const list = $('btPresetList');
+  const all = loadBtPresets();
+  const names = Object.keys(all);
+  if (!names.length){
+    list.innerHTML = '<span style="color:var(--muted);font-size:11px">no presets saved</span>';
+    return;
+  }
+  list.innerHTML = names.map(n =>
+    `<div class="presetRow" style="padding:4px 8px">
+       <span class="name" style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n}</span>
+       <button class="lil" data-load="${n}">Load</button>
+       <button class="lil del" data-del="${n}">✕</button>
+     </div>`).join('');
+  list.querySelectorAll('[data-load]').forEach(el => el.addEventListener('click', () => {
+    applyBtPreset(loadBtPresets()[el.dataset.load]);
+    setStatus('preset loaded', 'ok');
+  }));
+  list.querySelectorAll('[data-del]').forEach(el => el.addEventListener('click', () => {
+    const all = loadBtPresets(); delete all[el.dataset.del]; saveBtPresets(all); renderBtPresetList();
+  }));
+  const cnt = $('btPresetCount');
+  if (cnt) cnt.textContent = names.length;
+}
+
+$('btPresetToggle')?.addEventListener('click', () => {
+  const list = $('btPresetList');
+  list.hidden = !list.hidden;
+  $('btPresetToggle').textContent =
+    (list.hidden ? '▸' : '▾') + ' SAVED PRESETS (' + ($('btPresetCount')?.textContent || '0') + ')';
+});
+$('btPresetSave').addEventListener('click', () => {
+  const n = $('btPresetName').value.trim();
+  if (!n){ $('btPresetName').focus(); return; }
+  const all = loadBtPresets();
+  all[n] = captureBtPreset();
+  saveBtPresets(all);
+  $('btPresetName').value = '';
+  renderBtPresetList();
+  setStatus('preset saved', 'ok');
+});
+
+function autoFno(){
+  const ex = $('exchange').value;
+  if (ex === '.NS' || ex === '.BO') {
+    if ($('cfg_fno_mode').value === 'none') $('cfg_fno_mode').value = 'all';
+  } else {
+    $('cfg_fno_mode').value = 'none';
+  }
+  $('cfg_fno_mode').dispatchEvent(new Event('change'));
+}
+$('exchange').addEventListener('change', autoFno);
+autoFno();
+
+function syncStratMode(){
+  const mode = document.querySelector('input[name="strat_mode"]:checked').value;
+  $('multBlock').hidden = (mode === "simple");
+  if (mode === "same_side"){
+    const both = document.querySelector('input[name="side"][value="both"]');
+    if (both && both.checked){
+      document.querySelector('input[name="side"][value="long"]').checked = true;
+    }
+  }
+}
+document.querySelectorAll('input[name="strat_mode"]').forEach(el =>
+  el.addEventListener('change', syncStratMode));
+syncStratMode();
+
+function syncRecoveryInputs(){
+  const on = $('cfg_rec_mode').value !== 'off';
+  $('recoveryInputs').style.display = on ? '' : 'none';
+}
+$('cfg_rec_mode').addEventListener('change', syncRecoveryInputs);
+syncRecoveryInputs();
+
+$('cfg_target_mode').addEventListener('change', () => {
+  const v = parseFloat($('cfg_target').value) || 0;
+  if ($('cfg_target_mode').value === 'amount' && v < 10) $('cfg_target').value = 100;
+  if ($('cfg_target_mode').value === 'pct' && v >= 10)   $('cfg_target').value = 1;
+});
+
+/* ---- batch toggle ---- */
+let batchPanelOpen = true;
+
+function autoOutputTabName(){
+  const tab = ($('bTab').value || '').trim();
+  const prefix = tab.split('_')[0] || 'bt';
+  const picked = [];
+  if ($('src_wt').checked) picked.push('WT');
+  if ($('src_ce').checked) picked.push('CE');
+  if ($('src_st').checked) picked.push('ST');
+  const mid = picked.length ? picked.join('_') : 'scan';
+  return `${prefix}_${mid}_${$('tf').value}`;
+}
+function syncBatchMode(){
+  const on = $('batchMode').checked;
+  $('run').hidden = on;
+  $('runBatch').hidden = !on;
+  $('batchSourceRow').hidden = !on;
+  $('batchOutputRow').hidden = !on;
+  $('batchLoadRow').hidden = !on;
+  if (on){
+    $('batchResultsWrap').hidden = false;
+    if (!$('bOutputTab').value) $('bOutputTab').placeholder = autoOutputTabName();
+  }
+}
+$('batchMode').addEventListener('change', syncBatchMode);
+syncBatchMode();
+
+$('batchToggle').addEventListener('click', () => {
+  batchPanelOpen = !batchPanelOpen;
+  const body = $('batchPanelBody');
+  const hint = $('batchToggle');
+  if (body) body.style.display = batchPanelOpen ? '' : 'none';
+  if (hint) hint.textContent   = batchPanelOpen ? '▾ BATCH RESULTS' : '▸ BATCH RESULTS';
+});
+
+$('bResetOutput')?.addEventListener('click', () => {
+  $('bOutputTab').value = '';
+  $('bOutputTab').placeholder = autoOutputTabName();
+});
+
+$('bLoadBtn')?.addEventListener('click', async () => {
+  const book = $('bBook').value;
+  const tab  = $('bLoadTab').value;
+  const st   = $('bLoadStatus');
+  if (!tab){
+    st.textContent = 'pick a tab first';
+    st.style.color = 'var(--bad)';
+    return;
+  }
+  st.style.color = 'var(--muted)';
+  st.textContent = 'loading…';
+  try {
+    const r = await fetch(`/research/api/backtest/batch/load?book=${encodeURIComponent(book)}&tab=${encodeURIComponent(tab)}`);
+    const d = await r.json();
+    if (!d.ok){
+      st.textContent = '⚠️ ' + (d.error || 'load failed');
+      st.style.color = 'var(--bad)';
+      return;
+    }
+    // replace the current table + summary with the loaded rows
+    batchRows = d.rows;
+    batchSort = { key: null, dir: null };
+    $('batchResultsWrap').hidden = false;
+    renderBatchTable();
+    renderBatchSummary();
+    st.textContent = `loaded ${d.count} rows from ${book}::${tab}`;
+    st.style.color = 'var(--good)';
+    setStatus(`loaded ${d.count} rows from sheet`, 'ok');
+  } catch(e){
+    st.textContent = 'request failed';
+    st.style.color = 'var(--bad)';
+    console.error(e);
+  }
+});
+
+$('tf').addEventListener('change', () => {
+  if (!$('bOutputTab').value) $('bOutputTab').placeholder = autoOutputTabName();
+});
+$('bTab')?.addEventListener('change', () => {
+  if (!$('bOutputTab').value) $('bOutputTab').placeholder = autoOutputTabName();
+});
+
+/* toggle book/tab vs manual */
+function syncBatchSource(){
+  const isManual = $('bSource').value === 'manual';
+  $('bBook').style.display  = isManual ? 'none' : '';
+  $('bTab').style.display   = isManual ? 'none' : '';
+  $('bBookLbl').style.display = isManual ? 'none' : '';
+  $('bTabLbl').style.display  = isManual ? 'none' : '';
+  $('bManual').style.display  = isManual ? '' : 'none';
+}
+$('bSource').addEventListener('change', syncBatchSource);
+syncBatchSource();
+
+/* fetch available tabs when book changes (same endpoint as scanner) */
+async function loadBatchTabs(){
+  const book = $('bBook').value;
+  const sel  = $('bTab');
+  const prev = sel.value;
+  sel.innerHTML = '<option>loading…</option>';
+  try {
+    const r = await fetch(`/research/api/sheets/tabs?book=${encodeURIComponent(book)}`);
+    const d = await r.json();
+    const tabs = (d.ok && d.tabs && d.tabs.length) ? d.tabs : [];
+    if (!tabs.length){
+      sel.innerHTML = '<option value="">(no tabs found)</option>';
+      return;
+    }
+    sel.innerHTML = tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+    if (tabs.includes(prev)) sel.value = prev;
+    else if (tabs.includes('zero_input')) sel.value = 'zero_input';
+
+    // mirror the same tab list into the Load dropdown
+    const lsel = $('bLoadTab');
+    if (lsel){
+      const lprev = lsel.value;
+      lsel.innerHTML = '<option value="">(pick a tab)</option>' +
+        tabs.map(t => `<option value="${t}">${t}</option>`).join('');
+      if (tabs.includes(lprev)) lsel.value = lprev;
+    }
+  } catch(e){
+    console.error('batch tab fetch failed', e);
+    sel.innerHTML = '<option value="">(error)</option>';
+  }
+}
+$('bBook').addEventListener('change', loadBatchTabs);
+loadBatchTabs();
+
+$('cfg_fno_mode').addEventListener('change', () => {
+  const show = $('cfg_fno_mode').value === 'sheet' ? 'flex' : 'none';
+  $('fnoSheetRow').style.display = show;
+  $('fnoTabRow').style.display = show;
+});
+
+function readCfg(){
+  const base = $('symbol').value.trim().toUpperCase();
+  const exch = $('exchange').value;
+  let symbol;
+  if (base.includes('.') || base.startsWith('^') || base.endsWith('=X')){
+    symbol = base;
+  } else if (exch === '_FX'){
+    symbol = base + '=X';
+  } else if (exch === ''){
+    symbol = base;
+  } else {
+    symbol = base + exch;
+  }
+
+  const sideEl = document.querySelector('input[name="side"]:checked');
+  const srcEl  = document.querySelector('input[name="candle_src"]:checked');
+  const posEl  = document.querySelector('input[name="pos_mode"]:checked');
+  const stratEl= document.querySelector('input[name="strat_mode"]:checked');
+  const multEl = document.querySelector('input[name="mult_type"]:checked');
+
+  return {
+    symbol,
+    interval: $('tf').value,
+    period:   $('period').value,
+    indicators: {
+      wt: $('src_wt').checked,
+      ce: $('src_ce').checked,
+      st: $('src_st').checked,
+    },
+    wt_pending_rule:           $('cfg_wt_pending_rule').value,
+    params: {
+      wt: { n1: parseFloat($('cfg_wt_n1').value), n2: parseFloat($('cfg_wt_n2').value) },
+      ce: { length: parseFloat($('cfg_ce_len').value),
+            mult:   parseFloat($('cfg_ce_mult').value),
+            use_close: true },
+      st: { left:  parseInt($('cfg_st_left').value, 10)  || 15,
+            right: parseInt($('cfg_st_right').value, 10) || 15 },
+    },
+    capital:          parseFloat($('cfg_capital').value),
+    position_pct:     parseFloat($('cfg_position').value),
+    position_amount:  parseFloat($('cfg_amount').value),
+    fixed_qty:        parseInt($('cfg_qty').value, 10) || 1,
+    sizing_mode:      posEl ? posEl.value : 'fixed',
+    commission_pct:   parseFloat($('cfg_comm').value),
+    slippage_pct:     parseFloat($('cfg_slip').value),
+    buffer_pts:       parseFloat($('cfg_buffer').value),
+    wait_bars:        parseInt($('cfg_wait').value, 10),
+    profit_target_mode:  $('cfg_target_mode').value,
+    profit_target_value: parseFloat($('cfg_target').value),
+    profit_target_pct:   parseFloat($('cfg_target').value),
+    stop_loss_pct:       parseFloat($('cfg_stop').value),
+    exit_on_opposite:    $('cfg_opp').checked,
+    side_mode:           sideEl ? sideEl.value : 'both',
+    logic:               'any',
+    match_window:        5,
+    heikin_ashi:         srcEl ? srcEl.value === 'ha' : true,
+    fno_mode:            $('cfg_fno_mode').value,
+    sheet_name:          $('cfg_fno_book').value,
+    fno_sheet:           $('cfg_fno_sheet').value,
+    strategy_mode:       stratEl ? stratEl.value : 'simple',
+    multiplier_type:     multEl ? multEl.value : 'martingale',
+    base_qty:            parseInt($('cfg_qty').value, 10) || 1,
+    max_levels:          parseInt($('cfg_max_levels').value, 10) || 5,
+    trailing_enabled:          $('cfg_trail_on').checked,
+    trailing_start_pct:        parseFloat($('cfg_trail_start').value),
+    trailing_step_pct:         parseFloat($('cfg_trail_step').value),
+    trailing_tighten_enabled:  $('cfg_trail_tighten').checked,
+    trailing_tighten_at:       parseFloat($('cfg_trail_tighten_at').value),
+    trailing_tighten_step:     parseFloat($('cfg_trail_tighten_step').value),
+    wt_filter_enabled:         $('cfg_wt_filter').checked,
+    wt_buy_max:                parseFloat($('cfg_wt_buy_max').value),
+    wt_sell_min:               parseFloat($('cfg_wt_sell_min').value),
+    htf_filter_enabled:        $('cfg_htf_filter').checked,
+    rsi_filter_enabled:        $('cfg_rsi_filter').checked,
+    rsi_period:                parseInt($('cfg_rsi_period').value, 10) || 14,
+    vol_filter_enabled:        $('cfg_vol_filter').checked,
+    vol_mult:                  parseFloat($('cfg_vol_mult').value),
+    vol_lookback:              parseInt($('cfg_vol_lookback').value, 10) || 20,
+    // ST entry/exit modes
+    st_entry_mode:             $('cfg_st_entry_mode').value,
+    st_exit_mode:              $('cfg_st_exit_mode').value,
+    st_reentry_mode:           $('cfg_st_reentry_mode').value,
+
+    // recovery overlay params
+    recovery_enabled:          $('cfg_rec_mode').value !== 'off',
+    recovery_cumulative:       $('cfg_rec_mode').value === 'cumulative',
+    recovery_buffer_amount:    parseFloat($('cfg_rec_buffer').value),
+    recovery_trail_enabled:    $('cfg_rec_trail').checked,
+    recovery_trail_premium:    parseFloat($('cfg_rec_premium').value),
+    recovery_trail_step:       parseFloat($('cfg_rec_step').value),
+  };
+}
+
+/* ---- chart collapse toggles ---- */
+let priceChartOpen = false;
+let equityChartOpen = false;
+$('togglePrice').addEventListener('click', () => {
+  priceChartOpen = !priceChartOpen;
+  $('priceWrap').hidden = !priceChartOpen;
+  $('togglePrice').textContent =
+    (priceChartOpen ? '▾ ' : '▸ ') + 'PRICE + TRADES';
+  if (priceChartOpen && window._lastBT) drawPriceChart(window._lastBT.candles, window._lastBT.events, window._lastBT.trades);
+});
+$('toggleEquity').addEventListener('click', () => {
+  equityChartOpen = !equityChartOpen;
+  $('equityWrap').hidden = !equityChartOpen;
+  $('toggleEquity').textContent =
+    (equityChartOpen ? '▾ ' : '▸ ') + 'EQUITY CURVE';
+  if (equityChartOpen && window._lastBT) drawEquityChart(window._lastBT.equity, window._lastBT.metrics.capital);
+});
+
+/* ============================ CHARTS ============================ */
+function fit(cv){
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  cv.width = Math.max(1, Math.floor(r.width * dpr));
+  cv.height = Math.max(1, Math.floor(r.height * dpr));
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+
+function drawPriceChart(candles, events, trades){
+  const cv = $('priceChart');
+  const { ctx, w, h } = fit(cv);
+  ctx.clearRect(0, 0, w, h);
+  const n = candles.length; if (!n) return;
+  const padL = 8, padR = 62, padT = 10, padB = 18;
+  const X = i => padL + (w - padL - padR) * (n <= 1 ? 0 : i / (n - 1));
+  let lo = Infinity, hi = -Infinity;
+  for (const c of candles){ lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
+  const pad = (hi - lo) * 0.05 || 1; lo -= pad; hi += pad;
+  const Y = v => padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+  ctx.strokeStyle = '#222a35'; ctx.fillStyle = '#8b949e'; ctx.font = '10px system-ui';
+  for (let g = 0; g <= 4; g++){
+    const v = lo + (hi - lo) * g / 4, y = Y(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(v.toFixed(2), w - padR + 6, y + 3);
+  }
+  ctx.strokeStyle = '#5c6b7f'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  candles.forEach((c, i) => { const x = X(i), y = Y(c.c);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+  ctx.stroke();
+
+  ctx.strokeStyle = '#d2a8ff'; ctx.lineWidth = 1;
+  for (const e of events){
+    const c = candles[e.valid_i];
+    const x = X(e.valid_i), y = Y(e.direction === 'buy' ? c.h : c.l);
+    const r = 3.5;
+    ctx.strokeRect(x - r, y - r, r * 2, r * 2);
+  }
+  for (const e of events){
+    const x = X(e.trigger_i), y = Y(e.level);
+    ctx.fillStyle = e.direction === 'buy' ? '#3fb950' : '#f85149';
+    ctx.beginPath();
+    if (e.direction === 'buy'){
+      ctx.moveTo(x, y - 7); ctx.lineTo(x - 5, y + 1); ctx.lineTo(x + 5, y + 1);
+    } else {
+      ctx.moveTo(x, y + 7); ctx.lineTo(x - 5, y - 1); ctx.lineTo(x + 5, y - 1);
+    }
+    ctx.closePath(); ctx.fill();
+  }
+  for (const t of trades){
+    const xx = X(t.exit_i), xy = Y(t.exit_px);
+    ctx.fillStyle = t.pnl >= 0 ? '#7ee787' : '#f85149';
+    ctx.beginPath(); ctx.arc(xx, xy, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawEquityChart(equity, capital){
+  const cv = $('equityChart');
+  const { ctx, w, h } = fit(cv);
+  ctx.clearRect(0, 0, w, h);
+  const n = equity.length; if (!n) return;
+  const padL = 8, padR = 62, padT = 10, padB = 18;
+  const X = i => padL + (w - padL - padR) * (n <= 1 ? 0 : i / (n - 1));
+  let lo = Infinity, hi = -Infinity;
+  for (const e of equity){ lo = Math.min(lo, e); hi = Math.max(hi, e); }
+  const pad = (hi - lo) * 0.08 || 1; lo -= pad; hi += pad;
+  const Y = v => padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+  ctx.strokeStyle = '#222a35'; ctx.fillStyle = '#8b949e'; ctx.font = '10px system-ui';
+  for (let g = 0; g <= 3; g++){
+    const v = lo + (hi - lo) * g / 3, y = Y(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(Math.round(v).toLocaleString(), w - padR + 6, y + 3);
+  }
+  if (capital >= lo && capital <= hi){
+    ctx.strokeStyle = '#3d4552'; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(padL, Y(capital)); ctx.lineTo(w - padR, Y(capital)); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const grad = ctx.createLinearGradient(0, padT, 0, h - padB);
+  grad.addColorStop(0, 'rgba(88,166,255,.28)'); grad.addColorStop(1, 'rgba(88,166,255,0)');
+  ctx.beginPath();
+  ctx.moveTo(X(0), Y(equity[0]));
+  for (let i = 1; i < n; i++) ctx.lineTo(X(i), Y(equity[i]));
+  ctx.lineTo(X(n - 1), h - padB); ctx.lineTo(X(0), h - padB);
+  ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i < n; i++){ const x = X(i), y = Y(equity[i]);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+/* ============================ MULTI-COLUMN SORT ============================ */
+function _cmpVals(a, b){
+  const aE = a == null || a === '' || (typeof a === 'number' && !isFinite(a));
+  const bE = b == null || b === '' || (typeof b === 'number' && !isFinite(b));
+  if (aE && bE) return 0;
+  if (aE) return 1;
+  if (bE) return -1;
+  const an = Number(a), bn = Number(b);
+  if (!isNaN(an) && !isNaN(bn)) return an - bn;
+  return String(a).localeCompare(String(b));
+}
+function _multiSort(rows, spec){
+  if (!spec.length) return rows.slice();
+  return rows.slice().sort((a, b) => {
+    for (const {key, dir} of spec){
+      const c = _cmpVals(a[key], b[key]);
+      if (c !== 0) return dir === 'desc' ? -c : c;
+    }
+    return 0;
+  });
+}
+function _updateSortSpec(spec, key, shift){
+  const i = spec.findIndex(s => s.key === key);
+  if (shift){
+    if (i < 0) spec.push({ key, dir: 'asc' });
+    else if (spec[i].dir === 'asc') spec[i].dir = 'desc';
+    else spec.splice(i, 1);
+  } else {
+    if (spec.length === 1 && spec[0].key === key){
+      if (spec[0].dir === 'asc') spec[0].dir = 'desc';
+      else spec.length = 0;
+    } else {
+      spec.length = 0;
+      spec.push({ key, dir: 'asc' });
+    }
+  }
+}
+function _sortMark(spec, key){
+  const i = spec.findIndex(s => s.key === key);
+  if (i < 0) return '';
+  const arrow = spec[i].dir === 'asc' ? '▲' : '▼';
+  const num   = spec.length > 1 ? `<sup>${i + 1}</sup>` : '';
+  return ` <span class="sortMark">${arrow}${num}</span>`;
+}
+
+/* live sort state for the two tables */
+const TRADES_SORT = [];
+const EVENTS_SORT = [];
+const expandedTradeSigs = new Set();
+let _lastTradesData = [];
+let _lastEventsData = [];
+
+/* ============================ RENDERERS ============================ */
+function cls(v){ return v >= 0 ? 'buy' : 'sell'; }
+
+function renderCards(m, trades){
+  const net = m.net_pnl != null ? m.net_pnl : (m.final_equity - m.capital);
+  const netColor = net >= 0 ? 'buy' : 'sell';
+  const netStr = (net >= 0 ? '+' : '') + Math.round(net).toLocaleString();
+
+  // per-trade return stats (used for new cards)
+  const tList = Array.isArray(trades) ? trades : [];
+  const pctList = tList.map(t => Number(t.pnl_pct)).filter(v => !isNaN(v));
+  const avgRet = pctList.length ? pctList.reduce((s, v) => s + v, 0) / pctList.length : 0;
+  const bestRet = pctList.length ? Math.max(...pctList) : 0;
+
+  // ✅ Calculate dynamic profits first
+  const buyProfit = tList.filter(t => t.side === 'long').reduce((s, t) => s + t.pnl, 0);
+  const sellProfit = tList.filter(t => t.side === 'short').reduce((s, t) => s + t.pnl, 0);
+
+  const cards = [
+    ['Final equity',
+      Math.round(m.final_equity).toLocaleString() +
+      ` <span class="${netColor}" style="font-size:12px;font-weight:500;margin-left:6px">${netStr}</span>`, ''],
+    ['Total return',   m.total_return_pct.toFixed(2) + '%', cls(m.total_return_pct)],
+    ['Buy & hold',     m.buy_hold_pct.toFixed(2) + '%', cls(m.buy_hold_pct)],
+    ['Avg return',     avgRet.toFixed(2) + '%', cls(avgRet)],
+    ['Best return',    bestRet.toFixed(2) + '%', cls(bestRet)],
+    ['Max drawdown',   m.max_dd_pct.toFixed(2) + '%', 'sell'],
+    ['Sharpe',         m.sharpe.toFixed(2), cls(m.sharpe)],
+    ['Max win ₹',      Math.round(m.max_win  || 0).toLocaleString(), 'buy'],
+    ['Max loss ₹',     Math.round(m.max_loss || 0).toLocaleString(), 'sell'],
+    ['Signals',        m.events, ''],
+    ['Trades',         m.trades, ''],
+    ['Win rate',       m.win_rate.toFixed(1) + '%', ''],
+    ['Profit factor',  m.profit_factor.toFixed(2), cls(m.profit_factor - 1)],
+    ['Expectancy',     Math.round(m.expectancy).toLocaleString(), cls(m.expectancy)],
+    ['Avg win',        Math.round(m.avg_win).toLocaleString(), 'buy'],
+    ['Avg loss',       Math.round(m.avg_loss).toLocaleString(), 'sell'],
+    // ✅ FIX: Use the dynamic `cls()` function instead of hardcoded 'buy'/'sell'
+    ['Buy side profit',  Math.round(buyProfit).toLocaleString(), cls(buyProfit)],
+    ['Sell side profit', Math.round(sellProfit).toLocaleString(), cls(sellProfit)],
+  ];
+  $('cards').innerHTML = cards.map(([k,v,c]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+}
+
+function renderLatestSignal(events){
+  if (!events.length){ $('latestSig').style.display = 'none'; return; }
+  const e = events[events.length - 1];
+  $('latestSig').style.display = '';
+  const cell = (label, val, klass = '') =>
+    `<div><div class="k">${label}</div>
+       <div class="v ${klass}" style="font-size:13px;font-weight:600">${val}</div></div>`;
+  $('latestSigBody').innerHTML =
+    cell('Direction', e.direction.toUpperCase(),
+         e.direction === 'buy' ? 'buy' : 'sell') +
+    cell('Source',    e.source.toUpperCase()) +
+    cell('Trend',
+         e.source === 'st'
+           ? (e.direction === 'buy' ? 'Buy Trend' : 'Sell Trend')
+           : (e.wt_val > 0 ? 'Buy Trend' : 'Sell Trend'),
+         e.direction === 'buy' ? 'buy' : 'sell') +
+    cell('Perfect?',  e.perfect) +
+    cell('Valid candle',  e.valid_t.slice(0, 16).replace('T', ' ')) +
+    cell('Trigger bar',   e.trigger_t.slice(0, 16).replace('T', ' ')) +
+    cell('Trigger level', e.level.toFixed(2)) +
+    cell('Entry @',
+         (e.level + (e.direction === 'buy' ? 1 : -1)).toFixed(2),
+         e.direction === 'buy' ? 'buy' : 'sell');
+}
+
+/* --- trades table with multi-column sort + expandable detail rows --- */
+function _tradeSig(t){
+  return [t.entry_t, t.entry_px, t.exit_t, t.exit_px, t.pnl].join('|');
+}
+
+function renderTrades(trades, stratMode){
+  _lastTradesData = trades || [];
+  const wrap = $('tradesWrap');
+
+  if (!_lastTradesData.length){
+    wrap.innerHTML =
+      '<p style="color:var(--muted);font-size:12px;padding:20px">No trades.</p>';
+    return;
+  }
+
+  const isMulti = (stratMode === "same_side" || stratMode === "alternate");
+  const levelsHead = isMulti
+    ? `<th class="sortable" data-tsort="levels">Levels</th>` : '';
+
+  // rows with stable _i to keep detail mapping intact
+  const indexed = _lastTradesData.map((t, i) => ({ ...t, _i: i }));
+  const sorted  = CONTINUATION && !TRADES_SORT.length ? indexed.slice().reverse() : _multiSort(indexed, TRADES_SORT);
+
+  const rows = sorted.map((t, r) => {
+    const i         = t._i;
+    const qty       = (t.total_qty != null) ? t.total_qty : '';
+    const levels    = (t.levels != null) ? t.levels
+                    : (t.level != null ? t.level + 1 : '');
+    const capital   = fmtAmt(t.capital_used);
+    const detail    = t.entries_detail || [];
+    const hasDetail = detail.length > 0;
+    const levelsCell = isMulti ? `<td>${levels}</td>` : '';
+    const sig = _tradeSig(t);
+    const isExpanded = expandedTradeSigs.has(sig);
+    const arrow = hasDetail ? `<span class="expander">${isExpanded ? '▾' : '▸'}</span> ` : '';
+
+    const mainRow = `
+      <tr class="tradeRow ${hasDetail ? 'hasDetail' : ''}" data-i="${i}" data-sig="${sig}">
+        <td>${arrow}${r + 1}</td>
+        <td class="${t.side === 'long' ? 'buy' : 'sell'}">${t.side}</td>
+        <td>${t.key.toUpperCase()}</td>
+        ${CONTINUATION ? `<td>${t.wt_val != null ? t.wt_val : '—'}</td>` : ''}
+        <td>${capital}</td>
+        <td>${t.entry_t.slice(0, 16).replace('T', ' ')}</td>
+        <td>${t.entry_px}</td>
+        ${CONTINUATION ? `<td>${continuationQuote != null ? continuationQuote : '—'}</td>` : `<td>${t.wt_val != null ? t.wt_val : '—'}</td>`}
+        <td>${t.exit_t.slice(0, 16).replace('T', ' ')}</td>
+        <td>${t.exit_px}</td>
+        <td>${qty}</td>
+        <td>${t.bars}</td>
+        ${levelsCell}
+        <td class="${cls(t.pnl)}">${t.pnl}</td>
+        <td class="${cls(t.pnl_pct)}">${t.pnl_pct == null ? '—' : t.pnl_pct + '%'}</td>
+        <td class="mut">${t.reason}</td>
+      </tr>`;
+
+    let detailRow = '';
+    if (hasDetail){
+      const lines = detail.map((e, k) => {
+        const sigSide = (e.sign === 1) ? 'BUY' : 'SELL';
+        const sigCl   = (e.sign === 1) ? 'buy' : 'sell';
+        const legCl   = (e.leg_pnl >= 0) ? 'buy' : 'sell';
+        const lp      = (e.leg_pnl != null) ? e.leg_pnl : '';
+        return `<div class="detLine">
+           <span class="detTag">L${k + 1}</span>
+           <span class="${sigCl}" style="font-weight:700;margin-right:8px;
+                  display:inline-block;min-width:38px">${sigSide}</span>
+           <span style="color:var(--fg)">${e.t.slice(0, 16).replace('T', ' ')}</span>
+           <span style="color:var(--muted)"> @ </span><b>${e.px}</b>
+           <span style="color:var(--muted)"> · qty </span><b>${e.qty}</b>
+           <span style="color:var(--muted)"> → </span>
+           <span style="color:var(--fg)">${(e.t_out || '').slice(0, 16).replace('T', ' ')}</span>
+           <span style="color:var(--muted)"> @ </span><b>${e.px_out || ''}</b>
+           <span style="color:var(--muted)"> · leg P&L </span>
+           <b class="${legCl}">${lp}</b>
+           <span style="color:var(--muted)"> · </span>
+           <span style="color:var(--muted);font-style:italic">${e.reason || ''}</span>
+           <span style="color:var(--muted)"> · </span>
+           <span style="color:var(--muted);font-style:italic">${e.perfect || ''}</span>
+         </div>`;
+      }).join('');
+      detailRow = `
+        <tr class="detailRow" data-for="${i}" style="display:${isExpanded ? '' : 'none'}">
+          <td colspan="${(isMulti ? 15 : 14) + (CONTINUATION ? 1 : 0)}"
+              style="text-align:left;padding:8px 16px 8px 40px;
+                     background:#0f1620;color:var(--muted);font-size:11px;
+                     white-space:normal;border-left:3px solid var(--accent)">
+            ${lines}
+            <div class="detLine" style="margin-top:6px;color:var(--good)">
+              <span class="detTag">EXIT</span>
+              ${t.exit_t.slice(0, 16).replace('T', ' ')}
+              · @ <b>${t.exit_px}</b>
+              · close qty <b>${qty}</b>
+              · reason <b>${t.reason}</b>
+            </div>
+          </td>
+        </tr>`;
+    }
+    return mainRow + detailRow;
+  }).join('');
+
+  const th = (key, label, extra='') =>
+    `<th class="sortable" data-tsort="${key}" ${extra}>${label}${_sortMark(TRADES_SORT, key)}</th>`;
+
+  wrap.innerHTML = `
+    <div class="chartCap">
+      Trades (${_lastTradesData.length}) — click to expand · click a header to sort · shift-click to add a level
+    </div>
+    <div class="tblwrap"><table class="tlog">
+      <thead><tr>
+        ${th('_i', '#')}
+        ${th('side', 'Side')}
+        ${th('key', 'Source')}
+        ${CONTINUATION ? th('wt_val', 'Valid WT Val') : ''}
+        ${th('capital_used', 'Capital Used')}
+        ${th('entry_t', 'Entry time')}
+        ${th('entry_px', 'Avg entry')}
+        ${CONTINUATION ? '<th title="Yahoo quote may be delayed or prior close; timestamp unavailable. Not used for simulated P&amp;L.">LTP (Yahoo)</th>' : th('wt_val', 'Valid WT Val')}
+        ${th('exit_t', 'Exit time')}
+        ${th('exit_px', 'Exit px')}
+        ${th('total_qty', 'Qty')}
+        ${th('bars', 'Bars')}
+        ${isMulti ? th('levels', 'Levels') : ''}
+        ${th('pnl', 'P&L')}
+        ${th('pnl_pct', 'Return')}
+        ${th('reason', 'Reason')}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+
+  // wire sort header clicks
+  wrap.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', (ev) => {
+      _updateSortSpec(TRADES_SORT, th.dataset.tsort, ev.shiftKey);
+      renderTrades(_lastTradesData, stratMode);
+    });
+  });
+
+  // wire detail row toggles
+  wrap.querySelectorAll('.tradeRow.hasDetail').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const i   = tr.dataset.i;
+      const sig = tr.dataset.sig;
+      const det = wrap.querySelector(`.detailRow[data-for="${i}"]`);
+      if (!det) return;
+      const hidden = det.style.display === 'none';
+      det.style.display = hidden ? '' : 'none';
+      if (hidden) expandedTradeSigs.add(sig);
+      else        expandedTradeSigs.delete(sig);
+      const arrow = tr.querySelector('.expander');
+      if (arrow) arrow.textContent = hidden ? '▾' : '▸';
+    });
+  });
+}
+
+/* --- events table with multi-column sort + WT Trend column --- */
+function _wtTrend(e){
+  if (e.wt_val != null && !isNaN(e.wt_val)) {
+    return e.wt_val > 0 ? 'Buy Trend' : 'Sell Trend';
+  }
+  return e.direction === 'buy' ? 'Buy Trend' : 'Sell Trend';
+}
+
+function renderEvents(events){
+  _lastEventsData = events || [];
+
+  if (!_lastEventsData.length){
+    $('eventsWrap').innerHTML =
+      '<p style="color:var(--muted);font-size:12px;padding:20px">No WT/CE events detected.</p>';
+    return;
+  }
+
+  const buffer = CONTINUATION && continuationRenderedConfig ? Number(continuationRenderedConfig.buffer_pts) : (parseFloat($('cfg_buffer').value) || 1);
+
+  // decorate rows with derived fields so sorting works naturally
+  const decorated = _lastEventsData.map((e, i) => ({
+    ...e, _i: i,
+    wt_trend: _wtTrend(e),
+    entry_price: e.level + (e.direction === 'buy' ? buffer : -buffer),
+  }));
+
+  const passed  = decorated.filter(e => !e.filtered).length;
+  const historicalCount = decorated.length;
+  if (CONTINUATION) {
+    for (const q of continuationPendingSignals){
+      const qTime = String(q.valid_t || '').slice(0,16).replace('T',' ');
+      // A forming-bar breakout may already appear in the backtest events.
+      // Do not show that same valid signal again as untriggered.
+      const triggered = decorated.some(e => e.source === 'wt' && e.direction === q.dir &&
+        qTime && String(e.valid_t || '').slice(0,16).replace('T',' ') === qTime);
+      if (!triggered) decorated.push({
+        _i: decorated.length, is_pending: true, direction: q.dir, source: 'wt',
+        valid_t: q.valid_t || '', level: q.level, wt_val: null, trigger_t: '',
+        entry_price: null, filtered: false, filter_reasons: [],
+        quote_crossed: continuationQuote != null && Number.isFinite(Number(continuationQuote)) && Number(continuationQuote) > 0 &&
+          (q.dir === 'buy' ? Number(continuationQuote) > Number(q.level) + buffer : Number(continuationQuote) < Number(q.level) - buffer)
+      });
+    }
+  }
+  const pendingCount = decorated.length - historicalCount;
+  const stat = (label, cnt) => `<span style="color:var(--muted);font-size:11px;
+      margin-right:14px">${label} <b style="color:${cnt?'var(--bad)':'var(--muted)'}">${cnt}</b></span>`;
+  const wtR  = decorated.filter(e => (e.filter_reasons||[]).some(r => r.includes('WT'))).length;
+  const htfR = decorated.filter(e => (e.filter_reasons||[]).some(r => r.includes('HTF'))).length;
+  const rsiR = decorated.filter(e => (e.filter_reasons||[]).some(r => r.includes('RSI'))).length;
+  const volR = decorated.filter(e => (e.filter_reasons||[]).some(r => r.includes('Vol'))).length;
+  const statsHtml = `<div style="margin-bottom:8px">
+      <span style="color:var(--muted);font-size:11px;margin-right:14px">
+        ${CONTINUATION ? 'Historical triggered' : 'Total'} <b>${CONTINUATION ? historicalCount : decorated.length}</b></span>
+      ${CONTINUATION ? `<span style="color:var(--muted);font-size:11px;margin-right:14px">Untriggered <b>${pendingCount}</b></span>` : ''}
+      <span style="color:var(--muted);font-size:11px;margin-right:14px">
+        Passed <b class="buy">${passed}</b></span>
+      ${stat('WT cut', wtR)} ${stat('HTF cut', htfR)} ${stat('RSI cut', rsiR)} ${stat('VOL cut', volR)}
+    </div>`;
+
+  const sorted = CONTINUATION && !EVENTS_SORT.length
+    ? decorated.slice().sort((a,b) => String(b.trigger_t || b.valid_t).slice(0,16).replace('T',' ').localeCompare(String(a.trigger_t || a.valid_t).slice(0,16).replace('T',' ')))
+    : _multiSort(decorated, EVENTS_SORT);
+
+  const rows = sorted.map((e, r) => {
+    const reasons = (e.filter_reasons || []).join(', ');
+    const filtTag = e.filtered
+      ? ` <span style="color:var(--bad);font-size:10px">[${reasons}]</span>` : '';
+    const wtStr = (e.wt_val != null) ? e.wt_val.toFixed(2) : '—';
+    return `
+    <tr ${e.filtered ? 'style="opacity:.45"' : ''}>
+      <td>${r + 1}</td>
+      <td class="${e.direction === 'buy' ? 'buy' : 'sell'}">${e.direction}</td>
+      <td>${e.source.toUpperCase()}</td>
+      <td>${e.valid_t.slice(0, 16).replace('T', ' ')}</td>
+      <td>${e.level}</td>
+      <td>${wtStr}${filtTag}</td>
+      <td>${e.is_pending ? '—' : e.trigger_t.slice(0, 16).replace('T', ' ')}</td>
+      <td>${e.is_pending ? '—' : e.entry_price.toFixed(2)}</td>
+      ${CONTINUATION ? `<td>${e.is_pending ? (e.quote_crossed ? 'Quote crossed · awaiting scan' : 'Waiting (closed bars)') : (e.filtered ? 'Filtered' : 'Triggered')}</td>` : ''}
+    </tr>`;
+  }).join('');
+
+  const th = (key, label) =>
+    `<th class="sortable" data-esort="${key}">${label}${_sortMark(EVENTS_SORT, key)}</th>`;
+
+  $('eventsWrap').innerHTML = `
+    <div class="chartCap">
+      All signals detected (${decorated.length}) — compare with Scanner · click a header to sort
+    </div>
+    ${statsHtml}
+    <div class="tblwrap"><table class="tlog">
+      <thead><tr>
+        ${th('_i', '#')}
+        ${th('direction', 'Direction')}
+        ${th('source', 'Source')}
+        ${th('valid_t', 'Valid candle')}
+        ${th('level', 'Level')}
+        ${th('wt_val', 'Valid WT Val')}
+        ${th('trigger_t', 'Trigger bar')}
+        ${th('entry_price', 'Entry @')}
+        ${CONTINUATION ? '<th>Status</th>' : ''}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+
+  $('eventsWrap').querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', (ev) => {
+      _updateSortSpec(EVENTS_SORT, th.dataset.esort, ev.shiftKey);
+      renderEvents(_lastEventsData);
+    });
+  });
+}
+
+async function runBacktest(){
+  /* hide batch panel when running single */
+  if (!$('batchMode').checked) $('batchResultsWrap').hidden = true;
+  if (CONTINUATION && !continuationApplied && !applyContinuationSettings(false)) {
+    if ($('continuationAuto').checked) { $('continuationAuto').checked = false; saveBtState(); }
+    setContinuationState('STOPPED', '#8b949e');
+    $('continuationStatus').textContent = 'Automatic refresh stopped: check settings and apply again.';
+    return;
+  }
+  const cfg = CONTINUATION ? JSON.parse(JSON.stringify(continuationApplied)) : readCfg();
+  const ind = cfg.indicators;
+  if (!ind.wt && !ind.ce && !ind.st){ setStatus('pick at least one source', 'err'); if (CONTINUATION) { stopContinuation(); $('continuationStatus').textContent='Automatic refresh stopped: select an indicator.'; } return; }
+  const activeSrcCount = [ind.wt, ind.ce, ind.st].filter(Boolean).length;
+  if ((cfg.strategy_mode === "same_side" || cfg.strategy_mode === "alternate") && activeSrcCount > 1){
+    setStatus('same-side / alternate support only ONE source', 'err'); if (CONTINUATION) { stopContinuation(); $('continuationStatus').textContent='Automatic refresh stopped: select one indicator.'; } return;
+  }
+
+  const btn = $('run');
+  if (btn.disabled) return;
+  btn.disabled = true; if (CONTINUATION) $('applyContinuation').disabled = true; setStatus('running…');
+  if (CONTINUATION) {
+    clearTimeout(continuationTimer);
+    clearInterval(continuationCountdown);
+    pauseContinuationLtp('Full scan running; LTP poll waits.');
+    setContinuationState('SCANNING', '#58a6ff');
+    $('continuationStatus').textContent = 'Scanning and recalculating; previous results may be stale.';
+  }
+  try {
+    const res = await fetch(CONTINUATION ? '/research/api/continuation/run' : '/research/api/backtest/run', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    const data = await res.json();
+    if (!data.ok){ setStatus((CONTINUATION ? 'Refresh failed; previous results are stale: ' : '') + (data.error || 'failed'), 'err'); return; }
+
+    // stash the strategy mode so renderers know whether to show Levels column
+    data.strategy_mode = cfg.strategy_mode;
+    if (CONTINUATION && data.continuation) { data.continuation.client_scan_at = new Date().toISOString(); data.continuation.applied_cfg = cfg; }
+    if (CONTINUATION) { updateContinuationChanges(data, cfg); updateInProcess(data, cfg); }
+    renderBacktest(data);
+    saveBtResult(data);
+    setStatus(`${data.bars} bars · ${data.events.length} signals · ${data.trades.length} trades · ${data.ms} ms${CONTINUATION ? ' · refreshed ' + new Date().toLocaleTimeString() : ''}`, 'ok');
+  } catch (e){
+    setStatus(CONTINUATION ? 'Request failed; previous results are stale' : 'request failed', 'err'); console.error(e);
+  } finally {
+    btn.disabled = false;
+    if (CONTINUATION) {
+      $('applyContinuation').disabled = false; updateAppliedStatus();
+      if ($('continuationAuto').checked) { scheduleContinuation(); scheduleContinuationLtp(); }
+      else { setContinuationState('STOPPED', '#8b949e'); $('continuationStatus').textContent = 'Automatic refresh is off; no further scans scheduled.'; }
+    }
+  }
+}
+function updateAppliedStatus(){
+  if (!CONTINUATION || continuationBooting) return;
+  const el = $('continuationAppliedStatus');
+  if (!continuationApplied) { el.textContent = 'Settings not yet applied; first scan applies current values.'; return; }
+  try {
+    const dirty = JSON.stringify(readCfg()) !== JSON.stringify(continuationApplied);
+    el.textContent = dirty ? 'Changes not applied — scans still use previous settings.' : 'Settings applied';
+    el.style.color = dirty ? '#e3b341' : 'var(--good)';
+  } catch(e) { el.textContent = 'Check settings'; }
+}
+function applyContinuationSettings(runNow = true){
+  const cfg = readCfg(), sources = cfg.indicators;
+  const count = [sources.wt, sources.ce, sources.st].filter(Boolean).length;
+  if (!count || ((cfg.strategy_mode === 'same_side' || cfg.strategy_mode === 'alternate') && count > 1)) {
+    $('continuationAppliedStatus').textContent = !count ? 'Select at least one source before applying.' : 'This strategy supports one source only.';
+    $('continuationAppliedStatus').style.color = 'var(--bad)';
+    return false;
+  }
+  const invalidNumber = value => typeof value === 'number' ? !Number.isFinite(value)
+    : value && typeof value === 'object' ? Object.values(value).some(invalidNumber) : false;
+  if (!cfg.symbol || invalidNumber(cfg)) {
+    $('continuationAppliedStatus').textContent = 'Check symbol and numeric settings before applying.';
+    $('continuationAppliedStatus').style.color = 'var(--bad)';
+    return false;
+  }
+  continuationApplied = JSON.parse(JSON.stringify(cfg));
+  try { localStorage.setItem(CONTINUATION_APPLIED_KEY, JSON.stringify(continuationApplied)); } catch(e){}
+  saveBtState(); updateAppliedStatus();
+  if (runNow && $('continuationAuto').checked && !$('run').disabled) {
+    clearTimeout(continuationTimer); clearInterval(continuationCountdown); runBacktest();
+  }
+  return true;
+}
+if (CONTINUATION) $('applyContinuation').addEventListener('click', () => applyContinuationSettings(true));
+$('run').addEventListener('click', runBacktest);
+let lastMonitorData = null;
+let lastMonitorCfg = null;
+function updateInProcess(data, cfg, recheck = false){
+  const monitor = data.in_process, body = $('inProcessBody'), status = $('inProcessStatus');
+  body.replaceChildren();
+  lastMonitorData = data; lastMonitorCfg = cfg;
+  const openPositions = (data.trades || []).filter(t => t.reason === 'open (estimate)');
+  const position = $('inProcessPosition');
+  position.textContent = openPositions.length
+    ? openPositions.map(t => `Position: ${String(t.side || '').toUpperCase()} at ${t.entry_px} · waiting for exit (simulated)`).join(' | ')
+    : 'Position: none open in the recalculated backtest.';
+  if (!monitor) { status.textContent = 'Monitor unavailable: update research_backtest.py and research_routes.py, restart Arena and scan again.'; return; }
+  if (monitor.status !== 'ok') { status.textContent = monitor.reason || 'Monitor unavailable.'; return; }
+  const signals = monitor.signals || [];
+  const quote = data.continuation?.ltp;
+  const limitValue = Number($('monitorMaxDiff').value);
+  const validLimit = $('monitorMaxDiff').value !== '' && Number.isFinite(limitValue) && limitValue >= 0;
+  status.textContent = `Last included candle: ${monitor.last_closed_t || '—'} · pending rule: ${monitor.rule || '—'} · ${signals.length} signal(s).`;
+  if (!signals.length) status.textContent += ' No pending WT signal.';
+  for (const q of signals){
+    const level = Number(q.level), buffer = Number(monitor.buffer || 0);
+    const threshold = q.dir === 'buy' ? level + buffer : level - buffer;
+    const validQuote = quote != null && Number.isFinite(Number(quote)) && Number(quote) > 0;
+    const crossed = validQuote && (q.dir === 'buy' ? Number(quote) > threshold : Number(quote) < threshold);
+    let simpleStatus = validQuote ? (crossed ? 'Level crossed' : 'Waiting for breakout') : 'Waiting for quote';
+    let simpleOrder = '—';
+    // Only claim a match where a simple-strategy entry can be identified by
+    // direction, breakout bar and expected fill. Multi-leg cycles cannot be
+    // matched safely from the aggregate trade row.
+    const sign = q.dir === 'buy' ? 1 : q.dir === 'sell' ? -1 : 0;
+    const triggerMs = Date.parse(q.trigger_t);
+    const slippage = Number(cfg.slippage_pct);
+    const expectedFill = (level + sign * buffer) * (1 + sign * slippage / 100);
+    const openMatch = cfg.strategy_mode === 'simple' && q.kind === 'historical_break' && sign &&
+      Number.isFinite(triggerMs) && Number.isFinite(expectedFill) &&
+      (data.trades || []).some(t => t.reason === 'open (estimate)' && t.key === 'wt' &&
+        t.side === (sign > 0 ? 'long' : 'short') && Date.parse(t.entry_t) === triggerMs &&
+        Number.isFinite(Number(t.entry_px)) && Math.abs(Number(t.entry_px) - expectedFill) <= 0.011);
+    const sameOpen = cfg.strategy_mode === 'simple' && sign && openPositions.some(t =>
+      t.side === (sign > 0 ? 'long' : 'short'));
+    if (openMatch) {
+      simpleStatus = 'In position · waiting for exit';
+    } else if (sameOpen) {
+      simpleStatus = 'Same-side position open · waiting for exit';
+    } else if (sign && validQuote && Number.isFinite(threshold) && threshold > 0) {
+      const dir = sign > 0 ? 'BUY' : 'SELL';
+      if (!crossed && q.kind === 'pending') {
+        simpleOrder = `${dir} STOP-LIMIT · trigger ${sign > 0 ? '>' : '<'} ${threshold.toFixed(4)} · limit not set`;
+      } else if (!crossed) {
+        simpleStatus = 'Earlier breakout · price returned';
+      } else if ($('monitorAlreadyTriggered').checked && validLimit && level > 0 &&
+                 Math.abs(Number(quote) - level) / level * 100 <= limitValue + 1e-9) {
+        simpleOrder = `${dir} MARKET`;
+      } else simpleStatus = 'Crossed · market check off or outside limit';
+    }
+    const tr = document.createElement('tr');
+    for (const val of [String(q.dir || '').toUpperCase(), q.level, q.valid_t || '—',
+                       validQuote ? Number(quote) : '—', simpleOrder, simpleStatus]) {
+      const td = document.createElement('td'); td.textContent = String(val); tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  }
+}
+if (CONTINUATION){
+  for (const id of ['monitorAlreadyTriggered','monitorMaxDiff']) $(id).addEventListener('change', () => {
+    if (lastMonitorData && lastMonitorCfg) updateInProcess(lastMonitorData, lastMonitorCfg, true);
+  });
+}
+
+// Changes compare successful scans in this tab; neither a trade ledger nor live fills.
+let continuationBaseline = null;
+let continuationChanges = [];
+let continuationAudio = null;
+function signalIdentity(e){ return JSON.stringify([e.source, e.direction, e.valid_t, e.trigger_t]); }
+function tradeIdentity(t){
+  const first = t.entries_detail?.[0]?.t || t.entry_t;
+  return JSON.stringify([t.key, first]);
+}
+function tradeSummary(t){
+  return JSON.stringify([t.side, t.entry_t, t.entry_px, t.total_qty, t.exit_t, t.exit_px, t.reason,
+    (t.entries_detail || []).map(e => [e.t, e.px, e.qty, e.sign, e.t_out || '', e.px_out || '', e.reason || ''])]);
+}
+function continuationSoundAlert(){
+  if (!$('continuationSound').checked || !continuationAudio) return;
+  try {
+    const ctx = continuationAudio, oscillator = ctx.createOscillator(), gain = ctx.createGain();
+    oscillator.frequency.value = 880; gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + .3);
+    oscillator.connect(gain); gain.connect(ctx.destination); oscillator.start(); oscillator.stop(ctx.currentTime + .3);
+  } catch (e) { console.warn('Sound unavailable', e); }
+}
+function outsideRange(time, start){
+  const t = Date.parse(time), f = Date.parse(start);
+  return Number.isFinite(t) && Number.isFinite(f) && t < f;
+}
+function updateContinuationChanges(data, cfg){
+  const panel = $('continuationChanges');
+  const key = JSON.stringify(cfg);
+  const signals = new Map((data.events || []).map(e => [signalIdentity(e), e]));
+  const trades = new Map((data.trades || []).map(t => [tradeIdentity(t), t]));
+  const next = {key, from: data.from, signals, trades};
+  if (!continuationBaseline || continuationBaseline.key !== key){
+    continuationBaseline = next;
+    continuationChanges = [];
+    panel.textContent = 'Baseline set for these settings. Changes will appear after the next successful scan.';
+    return;
+  }
+  const changes = [];
+  for (const [id, e] of signals){
+    const prev = continuationBaseline.signals.get(id);
+    if (!prev) changes.push(`Signal appeared: ${String(e.direction || '').toUpperCase()} ${String(e.source || '').toUpperCase()} · trigger ${e.trigger_t || '—'}${e.filtered ? ' (filtered)' : ''}`);
+    else if (JSON.stringify([e.level, e.filtered, e.filter_reasons]) !== JSON.stringify([prev.level, prev.filtered, prev.filter_reasons]))
+      changes.push(`Signal revised: ${String(e.direction || '').toUpperCase()} · trigger ${e.trigger_t || '—'}`);
+  }
+  for (const [id, e] of continuationBaseline.signals){
+    if (!signals.has(id) && !outsideRange(e.trigger_t, data.from)) changes.push(`Signal removed or revised: ${String(e.direction || '').toUpperCase()} · trigger ${e.trigger_t || '—'}`);
+  }
+  for (const [id, t] of trades){
+    const prev = continuationBaseline.trades.get(id);
+    if (!prev) changes.push(`Simulated trade appeared: ${String(t.side || '').toUpperCase()} · entry ${t.entry_t || '—'} · ${t.reason || '—'}`);
+    else if (tradeSummary(t) !== tradeSummary(prev)) changes.push(`Simulated trade changed: ${String(t.side || '').toUpperCase()} · entry ${t.entry_t || '—'} · ${t.reason || '—'}`);
+  }
+  for (const [id, t] of continuationBaseline.trades){
+    if (!trades.has(id) && !outsideRange(t.entry_t, data.from)) changes.push(`Simulated trade removed or revised: ${String(t.side || '').toUpperCase()} · entry ${t.entry_t || '—'}`);
+  }
+  continuationBaseline = next;
+  if (!changes.length) return;
+  const timestamp = new Date().toLocaleTimeString();
+  continuationChanges = changes.map(c => `${timestamp} · ${c}`).concat(continuationChanges).slice(0, 20);
+  panel.replaceChildren(...continuationChanges.map(text => {
+    const line = document.createElement('div'); line.textContent = text; return line;
+  }));
+  continuationSoundAlert();
+}
+async function unlockContinuationSound(){
+  try {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    if (!Audio) throw new Error('Audio not supported');
+    if (!continuationAudio) continuationAudio = new Audio();
+    await continuationAudio.resume();
+    if (continuationAudio.state === 'suspended') throw new Error('Audio blocked');
+    $('continuationUnlockSound').hidden = true;
+    $('continuationSoundStatus').textContent = 'Sound ready';
+  } catch(e) {
+    $('continuationUnlockSound').hidden = false;
+    $('continuationSoundStatus').textContent = 'Click Enable sound in browser; sound may be blocked.';
+  }
+}
+if (CONTINUATION){
+  $('continuationUnlockSound').addEventListener('click', unlockContinuationSound);
+  $('continuationSound').addEventListener('change', () => {
+    if ($('continuationSound').checked) unlockContinuationSound();
+    else { $('continuationUnlockSound').hidden = true; $('continuationSoundStatus').textContent = ''; }
+  });
+}
+
+let continuationTimer = null;
+let continuationCountdown = null;
+let continuationLtpTimer = null;
+let continuationLtpAbort = null;
+let continuationLtpGeneration = 0;
+function setContinuationState(text, color){
+  const el = $('continuationState');
+  el.textContent = text;
+  el.style.color = color;
+  el.style.borderColor = color;
+}
+function stopContinuation(){
+  pauseContinuationLtp('LTP poll stopped.');
+  clearTimeout(continuationTimer);
+  clearInterval(continuationCountdown);
+  $('continuationAuto').checked = false;
+  setContinuationState('STOPPED', '#8b949e');
+  $('continuationStatus').textContent = $('run').disabled
+    ? 'Automatic refresh stopped. The current scan may still finish.'
+    : 'Automatic refresh stopped; no further scans scheduled.';
+  saveBtState();
+}
+function scheduleContinuation(){
+  clearTimeout(continuationTimer);
+  clearInterval(continuationCountdown);
+  if (!CONTINUATION || !$('continuationAuto').checked || $('run').disabled) return;
+  const seconds = Number($('continuationInterval').value);
+  const deadline = Date.now() + seconds * 1000;
+  setContinuationState('RUNNING · WAITING', '#3fb950');
+  const update = () => {
+    const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+    $('continuationStatus').textContent = `Next recalculation in ${remaining} seconds. Browser tab must stay open.`;
+  };
+  update();
+  continuationCountdown = setInterval(update, 1000);
+  continuationTimer = setTimeout(() => { clearInterval(continuationCountdown); runBacktest(); }, seconds * 1000);
+}
+function pauseContinuationLtp(message){
+  clearTimeout(continuationLtpTimer);
+  continuationLtpGeneration++;
+  if (continuationLtpAbort) continuationLtpAbort.abort();
+  continuationLtpAbort = null;
+  if (CONTINUATION) $('continuationLtpState').textContent = message;
+}
+function scheduleContinuationLtp(){
+  clearTimeout(continuationLtpTimer);
+  if (!CONTINUATION || !$('continuationAuto').checked || !$('continuationLtpPoll').checked) {
+    if (CONTINUATION && !$('continuationLtpPoll').checked) $('continuationLtpState').textContent = 'LTP poll off.';
+    else if (CONTINUATION && !$('continuationAuto').checked) $('continuationLtpState').textContent = 'LTP poll waiting: continuous recalculation is off.';
+    return;
+  }
+  if ($('run').disabled) { $('continuationLtpState').textContent = 'Full scan running; LTP poll waits.'; return; }
+  if (!continuationApplied || !lastMonitorData || !lastMonitorCfg ||
+      JSON.stringify(lastMonitorCfg) !== JSON.stringify(continuationApplied)) {
+    $('continuationLtpState').textContent = 'LTP poll waiting for a successful scan with applied settings.';
+    return;
+  }
+  const seconds = Number($('continuationLtpInterval').value);
+  $('continuationLtpState').textContent = `LTP poll on · next request in ${seconds} seconds while scan is idle.`;
+  continuationLtpTimer = setTimeout(pollContinuationLtp, seconds * 1000);
+}
+async function pollContinuationLtp(){
+  if (!CONTINUATION || !$('continuationAuto').checked || !$('continuationLtpPoll').checked || $('run').disabled || continuationLtpAbort) return;
+  const cfg = continuationApplied;
+  if (!cfg || !lastMonitorCfg || JSON.stringify(cfg) !== JSON.stringify(lastMonitorCfg)) return;
+  const generation = ++continuationLtpGeneration;
+  const controller = new AbortController(); continuationLtpAbort = controller;
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  $('continuationLtpState').textContent = 'Fetching LTP; quote time may be unknown.';
+  try {
+    const response = await fetch('/research/api/continuation/ltp', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({symbol: cfg.symbol}), signal: controller.signal,
+    });
+    if (response.status === 404) throw new Error('LTP endpoint unavailable: copy updated research_routes.py and restart Arena.');
+    const quote = await response.json();
+    if (generation !== continuationLtpGeneration || !$('continuationAuto').checked || $('run').disabled) return;
+    if (quote.busy) { $('continuationLtpState').textContent = 'LTP poll skipped while another scan or quote is active.'; return; }
+    if (!quote.ok) throw new Error('quote request failed');
+    const price = Number(quote.ltp);
+    continuationQuote = quote.ltp != null && Number.isFinite(price) && price > 0 ? price : null;
+    const c = lastMonitorData.continuation;
+    if (c) { c.ltp = continuationQuote; c.ltp_symbol = quote.ltp_symbol; c.ltp_status = quote.ltp_status; }
+    const text = continuationQuote == null ? `Unavailable${quote.ltp_symbol ? ' for ' + quote.ltp_symbol : ''}; last poll returned no usable quote.`
+      : `${continuationQuote}${quote.ltp_symbol ? ' · ' + quote.ltp_symbol : ''} · polled ${new Date().toLocaleTimeString()} (device time); quote time unknown`;
+    $('continuationQuoteStatus').textContent = text;
+    $('continuationQuoteStatus').style.color = continuationQuote == null ? 'var(--bad)' : 'var(--muted)';
+    updateInProcess(lastMonitorData, lastMonitorCfg, true);
+    renderTrades(_lastTradesData, lastMonitorCfg.strategy_mode || 'simple');
+    renderEvents(_lastEventsData);
+  } catch(e){
+    if (generation !== continuationLtpGeneration || !$('continuationAuto').checked) return;
+    continuationQuote = null;
+    if (lastMonitorData?.continuation) lastMonitorData.continuation.ltp = null;
+    $('continuationQuoteStatus').textContent = e?.message?.startsWith('LTP endpoint unavailable:')
+      ? e.message : 'LTP poll failed or timed out; quote unavailable. Check terminal and retry.';
+    $('continuationQuoteStatus').style.color = 'var(--bad)';
+    updateInProcess(lastMonitorData, lastMonitorCfg, true);
+    renderTrades(_lastTradesData, lastMonitorCfg.strategy_mode || 'simple');
+    renderEvents(_lastEventsData);
+  } finally {
+    clearTimeout(timeout);
+    if (generation === continuationLtpGeneration) {
+      continuationLtpAbort = null;
+      scheduleContinuationLtp();
+    }
+  }
+}
+if (CONTINUATION) {
+  $('continuationLtpPoll').addEventListener('change', () => {
+    pauseContinuationLtp('LTP poll changed.'); scheduleContinuationLtp();
+  });
+  $('continuationLtpInterval').addEventListener('change', () => {
+    pauseContinuationLtp('LTP interval changed.'); scheduleContinuationLtp();
+  });
+  $('continuationStop').addEventListener('click', stopContinuation);
+  $('continuationAuto').addEventListener('change', () => {
+    clearTimeout(continuationTimer);
+    clearInterval(continuationCountdown);
+    if ($('continuationAuto').checked) {
+      if (!$('run').disabled) runBacktest();
+      else { setContinuationState('SCANNING', '#58a6ff'); $('continuationStatus').textContent = 'Scanning; automatic refresh will continue afterwards.'; }
+    } else stopContinuation();
+  });
+  $('continuationInterval').addEventListener('change', scheduleContinuation);
+}
+
+
+/* ---- S/R diagnostic ---- */
+async function runSRDiagnostic(){
+  const base = $('symbol').value.trim().toUpperCase();
+  const exch = $('exchange').value;
+  let symbol;
+  if (base.includes('.') || base.startsWith('^') || base.endsWith('=X')){
+    symbol = base;
+  } else if (exch === '_FX'){
+    symbol = base + '=X';
+  } else if (exch === ''){
+    symbol = base;
+  } else {
+    symbol = base + exch;
+  }
+
+  const btn = $('runSRDiag');
+  btn.disabled = true;
+  setStatus('fetching S/R segments…');
+
+  try {
+    const qs = new URLSearchParams({
+      symbol,
+      interval: $('tf').value,
+      period:   $('period').value,
+      left:     $('cfg_st_left').value  || '15',
+      right:    $('cfg_st_right').value || '15',
+    });
+    const r = await fetch('/research/api/backtest/sr_segments?' + qs);
+    const d = await r.json();
+    if (!d.ok){ setStatus(d.error || 'failed', 'err'); return; }
+
+    renderSRDiagnostic(d);
+    setStatus(`${d.segments.length} segments · ${d.bars} bars · ${d.ms} ms`, 'ok');
+  } catch(e){
+    setStatus('request failed', 'err');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSRDiagnostic(d){
+  $('srDiagWrap').hidden = false;
+
+  // --- summary cards ---
+  const rSegs = d.segments.filter(s => s.type === 'R');
+  const sSegs = d.segments.filter(s => s.type === 'S');
+  const cards = [
+    ['Total segments', d.segments.length, ''],
+    ['Resistance',     rSegs.length,      'sell'],
+    ['Support',        sSegs.length,      'buy'],
+    ['Bars',           d.bars,            ''],
+  ];
+  $('srDiagSummary').innerHTML = cards.map(([k, v, c]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+
+  // --- table ---
+  const rows = d.segments.map((s, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td class="${s.type === 'R' ? 'sell' : 'buy'}"><b>${s.type}</b></td>
+      <td>${s.level}</td>
+      <td class="mut">${s.start_t.slice(0, 16).replace('T', ' ')}</td>
+      <td class="mut">${s.end_t.slice(0, 16).replace('T', ' ')}</td>
+      <td>${s.bars}</td>
+      <td class="mut">${(s.usable_from_t || '').slice(0, 16).replace('T', ' ')}</td>
+    </tr>`).join('');
+  $('srDiagBody').innerHTML = rows;
+
+  // --- chart ---
+  drawSRChart(d);
+}
+
+function drawSRChart(d){
+  const cv = $('srDiagChart');
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  cv.width  = Math.max(1, Math.floor(r.width  * dpr));
+  cv.height = Math.max(1, Math.floor(r.height * dpr));
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const w = r.width, h = r.height;
+  ctx.clearRect(0, 0, w, h);
+  const candles = d.candles;
+  const n = candles.length;
+  if (!n) return;
+
+  const padL = 8, padR = 62, padT = 10, padB = 18;
+  const X = i => padL + (w - padL - padR) * (n <= 1 ? 0 : i / (n - 1));
+
+  let lo = Infinity, hi = -Infinity;
+  for (const c of candles){ lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
+  for (const s of d.segments){ lo = Math.min(lo, s.level); hi = Math.max(hi, s.level); }
+  const pad = (hi - lo) * 0.04 || 1; lo -= pad; hi += pad;
+  const Y = v => padT + (h - padT - padB) * (1 - (v - lo) / (hi - lo));
+
+  // grid + axis
+  ctx.strokeStyle = '#222a35'; ctx.fillStyle = '#8b949e';
+  ctx.font = '10px system-ui';
+  for (let g = 0; g <= 4; g++){
+    const v = lo + (hi - lo) * g / 4, y = Y(v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(v.toFixed(2), w - padR + 6, y + 3);
+  }
+
+  // price
+  ctx.strokeStyle = '#5c6b7f'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  candles.forEach((c, i) => {
+    const x = X(i), y = Y(c.c);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.stroke();
+
+  // segments
+  ctx.lineWidth = 2.5;
+  for (const s of d.segments){
+    const x1 = X(s.start_i), x2 = X(s.end_i), y = Y(s.level);
+    ctx.strokeStyle = s.type === 'R' ? '#f85149' : '#58a6ff';
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
+    // small tick at each end
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x1, y - 4); ctx.lineTo(x1, y + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y - 4); ctx.lineTo(x2, y + 4); ctx.stroke();
+    ctx.lineWidth = 2.5;
+  }
+}
+
+$('runSRDiag').addEventListener('click', runSRDiagnostic);
+
+/* ---- info modal (click ⓘ to see setting help) ---- */
+const INFO_TEXT = {
+  st_reentry: `Standard
+After a trade closes, take the next valid signal. Buy → profit → next buy (if price triggers).
+
+One per opposite
+After a buy close, wait for a sell signal before the next buy. Effect: only one buy between each sell (and vice versa).
+
+Wait fresh R
+After a buy close, ignore the current R value. Wait until R changes to a NEW value, then wait for a valid candle for that new R, then trigger. Same idea applies to sell side using S. Use this if you don't want to enter using the R that formed while you were in the trade.`
+};
+
+function showInfo(key, title){
+  $('infoTitle').textContent = title || 'Setting info';
+  $('infoBody').textContent = INFO_TEXT[key] || '(no help available)';
+  $('infoModal').style.display = 'flex';
+}
+
+$('stReentryInfo').addEventListener('click', () => showInfo('st_reentry', 'Re-entry mode'));
+$('infoClose').addEventListener('click', () => { $('infoModal').style.display = 'none'; });
+$('infoModal').addEventListener('click', (e) => {
+  if (e.target.id === 'infoModal') $('infoModal').style.display = 'none';
+});
+
+/* ---- BATCH RUN (Refactored for background persistence) ---- */
+let batchJobId = null;
+let batchEventSource = null;
+let batchRows = [];
+
+function connectBatchStream(jobId) {
+  if (batchEventSource) batchEventSource.close();
+  batchEventSource = new EventSource(`/research/api/backtest/batch/stream?job=${jobId}`);
+  
+  batchEventSource.onmessage = ev => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === 'row'){
+        // FIX 1: Prevent duplicate rows
+        if (!batchRows.find(r => r.symbol === msg.row.symbol)) {
+            batchRows.push(msg.row);
+            renderBatchTable();
+            $('batchProgress').textContent = `${batchRows.length} / ${msg.total}`;
+        }
+      } else if (msg.type === 'done'){
+        setStatus(`batch done · ${msg.count} symbols`, 'ok');
+        renderBatchTable();
+        renderBatchSummary();
+        closeBatchStream();
+        // FIX 2: Do NOT remove from localStorage so it restores on return.
+        // We only clear it when starting a new batch.
+        if (!$('batchMode').hidden) writeBatchToSheet();
+      } else if (msg.type === 'stopped'){
+        setStatus(`batch stopped · ${msg.processed} done`, 'err');
+        renderBatchTable();
+        renderBatchSummary();
+        closeBatchStream();
+        localStorage.removeItem('active_batch_job');
+      }
+    } catch(e){ console.error('SSE parse', e); }
+  };
+  
+  batchEventSource.onerror = () => {
+    setStatus('stream closed', 'err');
+    closeBatchStream();
+  };
+}
+
+async function runBatch(){
+  const cfg = readCfg();
+  cfg.source         = $('bSource').value;
+  cfg.sheet_name     = $('bBook').value.trim();
+  cfg.input_sheet    = $('bTab').value.trim();
+  cfg.manual_symbols = $('bManual').value;
+
+  // Clear old job id when starting a fresh run
+  localStorage.removeItem('active_batch_job');
+
+  const btn = $('runBatch');
+  btn.disabled = true;
+  $('stopBatch').hidden = false;
+  setStatus('starting batch…');
+
+  batchRows = [];
+  $('batchBody').innerHTML = '';
+  $('batchSummary').innerHTML = '';
+  $('batchProgress').textContent = '';
+
+  try {
+    const res = await fetch('/research/api/backtest/batch/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source:         cfg.source,
+        sheet_name:     cfg.sheet_name,
+        input_sheet:    cfg.input_sheet,
+        manual_symbols: cfg.manual_symbols,
+        settings:       cfg,
+      }),
+    });
+    const data = await res.json();
+    if (!data.ok){ setStatus(data.error || 'batch failed', 'err'); return; }
+
+    batchJobId = data.job_id;
+    localStorage.setItem('active_batch_job', batchJobId);
+    setStatus(`batch running · ${data.count} symbols`);
+    
+    connectBatchStream(batchJobId);
+  } catch (e){
+    setStatus('request failed', 'err');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function writeBatchToSheet(){
+  if (!batchRows.length) return;
+  setStatus('writing to sheet…');
+  try {
+    const picked = { wt: $('src_wt').checked, ce: $('src_ce').checked,
+                     st: $('src_st').checked };
+    const r = await fetch('/research/api/backtest/batch/write', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sheet_name:  $('bBook').value,
+        input_sheet: $('bTab').value,
+        tf:          $('tf').value,
+        indicators:  picked,
+        rows:        batchRows,
+        output_tab:  $('bOutputTab').value || "",
+      }),
+    });
+    const d = await r.json();
+    if (d.ok){
+      setStatus(`batch done · wrote ${d.count} rows → ${d.output_sheet}`, 'ok');
+    } else {
+      setStatus(`batch done · sheet write failed: ${d.error || '?'}`, 'err');
+    }
+  } catch(e){
+    setStatus('batch done · sheet write error', 'err');
+    console.error(e);
+  }
+}
+
+function closeBatchStream(){
+  if (batchEventSource){ batchEventSource.close(); batchEventSource = null; }
+  $('stopBatch').hidden = true;
+  $('runBatch').disabled = false;
+}
+
+async function stopBatch(){
+  if (!batchJobId) return;
+  try {
+    await fetch('/research/api/backtest/batch/stop', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_id: batchJobId }),
+    });
+  } catch(e){ console.error(e); }
+}
+
+$('runBatch').addEventListener('click', runBatch);
+$('stopBatch').addEventListener('click', stopBatch);
+
+function appendBatchRow(r, idx){
+  const t = document.createElement('tr');
+  const okCls = v => (v == null || isNaN(v)) ? 'mut' : (v >= 0 ? 'buy' : 'sell');
+  const num   = (v, dec = 2) => (v == null || isNaN(v)) ? '—'
+                              : Number(v).toFixed(dec);
+
+  if (!r.ok){
+    t.innerHTML = `
+      <td>${idx + 1}</td>
+      <td><b>${r.symbol || '?'}</b></td>
+      <td colspan="11" style="text-align:left;color:var(--bad);font-size:11px">
+        ⚠️ ${r.error || 'failed'}
+      </td>`;
+    $('batchBody').appendChild(t);
+    return;
+  }
+
+  t.innerHTML = `
+    <td>${idx + 1}</td>
+    <td><b>${r.symbol}</b></td>
+    <td class="${okCls(r.return_pct)}">${num(r.return_pct)}%</td>
+    <td class="${okCls(r.buy_hold_pct)}">${num(r.buy_hold_pct)}%</td>
+    <td>${r.trades ?? '—'}</td>
+    <td>${num(r.win_rate, 1)}%</td>
+    <td>${num(r.profit_factor)}</td>
+    <td class="sell">${num(r.max_dd_pct)}%</td>
+    <td class="${okCls(r.net_pnl)}">${Math.round(r.net_pnl || 0).toLocaleString()}</td>
+    <td class="buy">${Math.round(r.max_win || 0).toLocaleString()}</td>
+    <td class="sell">${Math.round(r.max_loss || 0).toLocaleString()}</td>
+    <td>${num(r.sharpe)}</td>
+    <td class="mut">${r.ms ?? 0} ms</td>`;
+  t.style.cursor = 'pointer';
+  t.title = `Click to open ${r.symbol} full backtest`;
+  t.addEventListener('click', () => {
+    const base = r.symbol.replace(/\.(NS|BO)$/, '').replace(/=X$/, '');
+    $('symbol').value = base;
+    if (r.symbol.endsWith('.NS')) $('exchange').value = '.NS';
+    else if (r.symbol.endsWith('.BO')) $('exchange').value = '.BO';
+    else if (r.symbol.endsWith('=X')) $('exchange').value = '_FX';
+    else $('exchange').value = '';
+    $('batchMode').checked = false;
+    syncBatchMode();
+    setStatus('opening…');
+    runBacktest();
+  });
+  $('batchBody').appendChild(t);
+}
+
+/* ---- batch sorting + sums ---- */
+let batchSort = { key: null, dir: null };
+
+function _batchSortRows(rows){
+  if (!batchSort.key || !batchSort.dir) return rows.slice();
+  const { key, dir } = batchSort;
+  return rows.slice().sort((a, b) => {
+    const av = a[key], bv = b[key];
+    const aE = (av == null || av === ''), bE = (bv == null || bv === '');
+    if (aE && bE) return 0;
+    if (aE) return 1;
+    if (bE) return -1;
+    const an = parseFloat(av), bn = parseFloat(bv);
+    const aNum = !isNaN(an) && isFinite(an), bNum = !isNaN(bn) && isFinite(bn);
+    let cmp = (aNum && bNum) ? an - bn : String(av).localeCompare(String(bv));
+    return dir === 'desc' ? -cmp : cmp;
+  });
+}
+
+function renderBatchTable(){
+  const tbody = $('batchBody');
+  tbody.innerHTML = '';
+  const sorted = _batchSortRows(batchRows);
+  sorted.forEach((r, i) => appendBatchRow(r, i));
+
+  // sums
+  const ok = batchRows.filter(r => r.ok);
+  const sumNet  = ok.reduce((s,r) => s + (r.net_pnl || 0), 0);
+  const sumWin  = ok.reduce((s,r) => s + (r.max_win || 0), 0);
+  const sumLoss = ok.reduce((s,r) => s + (r.max_loss || 0), 0);
+  const fmt = v => (v >= 0 ? '' : '-') + Math.abs(Math.round(v)).toLocaleString();
+  const el = $('batchSumNet'); if (el) el.textContent = fmt(sumNet);
+  const ew = $('batchSumWin'); if (ew) ew.textContent = fmt(sumWin);
+  const el2= $('batchSumLoss'); if (el2) el2.textContent = fmt(sumLoss);
+
+  // header sort indicators
+  document.querySelectorAll('#batchTable th[data-bsort]').forEach(th => {
+    th.style.cursor = 'pointer';
+    const k = th.dataset.bsort;
+    let icon = ' ↕';
+    if (batchSort.key === k && batchSort.dir === 'asc')  icon = ' ▲';
+    if (batchSort.key === k && batchSort.dir === 'desc') icon = ' ▼';
+    th.textContent = th.textContent.replace(/\s*[↕▲▼]$/, '') + icon;
+    if (!th.dataset.bound){
+      th.dataset.bound = '1';
+      th.addEventListener('click', () => {
+        if (batchSort.key !== k)         batchSort = { key: k, dir: 'asc'  };
+        else if (batchSort.dir === 'asc')  batchSort = { key: k, dir: 'desc' };
+        else                               batchSort = { key: null, dir: null };
+        renderBatchTable();
+      });
+    }
+  });
+}
+
+/* ---- summary cards for batch ---- */
+function renderBatchSummary(){
+  if (!batchRows.length) return;
+  const ok = batchRows.filter(r => r.ok);
+  const total = batchRows.length;
+  const profitable = ok.filter(r => r.return_pct > 0).length;
+  const avgRet = ok.length ? ok.reduce((s,r) => s + r.return_pct, 0) / ok.length : 0;
+  const avgWin = ok.length ? ok.reduce((s,r) => s + r.win_rate, 0) / ok.length : 0;
+  const totalTrades = ok.reduce((s,r) => s + r.trades, 0);
+  const totalPnl = ok.reduce((s,r) => s + r.net_pnl, 0);
+  const best = ok.reduce((a,b) => a.return_pct > b.return_pct ? a : b, ok[0] || {});
+  const worst = ok.reduce((a,b) => a.return_pct < b.return_pct ? a : b, ok[0] || {});
+
+  const cards = [
+    ['Symbols',         total, ''],
+    ['Profitable',      `${profitable}/${ok.length}`, profitable > ok.length/2 ? 'buy':'sell'],
+    ['Avg return',      avgRet.toFixed(2)+'%', avgRet >= 0 ? 'buy':'sell'],
+    ['Avg win rate',    avgWin.toFixed(1)+'%', ''],
+    ['Total trades',    totalTrades, ''],
+    ['Total net ₹',     Math.round(totalPnl).toLocaleString(), totalPnl>=0?'buy':'sell'],
+    ['Best symbol',     best.symbol || '—', 'buy'],
+    ['Best return',     best.return_pct != null ? best.return_pct.toFixed(2)+'%' : '—', 'buy'],
+    ['Worst symbol',    worst.symbol || '—', 'sell'],
+    ['Worst return',    worst.return_pct != null ? worst.return_pct.toFixed(2)+'%' : '—', 'sell'],
+  ];
+  $('batchSummary').innerHTML = cards.map(([k,v,c]) =>
+    `<div class="card"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`).join('');
+}
+
+/* ============================ WT ANALYTICS ============================ */
+function renderWTAnalytics(trades) {
+  const wrap = $('wtAnalyticsWrap');
+  if (!trades || !trades.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  const wtTrades = trades.filter(t => t.key === 'wt' && t.wt_val != null && !isNaN(t.wt_val));
+  if (!wtTrades.length) {
+    wrap.innerHTML = '<div class="empty" style="padding:20px">No WT trades with valid WT Val found to analyze.</div>';
+    return;
+  }
+
+  // ✅ NEW: Initialize Macro Bins (0 to Minus, 0 to Plus)
+  const macroBins = [
+    { min: -Infinity, max: 0, label: '0 to Minus Full Range (< 0)' },
+    { min: 0, max: Infinity, label: '0 to Plus Full Range (>= 0)' }
+  ];
+
+  // ✅ NEW: Initialize Detail Bins
+  const detailBins = [
+    { min: -Infinity, max: -40, label: '< -40' },
+    { min: -40, max: -20, label: '-40 to -20' },
+    { min: -20, max: -10, label: '-20 to -10' },
+    { min: -10, max: 0, label: '-10 to 0' },
+    { min: 0, max: 10, label: '0 to 10' },
+    { min: 10, max: 20, label: '10 to 20' },
+    { min: 20, max: 40, label: '20 to 40' },
+    { min: 40, max: Infinity, label: '> 40' }
+  ];
+
+  // Helper to initialize stats
+  const initStats = (arr) => arr.forEach(b => {
+    b.count = 0; b.wins = 0; b.pnl = 0; 
+    b.profit = 0; b.loss = 0; b.longPnl = 0; b.shortPnl = 0;
+  });
+  
+  initStats(macroBins);
+  initStats(detailBins);
+
+  // Helper to populate stats
+  const updateBins = (arr, val, t) => {
+    let b = arr.find(x => val >= x.min && val < x.max);
+    if (!b) b = arr[arr.length - 1];
+    b.count++;
+    if (t.pnl > 0) { b.wins++; b.profit += t.pnl; } 
+    else if (t.pnl < 0) { b.loss += t.pnl; }
+    b.pnl += t.pnl;
+    if (t.side === 'long') b.longPnl += t.pnl;
+    else b.shortPnl += t.pnl;
+  };
+
+  wtTrades.forEach(t => {
+    const val = Number(t.wt_val);
+    updateBins(macroBins, val, t);
+    updateBins(detailBins, val, t);
+  });
+
+  // ✅ FIX: Look for MAX pnl, not MIN. (current.pnl > prev.pnl)
+  let bestBin = detailBins.reduce((prev, current) => (current.pnl > prev.pnl && current.count > 0) ? current : prev, detailBins[0]);
+  if (bestBin.count === 0) bestBin = null;
+
+  // Build HTML
+  let html = `
+    <div class="chartCap">WT Value Profitability Analysis — find the most profitable WT zones</div>
+    <div style="background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; font-size:13px;">
+      <span style="color:var(--accent); font-weight:bold; text-transform:uppercase; letter-spacing:.05em;">Final Verdict:</span>
+  `;
+
+  if (bestBin) {
+    html += `
+      The most profitable WT range for this stock was <b>${bestBin.label}</b>, 
+      generating a net profit of <b class="${cls(bestBin.pnl)}">₹${Math.round(bestBin.pnl).toLocaleString()}</b> 
+      across ${bestBin.count} trades (${((bestBin.wins / bestBin.count) * 100).toFixed(1)}% win rate).
+    `;
+  } else {
+    html += `No profitable WT ranges found.`;
+  }
+
+  html += `
+    </div>
+    <div class="tblwrap">
+      <table class="tlog" style="width:100%">
+        <thead>
+          <tr>
+            <th style="text-align:left">WT Value Range</th>
+            <th>Trades</th>
+            <th>Win Rate</th>
+            <th>Total Net ₹</th>
+            <th class="buy">Profit ₹</th> <!-- ✅ NEW -->
+            <th class="sell">Loss ₹</th>   <!-- ✅ NEW -->
+            <th>Long P&L ₹</th>
+            <th>Short P&L ₹</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  // ✅ Helper to render a single row
+  const renderRow = (b, isBest) => {
+    if (b.count === 0) return '';
+    const wr = b.count ? ((b.wins / b.count) * 100).toFixed(1) : '—';
+    const rowStyle = isBest ? 'style="background:rgba(63,185,80,0.15);"' : '';
+    return `
+      <tr ${rowStyle}>
+        <td style="text-align:left"><b>${b.label}</b></td>
+        <td>${b.count}</td>
+        <td>${wr}%</td>
+        <td class="${cls(b.pnl)}">${b.pnl >= 0 ? '+' : ''}${Math.round(b.pnl).toLocaleString()}</td>
+        <td class="buy">+${Math.round(b.profit).toLocaleString()}</td> <!-- ✅ NEW -->
+        <td class="sell">${Math.round(b.loss).toLocaleString()}</td>   <!-- ✅ NEW -->
+        <td class="${cls(b.longPnl)}">${b.longPnl >= 0 ? '+' : ''}${Math.round(b.longPnl).toLocaleString()}</td>
+        <td class="${cls(b.shortPnl)}">${b.shortPnl >= 0 ? '+' : ''}${Math.round(b.shortPnl).toLocaleString()}</td>
+      </tr>
+    `;
+  };
+
+  // 1. Render Macro Bins
+  macroBins.forEach(b => {
+    html += renderRow(b, false);
+  });
+
+  // 2. Render Divider
+  html += `<tr><td colspan="8" style="background:var(--border); height:1px; padding:0;"></td></tr>`;
+
+  // 3. Render Detail Bins
+  detailBins.forEach(b => {
+    const isBest = b === bestBin && b.count > 0;
+    html += renderRow(b, isBest);
+  });
+
+  html += `</tbody></table></div>`;
+  wrap.innerHTML = html;
+}
+
+let rz;
+window.addEventListener('resize', () => {
+  clearTimeout(rz);
+  rz = setTimeout(() => {
+    if (window._lastBT){
+      if (priceChartOpen)  drawPriceChart(window._lastBT.candles, window._lastBT.events, window._lastBT.trades);
+      if (equityChartOpen) drawEquityChart(window._lastBT.equity, window._lastBT.metrics.capital);
+    }
+  }, 150);
+});
+
+/* ===== AUTO-TEST LOGIC ===== */
+const autoTestVars = document.querySelectorAll('.at-var');
+const atCountEl = $('atCount');
+
+function calcCombos() {
+  let total = 1;
+  autoTestVars.forEach(cb => {
+    if (cb.checked) total *= parseInt(cb.dataset.count);
+  });
+  atCountEl.textContent = total;
+}
+autoTestVars.forEach(cb => cb.addEventListener('change', calcCombos));
+
+// Toggle panels
+$('autoTestMode').addEventListener('change', () => {
+  const on = $('autoTestMode').checked;
+  $('autoTestPanel').hidden = !on;
+  $('batchMode').checked = false; // Turn off batch if autotest is on
+  syncBatchMode();
+  $('run').hidden = on;
+});
+// Ensure batch turns off autotest
+$('batchMode').addEventListener('change', () => {
+  if ($('batchMode').checked) {
+    $('autoTestMode').checked = false;
+    $('autoTestPanel').hidden = true;
+    $('run').hidden = false;
+  }
+  syncBatchMode();
+});
+
+/* ---- AUTO-TEST RUN (Refactored for background persistence) ---- */
+let autoJobId = null;
+let autoEventSource = null;
+
+function connectAutoStream(jobId) {
+  if (autoEventSource) autoEventSource.close();
+  $('autoTestResultsWrap').hidden = false;
+  autoEventSource = new EventSource(`/research/api/backtest/autotest/stream?job=${jobId}`);
+  
+  autoEventSource.onmessage = ev => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === 'start') {
+      $('atProgress').textContent = `0 / ${msg.total}`;
+    } else if (msg.type === 'row') {
+      $('atProgress').textContent = `${msg.current} / ${msg.total}`;
+      const s = msg.row.settings;
+      const settingStr = Object.entries(s).map(([k,v]) => `<b>${k}:</b> ${v}`).join(' | ');
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${msg.row.combo_id}</td>
+        <td style="font-size:11px; white-space:normal; text-align:left; line-height:1.4;">${settingStr}</td>
+        <td class="${cls(msg.row.return_pct)}">${msg.row.return_pct}%</td>
+        <td class="sell">${msg.row.max_dd_pct}%</td>
+        <td>${msg.row.trades}</td>
+        <td>${msg.row.win_rate}%</td>
+        <td>${msg.row.profit_factor}</td>
+        <td class="${cls(msg.row.net_pnl)}">${Math.round(msg.row.net_pnl).toLocaleString()}</td>
+      `;
+      $('autoTestBody').appendChild(tr);
+    } else if (msg.type === 'done' || msg.type === 'stopped') {
+      $('atProgress').textContent = `Finished! (${msg.count} valid results)`;
+      localStorage.removeItem('active_auto_job');
+      closeAutoStream();
+    }
+  };
+}
+
+$('runAutoBtn').addEventListener('click', async () => {
+  const cfg = readCfg();
+  const vary = [];
+  autoTestVars.forEach(cb => { if (cb.checked) vary.push(cb.dataset.key); });
+  
+  if (vary.length === 0) { setStatus('select at least one setting to vary', 'err'); return; }
+  
+  $('runAutoBtn').disabled = true;
+  $('stopAutoBtn').hidden = false;
+  $('atProgress').textContent = 'Starting...';
+  $('autoTestResultsWrap').hidden = false;
+  $('autoTestBody').innerHTML = '';
+  
+  try {
+    const res = await fetch('/research/api/backtest/autotest/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config: cfg, vary: vary })
+    });
+    const data = await res.json();
+    if (!data.ok) { setStatus('auto-test failed', 'err'); return; }
+    
+    autoJobId = data.job_id;
+    localStorage.setItem('active_auto_job', autoJobId);
+    connectAutoStream(autoJobId);
+    
+  } catch(e) {
+    setStatus('request failed', 'err'); console.error(e);
+    $('runAutoBtn').disabled = false;
+  }
+});
+
+$('stopAutoBtn').addEventListener('click', async () => {
+  if (!autoJobId) return;
+  await fetch('/research/api/backtest/autotest/stop', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ job_id: autoJobId })
+  });
+});
+
+function closeAutoStream() {
+  if (autoEventSource) { autoEventSource.close(); autoEventSource = null; }
+  $('runAutoBtn').disabled = false;
+  $('stopAutoBtn').hidden = true;
+}
+
+/* ═══════════════ BOOT ═══════════════ */
+/* 1. restore prior inputs FIRST so all sync functions see correct values */
+restoreBtState();
+
+/* 2. run all the sync/refresh helpers */
+refreshPeriods();
+syncStratMode();
+syncIndicatorParams();
+syncBatchSource();
+syncBatchMode();
+syncRecoveryInputs();
+if (!CONTINUATION) autoFno();
+else $('cfg_fno_mode').dispatchEvent(new Event('change'));
+renderBtPresetList();
+if (CONTINUATION) {
+  try { continuationApplied = JSON.parse(localStorage.getItem(CONTINUATION_APPLIED_KEY) || 'null'); } catch(e) { continuationApplied = null; }
+  continuationBooting = false; updateAppliedStatus();
+}
+
+/* 3. Check if there are any jobs running in the background */
+const activeBatch = CONTINUATION ? null : localStorage.getItem('active_batch_job');
+const activeAuto  = CONTINUATION ? null : localStorage.getItem('active_auto_job');
+
+if (activeBatch) {
+  batchJobId = activeBatch;
+  $('batchMode').checked = true;
+  syncBatchMode();
+  setStatus('reconnecting to batch...');
+  connectBatchStream(batchJobId);
+} else if (activeAuto) {
+  autoJobId = activeAuto;
+  $('autoTestMode').checked = true;
+  $('autoTestPanel').hidden = false;
+  $('run').hidden = true;
+  setStatus('reconnecting to auto-test...');
+  connectAutoStream(autoJobId);
+} else {
+  /* 4. No active jobs, just restore last result */
+  (async () => {
+    const local = tryRestoreBtResult();
+    if (!local && !CONTINUATION) await tryFetchServerLastBacktest();
+    if (CONTINUATION) {
+      if ($('continuationSound').checked) {
+        $('continuationUnlockSound').hidden = false;
+        $('continuationSoundStatus').textContent = 'Click Enable sound in browser after refresh.';
+      }
+      if ($('continuationAuto').checked) runBacktest();
+      else scheduleContinuationLtp();
+    }
+  })();
+}
+</script>
+{% endblock %}

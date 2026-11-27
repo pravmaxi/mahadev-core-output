@@ -215,8 +215,23 @@ def _fno_list(cfg, ttl=600):
         return set()
 
 
+def _is_indian_fno_symbol(cfg, sym):
+    """Identify eligible rows from their normalized ticker or explicit exchange badge."""
+    s = str(sym or "").strip().upper()
+    if s.endswith((".NS", ".BO")) or s.startswith(("^NSE", "^BSE")):
+        return True
+    # Explicit non-Indian tickers must not be reclassified by a similarly named row.
+    if "." in s or "=" in s or s.endswith(("_FX", "_CRYPTO", "-USD", "-USDT")) or s.startswith("^"):
+        return False
+    exchanges = cfg.get("symbol_exch") if isinstance(cfg.get("symbol_exch"), dict) else {}
+    for key, exchange in exchanges.items():
+        if str(key).strip().upper() == s:
+            return str(exchange).strip().upper() in ("NSE", "BSE")
+    return False
+
+
 def fno_should_apply(cfg, sym):
-    """Same decision the backtest makes, including its timeframe restriction."""
+    """Sheet list applies only to NSE/BSE; 'all' remains an explicit override."""
     mode = str(cfg.get("fno_mode") or "none").lower()
     tf = str(cfg.get("interval") or "")
     if tf not in FNO_TFS or mode == "none":
@@ -224,6 +239,8 @@ def fno_should_apply(cfg, sym):
     if mode == "all":
         return True
     if mode == "sheet":
+        if not _is_indian_fno_symbol(cfg, sym):
+            return False
         lst = _fno_list(cfg)
         if not lst:
             return False
@@ -851,7 +868,82 @@ def _latest_break(pend, by_bar):
     return None
 
 
-def _already_triggered(st, Cs, cfg, pend, brk, ltp, t_now, allow_entry=True):
+def _profile_resume_start():
+    """Guard only running named profiles; unprofiled/manual replay stays unchanged."""
+    started = _num(RUNTIME.get("started"), 0)
+    return started if _PROFILE_NAME and RUNTIME.get("running") and started > 0 else None
+
+
+def _resume_bar_after_start(bar_t, started):
+    """Only candles beginning after Start are unambiguously entirely online.
+
+    A candle overlapping Start may contain an offline breakout; fail closed.
+    Timestamps are recorded in IST to minute precision.
+    """
+    if not started:
+        return True
+    bar = _parse_t(bar_t)
+    if bar is None:
+        return False
+    boundary = __import__("datetime").datetime.fromtimestamp(started, IST).replace(tzinfo=None)
+    return bar > boundary
+
+
+def _resume_fresh_quote(st, started):
+    if not started:
+        return True
+    age = st.get("ltp_age_min")
+    try:
+        age = float(age)
+        return (st.get("ltp_src") == "live" and 0 <= age <= 3 and
+                float(st.get("px_at") or 0) - age * 60 >= float(started))
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+
+def _resume_pending_book(st, pends, C, ltp, started):
+    """Do not infer an offline crossing from the first observed live price.
+
+    Pre-Start pending signals become eligible after an unbroken fresh price is
+    observed in this run. Then a later live break can be processed normally.
+    """
+    if not started or not isinstance(pends, dict):
+        return pends
+    watch = st.get("_resume_watch")
+    if not isinstance(watch, dict) or watch.get("started") != started:
+        watch = {"started": started, "signals": {}}
+        st["_resume_watch"] = watch
+    result = dict(pends)
+    blocked = False
+    for d in ("buy", "sell"):
+        q = pends.get(d)
+        if not isinstance(q, dict):
+            continue
+        if _resume_bar_after_start(q.get("valid_t"), started):
+            continue
+        sid = "%s|%s|%s" % (d, q.get("valid_t"), q.get("level"))
+        armed = bool(watch["signals"].get(sid))
+        try:
+            level = float(q["level"])
+            buf = _num(C.get("buffer_pts"), 0.0)
+            crossed = float(ltp) > level + buf if d == "buy" else float(ltp) < level - buf
+            if not crossed and _resume_fresh_quote(st, started):
+                armed = True
+                watch["signals"][sid] = True
+        except (KeyError, TypeError, ValueError):
+            armed = False
+        if not armed or not _resume_fresh_quote(st, started):
+            result[d] = None
+            blocked = True
+    note = "resume safety: waiting for an unbroken fresh price before a new live breakout"
+    if blocked:
+        st["no_fill"] = note
+    elif st.get("no_fill") == note:
+        st["no_fill"] = ""
+    return result
+
+
+def _already_triggered(st, Cs, cfg, pend, brk, ltp, t_now, allow_entry=True, resume_start=None):
     """'Allow already-triggered if within %'.
 
     The LATEST cross (the one the Scanner page shows) broke out on an older candle —
@@ -882,6 +974,11 @@ def _already_triggered(st, Cs, cfg, pend, brk, ltp, t_now, allow_entry=True):
         return "→ not entered: Side = %s only" % Cs["side_mode"]
     if not allow_entry:
         return "→ not entered: stale feed — no new entries"
+    if resume_start and not _resume_bar_after_start(brk.get("trigger_t"), resume_start) and not _resume_fresh_quote(st, resume_start):
+        st["no_fill"] = "resume safety: waiting for a fresh post-Start quote"
+        return "→ not entered: resume safety needs a fresh post-Start quote"
+    if st.get("no_fill") == "resume safety: waiting for a fresh post-Start quote":
+        st["no_fill"] = ""
     if str(st.get("last_action") or "").startswith("EXIT "):
         return "→ not entered: no market re-entry right after an exit"
     mx = _num(cfg.get("already_triggered_max_pct"), 1.0)
@@ -1119,7 +1216,7 @@ def _pre_run(valid_t):
     return ""
 
 
-def live_step(st, C, by_bar, last_i, ltp, t, allow_entry=True, pends=None):
+def live_step(st, C, by_bar, last_i, ltp, t, allow_entry=True, pends=None, resume_start=None):
     """One tick of the live state machine for one symbol.
 
     allow_entry=False keeps managing an open position but refuses new entries
@@ -1143,6 +1240,10 @@ def live_step(st, C, by_bar, last_i, ltp, t, allow_entry=True, pends=None):
                      for ev in by_bar[i]
                      if (str(ev.get("trigger_t") or "") > previous_bar
                          if previous_bar else i == last_i)]
+    if resume_start:
+        # Do not replay offline/overlapping candles as current entries or exits.
+        recent_events = [ev for ev in recent_events if _resume_bar_after_start(ev.get("trigger_t"), resume_start)]
+        pends = _resume_pending_book(st, pends, C, ltp, resume_start)
     if st.get("pos"):
         sign = st["pos"]["sign"]
         for ev in recent_events:
@@ -1711,10 +1812,13 @@ def _scan_once(cfg):
                 if _stop_requested():
                     RUNTIME["aborted"] = True
                     break
+                resume_start = _profile_resume_start()
                 if not getattr(_TL, "preview", False):
                     live_step(st, Cs, by_bar, last_i, ltp, t_now,
-                              allow_entry=allow_entry, pends=pends)
+                              allow_entry=allow_entry, pends=pends, resume_start=resume_start)
                     st["events_checked_through"] = str(closed.index[-1])[:16]
+                    if resume_start:
+                        st["_resume_ready"] = resume_start
                 st["stale"] = bool(stale)
 
                 pend = _pending_signal(closed, cfg, comp=_comp)
@@ -1768,7 +1872,7 @@ def _scan_once(cfg):
                         st["pos"] = original_pos
                 else:
                     st["latest_note"] = _already_triggered(st, Cs, cfg, pend, _lb, ltp, t_now,
-                                                           allow_entry=allow_entry)
+                                                           allow_entry=allow_entry, resume_start=resume_start)
                     _pos_view(st, Cs, ltp)
 
                 st["status"] = "OK"
@@ -2753,6 +2857,10 @@ def _ltp_tick(st, sym, ltp, age, C, cfg, alloc_amt, alloc_cap, t_now, fetch_at=N
     if age is not None:
         st["ltp_age_min"] = age
         st["ltp_src"] = "live"
+    elif _profile_resume_start():
+        # The fallback price has no timestamp; do not reuse the previous tick's age.
+        st["ltp_age_min"] = None
+        st["ltp_src"] = "unknown"
     Cs = dict(C)
     _k = _clean_sym(sym)
     if _k in alloc_amt:
@@ -2760,6 +2868,10 @@ def _ltp_tick(st, sym, ltp, age, C, cfg, alloc_amt, alloc_cap, t_now, fetch_at=N
     if _k in alloc_cap:
         Cs["capital"] = alloc_cap[_k]
     allow = (not st.get("stale")) or _bool(cfg.get("allow_stale_entries"), False)
+    resume_start = _profile_resume_start()
+    resume_ready = not resume_start or st.get("_resume_ready") == resume_start
+    eligible_pends = (_resume_pending_book(st, st.get("pending_book"), Cs, ltp, resume_start)
+                      if resume_ready else None)
     changed = False
 
     pos = st.get("pos")
@@ -2770,7 +2882,8 @@ def _ltp_tick(st, sym, ltp, age, C, cfg, alloc_amt, alloc_cap, t_now, fetch_at=N
             TRADES.append(tr)
             st["last_action"] = "EXIT %s @ %s (LTP)" % (tr["reason"], tr["exit"])
             changed = True
-        elif Cs.get("exit_on_opposite") and st.get("opp_lvl") is not None:
+        elif (resume_ready and Cs.get("exit_on_opposite") and st.get("opp_lvl") is not None
+              and (not resume_start or (eligible_pends or {}).get("sell" if pos["sign"] > 0 else "buy"))):
             ol = float(st["opp_lvl"])
             buf = _num(Cs.get("buffer_pts"), 0.0)
             sgn = pos["sign"]
@@ -2788,7 +2901,8 @@ def _ltp_tick(st, sym, ltp, age, C, cfg, alloc_amt, alloc_cap, t_now, fetch_at=N
                                (Cs["side_mode"] == "short" and opp_dir == "buy"))
                 if not side_ok:
                     st["no_fill"] = "side mode = %s only" % Cs["side_mode"]
-                elif allow and osig != st.get("last_sig"):
+                elif (allow and osig != st.get("last_sig") and
+                      (not resume_start or (eligible_pends or {}).get(opp_dir))):
                     opened = _open_pos(st, Cs, ol, opp_dir, buf, t_now, osig, ltp=ltp,
                                        kind="ltp_flip")
                     if opened:
@@ -2801,10 +2915,10 @@ def _ltp_tick(st, sym, ltp, age, C, cfg, alloc_amt, alloc_cap, t_now, fetch_at=N
                     else:
                         st["no_fill"] = "not enough cash for 1 share at this size"
 
-    if not st.get("pos") and allow and isinstance(st.get("pending_book"), dict):
+    if not st.get("pos") and allow and resume_ready and isinstance(eligible_pends, dict):
         # step 6 of live_step only: a pending level from the last full scan, broken
         # by this LTP (by_bar is empty, so nothing else in live_step can fire)
-        live_step(st, Cs, {}, -1, ltp, t_now, allow_entry=True, pends=st["pending_book"])
+        live_step(st, Cs, {}, -1, ltp, t_now, allow_entry=True, pends=eligible_pends, resume_start=resume_start)
         if st.get("pos"):
             st["last_action"] = str(st.get("last_action") or "") + " (LTP)"
             changed = True
@@ -2971,7 +3085,7 @@ def _api_scan_locked():
 # Until step 4 the page's Logic check says "trading logic changed since the logic
 # check was last reviewed" and tests/test_paper_live_health.py::LogicContract fails
 # — on purpose: a rule the check does not know is treated as a possible problem.
-LOGIC_VERSION = "v20"
+LOGIC_VERSION = "v22"
 
 EXIT_REASONS = {
     "stop": "fixed stop loss hit",
@@ -3023,8 +3137,7 @@ SETTINGS_KNOWN = {          # every setting -> how the logic check takes it into
     "side_mode": "a blocked side is a note, not a missed entry",
     "heikin_ashi": "candle type — fast Heikin-Ashi self-test",
     "entry_exec": "fill-price check",
-    "allow_already_triggered": "the latest cross within Max diff % must be entered "
-                               "(missed_already_triggered), at market (fill_rule)",
+    "allow_already_triggered": "latest eligible signal within Max diff % enters at market; profile resume requires a fresh post-Start quote, with resume-safety blocks treated as notes",
     "already_triggered_max_pct": "the latest cross within Max diff % must be entered "
                                  "(missed_already_triggered), at market (fill_rule)",
     "alloc": _SIZING,
@@ -3036,7 +3149,7 @@ SETTINGS_KNOWN = {          # every setting -> how the logic check takes it into
     "commission_pct": _SIZING,
     "slippage_pct": "fill-price check allows for the slippage booked at entry",
     "exit_on_opposite": "opposite-level check only when ticked",
-    "fno_mode": "F&O 15:15 filter — " + _NO_LIVE,
+    "fno_mode": "F&O 15:15: sheet applies only to NSE/BSE rows; all applies to every market — " + _NO_LIVE,
     "fno_book": "F&O 15:15 filter — " + _NO_LIVE,
     "fno_tab": "F&O 15:15 filter — " + _NO_LIVE,
     "wt_filter_enabled": _FILTER,
@@ -3073,7 +3186,8 @@ HEALTH_CODES = {            # every check the logic check can report
     "past_target": "LTP past the target, still open",
     "past_stop": "LTP past the stop, still open",
     "opp_broken": "opposite level broken, still open",
-    "late_entry": "entry more than a candle late",
+    "late_entry": "entry more than a candle late, measured in calendar time including inactive periods",
+    "resume_guard": "profile resume skips offline candles and blocks unverified pending breakouts",
     "late_exit": "exit more than a candle late",
     "side_block": "break skipped: side mode",
     "no_fill": "break skipped: no fill",
@@ -3117,14 +3231,14 @@ LOGIC_FUNCS = {
     "data.py": ("cancelled", "download", "download_batch", "get_live_ltp"),
     "paper_engine.py": (
         "scan_once", "ltp_only_scan", "api_stop", "norm_symbol", "parse_symbols", "cfg_of", "_alloc_maps", "_make_C",
-        "fno_should_apply", "apply_fno", "_ha_arrays", "_wt_arrays", "_heikin_ashi",
+        "_is_indian_fno_symbol", "fno_should_apply", "apply_fno", "_ha_arrays", "_wt_arrays", "_heikin_ashi",
         "_wt_compute", "_ltp_from_1m", "_open_pos", "_close_pos", "_check_price_exits",
         "_sig_id", "_prep", "_pending_signal", "_pending_book", "wt_action_text",
-        "_pre_run", "live_step", "_stop_requested", "_market_open_now", "_pos_view",
+        "_pre_run", "_parse_t", "_profile_resume_start", "_resume_bar_after_start", "_resume_fresh_quote", "_resume_pending_book", "live_step", "_stop_requested", "_market_open_now", "_pos_view",
         "_chunks", "_download_candles", "_scan_once", "_loop", "api_update_inner",
         "_ltp_tick", "_ltp_only_scan", "api_ltp_only", "_latest_break",
         "_already_triggered", "_save", "_load", "_profile_snapshot", "_profile_restore_startup",
-        "api_session_profiles", "api_start", "_api_start_locked", "api_scan", "_api_scan_locked", "api_update", "api_reset", "api_allocations", "global_health"),
+        "api_session_profiles", "api_start", "_api_start_locked", "api_scan", "_api_scan_locked", "api_update", "api_reset", "api_allocations", "symbol_health", "global_health"),
     "paper_profiles.py": ("_path", "_validate", "load", "save", "_atomic_write", "load_backup"),
     "backtest.py": ("_qty_for", "_target_px", "_trailing_sl_price", "_rsi_series",
                     "_load_htf_trend", "detect_wt_events", "_apply_filters"),
@@ -3150,7 +3264,7 @@ HEALTH_REVIEWED = {  # stamped by: python paper_live_engine.py --logic-stamp
     'data:get_live_ltp': '833c269f9c',
     'engine:SETTINGS': '2c2f57df06',
     'engine:_alloc_maps': '46d3860feb',
-    'engine:_already_triggered': '69a5a6e16f',
+    'engine:_already_triggered': '1382dffc32',
     'engine:_api_scan_locked': '46e62566df',
     'engine:_api_start_locked': 'b9a4c11444',
     'engine:_check_price_exits': '87e164e290',
@@ -3159,24 +3273,30 @@ HEALTH_REVIEWED = {  # stamped by: python paper_live_engine.py --logic-stamp
     'engine:_download_candles': 'ee8bfdcb9b',
     'engine:_ha_arrays': '4ab7607ece',
     'engine:_heikin_ashi': '8ffad86338',
+    'engine:_is_indian_fno_symbol': 'b901b92414',
     'engine:_latest_break': '5539b0530a',
     'engine:_load': 'be15b6a3f8',
     'engine:_loop': 'de36fea4b0',
     'engine:_ltp_from_1m': '9118a91307',
     'engine:_ltp_only_scan': '6bec62d04c',
-    'engine:_ltp_tick': 'e0b855df1f',
+    'engine:_ltp_tick': '718c762f99',
     'engine:_make_C': '93938f2061',
     'engine:_market_open_now': 'fc1a1db535',
     'engine:_open_pos': '68c6f6a49d',
+    'engine:_parse_t': '16697d981c',
     'engine:_pending_book': '67c3bf3ae5',
     'engine:_pending_signal': 'f588238935',
     'engine:_pos_view': '32280b4b14',
     'engine:_pre_run': 'e809718243',
     'engine:_prep': 'f46beb9a40',
-    'engine:_profile_restore_startup': '57a93ab1cc',
+    'engine:_profile_restore_startup': '31e991526c',
+    'engine:_profile_resume_start': '170886994e',
     'engine:_profile_snapshot': '9c71324afe',
+    'engine:_resume_bar_after_start': 'c209f1c36d',
+    'engine:_resume_fresh_quote': '5e7fa0405b',
+    'engine:_resume_pending_book': '734cbcad76',
     'engine:_save': 'eb3d8c6009',
-    'engine:_scan_once': 'deb58d2fce',
+    'engine:_scan_once': '877c14fbdb',
     'engine:_sig_id': '6280d01f97',
     'engine:_stop_requested': 'bcc4a2a2dd',
     'engine:_wt_arrays': 'eac3feaf4f',
@@ -3185,20 +3305,21 @@ HEALTH_REVIEWED = {  # stamped by: python paper_live_engine.py --logic-stamp
     'engine:api_ltp_only': '6192e8f1be',
     'engine:api_reset': '406ce23048',
     'engine:api_scan': '8dd1cb830a',
-    'engine:api_session_profiles': '8253a821e5',
+    'engine:api_session_profiles': 'c51e8c7f34',
     'engine:api_start': '89b59601b0',
     'engine:api_stop': '8ee4d40163',
     'engine:api_update': '498f9ce1d3',
     'engine:api_update_inner': '2abf928733',
     'engine:apply_fno': '450791dd52',
     'engine:cfg_of': '9418197d71',
-    'engine:fno_should_apply': '16938225cf',
+    'engine:fno_should_apply': '50bb3ac0bc',
     'engine:global_health': '2d2ed04b39',
-    'engine:live_step': 'a2c2d6d204',
+    'engine:live_step': 'a0c33b9f7b',
     'engine:ltp_only_scan': 'facd0663b8',
     'engine:norm_symbol': 'd82aa123cd',
     'engine:parse_symbols': '816a18a470',
     'engine:scan_once': '4245780257',
+    'engine:symbol_health': 'b1af239a86',
     'engine:wt_action_text': 'c1c6543e42',
     'profiles:_atomic_write': '1482cb03a2',
     'profiles:_path': '68ba1ccb3f',
@@ -3390,6 +3511,11 @@ def symbol_health(sym, st, cfg, C=None, listed=True, mk_open=None, now_t=None,
     if st.get("ltp_error"):
         add("error", "ltp_crash", "the LTP poll crashed on this symbol — %s"
             % str(st["ltp_error"])[:160])
+    resume_start = _profile_resume_start()
+    if resume_start and st.get("_resume_ready") != resume_start:
+        add("info", "resume_guard", "profile resumed — waiting for a fresh full scan before signal entries or opposite-signal exits; price exits remain active")
+    elif resume_start and str(st.get("no_fill") or "").startswith("resume safety:"):
+        add("info", "resume_guard", str(st.get("no_fill")))
 
     # feed
     if st.get("stale"):
@@ -3448,7 +3574,10 @@ def symbol_health(sym, st, cfg, C=None, listed=True, mk_open=None, now_t=None,
             add("warn", "past_stop", "LTP %s is past the stop %s but the %s is still open"
                 % (_px(sym, ltp), _px(sym, stp), side))
         ol = st.get("opp_lvl")
-        if ltp and isinstance(ol, (int, float)) and C.get("exit_on_opposite"):
+        resume_start = _profile_resume_start()
+        resume_block = resume_start and (st.get("_resume_ready") != resume_start or
+                          str(st.get("no_fill") or "").startswith("resume safety:"))
+        if ltp and isinstance(ol, (int, float)) and C.get("exit_on_opposite") and not resume_block:
             buf = _num(C.get("buffer_pts"), 0.0)
             if (sign > 0 and ltp < ol - buf) or (sign < 0 and ltp > ol + buf):
                 add("warn", "opp_broken",
@@ -3458,8 +3587,8 @@ def symbol_health(sym, st, cfg, C=None, listed=True, mk_open=None, now_t=None,
         late = _late_min(pos.get("break_t"), pos.get("entry_t"), tf_min)
         if late is not None and late > tf_min and _recent(pos.get("entry_t"), now_t, 60):
             add("warn", "late_entry",
-                "entry came %d min after the breakout candle closed — full scans are slower "
-                "than the candle" % late)
+                "entry came %d calendar min after the breakout candle closed; this includes "
+                "inactive and closed-market time, not necessarily slow scans" % late)
 
         # was the position booked the way its own entry rule says?
         kind, fill = pos.get("kind"), pos.get("fill")
@@ -3524,7 +3653,8 @@ def symbol_health(sym, st, cfg, C=None, listed=True, mk_open=None, now_t=None,
                    or sid == st.get("last_sig") or sid in (st.get("sigs_traded") or [])
                    or (st.get("stale") and not _bool(cfg.get("allow_stale_entries"), False))
                    or str(st.get("last_action") or "").startswith("EXIT ")
-                   or "cash" in str(st.get("no_fill") or ""))
+                   or "cash" in str(st.get("no_fill") or "")
+                   or str(st.get("no_fill") or "").startswith("resume safety:"))
         if dpct <= mx + 1e-9 and not blocked:
             add("warn", "missed_already_triggered",
                 "latest cross %s @ %s broke out at %s and the price was %.2f%% away (within Max "
@@ -4249,6 +4379,7 @@ def api_status():
         "config": RUNTIME.get("config", {}),
         "profile": PROFILE,
         "session_profile": _PROFILE_NAME,
+        "resume_guard": 1,
         "session_error": _PROFILE_ERROR,
         "session_ui": _PROFILE_UI,
         "sheet_out": _sheet_status() if PROFILE == "live" else None,
@@ -4264,8 +4395,11 @@ def api_status():
         "sizing_mode": str(RUNTIME["config"].get("sizing_mode") or "fixed"),
         "entry_exec": str(RUNTIME["config"].get("entry_exec") or "level"),
         "fno_mode": str(RUNTIME["config"].get("fno_mode") or "none"),
-        "fno_error": _FNO_CACHE.get("err", "") if str(
-            RUNTIME["config"].get("fno_mode") or "") == "sheet" else "",
+        "fno_error": _FNO_CACHE.get("err", "") if (
+            str(_cfg.get("fno_mode") or "").lower() == "sheet"
+            and str(_cfg.get("interval") or "") in FNO_TFS
+            and _FNO_CACHE.get("key") == (_cfg.get("fno_book"), _cfg.get("fno_tab"))
+            and any(_is_indian_fno_symbol(_cfg, sym) for sym in _cur)) else "",
     })
 
 

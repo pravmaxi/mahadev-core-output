@@ -20,13 +20,16 @@ if os.getenv('ARENA_VERBOSE_REQUESTS') != '1':
     logging.getLogger('werkzeug').addFilter(QuietPollingRequests())
 import paper_engine
 import live_engine
+import research_data
+from research_routes import research_bp
 
 app = Flask(__name__)
+app.register_blueprint(research_bp, url_prefix="/research")
 app.register_blueprint(paper_engine.paper_live_bp, url_prefix="/paper", name="arena_paper")
 app.register_blueprint(live_engine.paper_live_bp, url_prefix="/live", name="arena_live")
 # yfinance is not thread-safe, including across our two independently loaded engines.
 shared_data_lock = threading.Lock()
-paper_engine.DATA_LOCK = live_engine.DATA_LOCK = shared_data_lock
+paper_engine.DATA_LOCK = live_engine.DATA_LOCK = research_data.YAHOO_LOCK = shared_data_lock
 
 @app.route('/')
 def index():
